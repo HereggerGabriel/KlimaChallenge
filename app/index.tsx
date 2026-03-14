@@ -11,10 +11,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar } from "expo-status-bar";
 import { Palette } from "@/constants/Colors";
 
-async function getInitialRoute(): Promise<"/onboarding" | "/(tabs)"> {
+async function getInitialRoute(): Promise<"/onboarding" | "/(tabs)/user"> {
   try {
     const auth = await AsyncStorage.getItem("isAuthenticated");
-    return auth === "true" ? "/(tabs)" : "/onboarding";
+    return auth === "true" ? "/(tabs)/user" : "/onboarding";
   } catch {
     return "/onboarding";
   }

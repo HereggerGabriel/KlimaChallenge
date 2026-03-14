@@ -153,7 +153,7 @@ export default function UserScreen() {
 				style: "destructive",
 				onPress: async () => {
 					await AsyncStorage.multiRemove(["isAuthenticated", "userData"]);
-					router.replace("/login");
+					router.replace("/onboarding");
 				},
 			},
 		]);
@@ -242,11 +242,20 @@ export default function UserScreen() {
 	return (
 		<ScrollView style={styles.container}>
 			<View style={styles.header}>
-				<ThemedText type="title" style={styles.headerTitle}>My Climate Journey</ThemedText>
+				<ThemedText type="title" style={styles.headerTitle}>
+					My Climate Journey
+				</ThemedText>
 				<View style={styles.headerSubRow}>
 					<ThemedText style={styles.subtitle}>Track your impact and savings</ThemedText>
-					<TouchableOpacity onPress={handleLogout} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-						<IconSymbol name="rectangle.portrait.and.arrow.right" size={22} color={Palette.red.light} />
+					<TouchableOpacity
+						onPress={handleLogout}
+						hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+					>
+						<IconSymbol
+							name="rectangle.portrait.and.arrow.right"
+							size={22}
+							color={Palette.red.light}
+						/>
 					</TouchableOpacity>
 				</View>
 			</View>
@@ -261,7 +270,7 @@ export default function UserScreen() {
 				totalTrips={trips.length}
 				totalDistance={totalDistance}
 				totalCost={totalCost}
-				klimaTicketCost={1297.8}
+				klimaTicketCost={1400.0}
 			/>
 
 			{favorites.length > 0 && (
