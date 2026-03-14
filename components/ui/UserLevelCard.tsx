@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Palette } from '@/constants/Colors';
 
 interface UserLevelCardProps {
   level: number;
@@ -25,7 +26,7 @@ export default function UserLevelCard({ level, currentXP, xpToNextLevel }: UserL
 
   return (
     <LinearGradient
-      colors={['#4F46E5', '#7C3AED']}
+      colors={[Palette.blue.mid, Palette.blue.dark]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.container}
@@ -82,7 +83,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#fff',
+    backgroundColor: Palette.green.mid,
     borderRadius: 4,
   },
   footer: {

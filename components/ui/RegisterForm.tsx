@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
-import { View, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator } from "react-native";
+import { View, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/ThemedText";
 import { createClient } from "@supabase/supabase-js";
 import Constants from "expo-constants";
 
 const supabase = createClient(
 	Constants.expoConfig?.extra?.supabaseUrl ?? "",
-	Constants.expoConfig?.extra?.supabaseAnonKey ?? ""
+	Constants.expoConfig?.extra?.supabaseAnonKey ?? "",
 );
 
 type FormData = {
@@ -97,7 +98,9 @@ export default function RegisterForm() {
 								value={value}
 							/>
 							{errors.email && (
-								<ThemedText className="text-red-500 text-sm mt-1">{errors.email.message}</ThemedText>
+								<ThemedText className="text-red-500 text-sm mt-1">
+									{errors.email.message}
+								</ThemedText>
 							)}
 						</View>
 					)}
@@ -124,7 +127,9 @@ export default function RegisterForm() {
 								value={value}
 							/>
 							{errors.password && (
-								<ThemedText className="text-red-500 text-sm mt-1">{errors.password.message}</ThemedText>
+								<ThemedText className="text-red-500 text-sm mt-1">
+									{errors.password.message}
+								</ThemedText>
 							)}
 						</View>
 					)}

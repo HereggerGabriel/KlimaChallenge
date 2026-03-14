@@ -1,80 +1,134 @@
-import React from "react";
-import { View, ScrollView, Image } from "react-native";
+import React, { useState, useEffect } from "react";
+import { ScrollView, View, StyleSheet, TouchableOpacity } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
-import LoginForm from "@/components/ui/LoginForm";
+import { FinancialOverview } from "@/components/ui/FinancialOverview";
+import UserLevelCard from "@/components/ui/UserLevelCard";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { loadTrips } from "@/services/tripStorage";
+import { Trip } from "@/types/trip";
+import {
+  calculateLevel,
+  calculateXPForNextLevel,
+  calculateCurrentLevelXP,
+} from "@/utils/levelSystem";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
+import { Palette } from "@/constants/Colors";
 
-export default function HomeScreen() {
-	return (
-		<ScrollView className="flex-1 bg-gray-50 dark:bg-gray-900">
-			<View className="flex-1">
-				{/* Hero Section */}
-				<View className="relative h-48 bg-blue-500">
-					<Image
-						source={require("@/assets/images/icon.png")}
-						className="absolute inset-0 w-full h-full"
-						resizeMode="cover"
-					/>
-					<View className="absolute inset-0 bg-black/40" />
-					<View className="absolute inset-0 flex items-center justify-center">
-						<ThemedText type="title" className="text-white text-3xl font-bold text-center">
-							Track Your Trips, Save the Climate
-						</ThemedText>
-						<ThemedText className="text-white text-lg mt-2 text-center">
-							And your wallet too
-						</ThemedText>
-					</View>
-				</View>
+const KLIMA_TICKET_COST = 1297.8;
 
-				{/* Login Form Section */}
-				<View className="px-4 py-6">
-					<LoginForm />
-				</View>
+export default function HomeTab() {
+  const insets = useSafeAreaInsets();
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [xp, setXP] = useState(0);
 
-				{/* Feature Highlights */}
-				<View className="px-4 py-6">
-					<ThemedText type="subtitle" className="text-center mb-6">
-						Why Track Your Journeys?
-					</ThemedText>
-					<View className="space-y-4">
-						<View className="flex-row items-center">
-							<View className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full items-center justify-center mr-3">
-								<ThemedText className="text-blue-500 dark:text-blue-300">✓</ThemedText>
-							</View>
-							<ThemedText>Reduce your carbon footprint</ThemedText>
-						</View>
-						<View className="flex-row items-center">
-							<View className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full items-center justify-center mr-3">
-								<ThemedText className="text-blue-500 dark:text-blue-300">✓</ThemedText>
-							</View>
-							<ThemedText>Save money with KlimaTicket Ö</ThemedText>
-						</View>
-						<View className="flex-row items-center">
-							<View className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full items-center justify-center mr-3">
-								<ThemedText className="text-blue-500 dark:text-blue-300">✓</ThemedText>
-							</View>
-							<ThemedText>Make informed decisions about your transport</ThemedText>
-						</View>
-					</View>
-				</View>
+  useEffect(() => {
+    loadTrips().then(setTrips);
+    AsyncStorage.getItem("userXP").then((val) => setXP(val ? parseInt(val, 10) : 0));
+  }, []);
 
-				{/* Reference Price Info */}
-				<View className="px-4 py-6 bg-white dark:bg-gray-800">
-					<ThemedText type="subtitle" className="text-center mb-4">
-						Reference Prices
-					</ThemedText>
-					<View className="space-y-2">
-						<ThemedText className="text-center">
-							Single Bus Trip: €2.50
-						</ThemedText>
-						<ThemedText className="text-center">
-							KlimaTicket Ö Classic: €1,297.80/year
-						</ThemedText>
-						<ThemedText className="text-sm text-center opacity-70 mt-2">
-							Track your daily trips to see if the yearly ticket pays off
-						</ThemedText>
-					</View>
-				</View>
-			</View>
-		</ScrollView>
-	);
+  const level = calculateLevel(xp);
+  const xpToNext = calculateXPForNextLevel(level);
+  const currentLevelXP = calculateCurrentLevelXP(xp, level);
+  const totalTrips = trips.length;
+  const totalDistance = trips.reduce((s, t) => s + t.distance, 0);
+  const totalCost = trips.reduce((s, t) => s + t.cost, 0);
+
+  return (
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[
+        styles.content,
+        { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 24 },
+      ]}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Greeting */}
+      <View style={styles.greetingRow}>
+        <ThemedText style={styles.greeting}>Good day 👋</ThemedText>
+        <ThemedText style={styles.subGreeting}>Here's your KlimaChallenge</ThemedText>
+      </View>
+
+      {/* Level card */}
+      <UserLevelCard level={level} currentXP={currentLevelXP} xpToNextLevel={xpToNext} />
+
+      {/* Financial overview */}
+      <FinancialOverview
+        totalTrips={totalTrips}
+        totalDistance={totalDistance}
+        totalCost={totalCost}
+        klimaTicketCost={KLIMA_TICKET_COST}
+      />
+
+      {/* Quick actions */}
+      <View style={styles.actionsRow}>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => router.push("/(tabs)/user")}
+          activeOpacity={0.8}
+        >
+          <ThemedText style={styles.actionIcon}>🚊</ThemedText>
+          <ThemedText style={styles.actionLabel}>My Trips</ThemedText>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => router.push("/new-trip")}
+          activeOpacity={0.8}
+        >
+          <ThemedText style={styles.actionIcon}>＋</ThemedText>
+          <ThemedText style={styles.actionLabel}>Log Trip</ThemedText>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
+  );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f5f7fa",
+  },
+  content: {
+    paddingHorizontal: 16,
+    gap: 16,
+  },
+  greetingRow: {
+    gap: 4,
+    marginBottom: 4,
+  },
+  greeting: {
+    fontSize: 26,
+    fontWeight: "700",
+    color: Palette.blue.dark,
+  },
+  subGreeting: {
+    fontSize: 14,
+    color: Palette.blue.mid,
+  },
+  actionsRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  actionButton: {
+    flex: 1,
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    paddingVertical: 20,
+    alignItems: "center",
+    gap: 8,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  actionIcon: {
+    fontSize: 28,
+  },
+  actionLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: Palette.blue.dark,
+  },
+});

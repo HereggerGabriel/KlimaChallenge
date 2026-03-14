@@ -4,8 +4,9 @@ export const calculateXPForNextLevel = (currentLevel: number): number => {
 };
 
 export const calculateLevel = (totalXP: number): number => {
+  if (totalXP < 100) return 1;
   // Inverse of the XP calculation to determine level
-  return Math.floor(Math.log(totalXP / 100) / Math.log(1.5)) + 1;
+  return Math.max(1, Math.floor(Math.log(totalXP / 100) / Math.log(1.5)) + 1);
 };
 
 export const calculateCurrentLevelXP = (totalXP: number, currentLevel: number): number => {
@@ -26,18 +27,18 @@ export const getXPForTrip = (distance: number, transportType: string): number =>
   const distanceXP = Math.min(distance, 50);
   baseXP += distanceXP;
   
-  // Bonus XP for sustainable transport
+  // Bonus XP for sustainable transport types used in the app
   switch (transportType.toLowerCase()) {
-    case 'bike':
-      baseXP *= 1.5;
+    case 'tram':
+      baseXP *= 1.4;
       break;
-    case 'public transport':
+    case 'subway':
       baseXP *= 1.3;
       break;
-    case 'walk':
+    case 'train':
       baseXP *= 1.2;
       break;
-    case 'car':
+    case 'bus':
       baseXP *= 1.1;
       break;
     default:
