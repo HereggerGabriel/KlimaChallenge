@@ -1,3 +1,13 @@
+export const getLevelTitle = (level: number): string => {
+  if (level < 5) return 'Novice Explorer';
+  if (level < 10) return 'Adventure Seeker';
+  if (level < 15) return 'Journey Master';
+  if (level < 20) return 'Travel Expert';
+  if (level < 25) return 'Globe Trotter';
+  if (level < 30) return 'World Wanderer';
+  return 'Legendary Voyager';
+};
+
 // XP required to complete level N (i.e. to advance from level N to N+1)
 export const calculateXPForNextLevel = (level: number): number => {
   return Math.floor(100 * Math.pow(1.5, level - 1));

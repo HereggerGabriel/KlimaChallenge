@@ -18,7 +18,23 @@ export const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	header: {
+		flexDirection: "row",
+		alignItems: "center",
 		marginBottom: 24,
+	},
+	avatarCircle: {
+		width: 40,
+		height: 40,
+		borderRadius: 20,
+		backgroundColor: Palette.green.mid,
+		alignItems: "center",
+		justifyContent: "center",
+		marginLeft: 12,
+	},
+	avatarInitial: {
+		fontSize: 18,
+		fontWeight: "700",
+		color: "#fff",
 	},
 	headerTitle: {
 		color: "#fff",
@@ -190,6 +206,38 @@ export const styles = StyleSheet.create({
 	favoriteDistance: {
 		fontSize: 12,
 		color: "rgba(255,255,255,0.5)",
+	},
+	emptyState: {
+		alignItems: "center",
+		paddingVertical: 36,
+		gap: 8,
+	},
+	emptyStateTitle: {
+		fontSize: 16,
+		fontWeight: "600",
+		color: "rgba(255,255,255,0.6)",
+		marginTop: 8,
+	},
+	emptyStateSubtitle: {
+		fontSize: 13,
+		color: "rgba(255,255,255,0.35)",
+		textAlign: "center",
+		paddingHorizontal: 24,
+	},
+	emptyStateCTA: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 6,
+		marginTop: 12,
+		paddingVertical: 10,
+		paddingHorizontal: 20,
+		backgroundColor: Palette.green.mid,
+		borderRadius: 20,
+	},
+	emptyStateCTAText: {
+		fontSize: 14,
+		color: "#fff",
+		fontWeight: "600",
 	},
 	logoutSection: {
 		marginTop: 36,

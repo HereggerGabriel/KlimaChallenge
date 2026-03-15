@@ -4,13 +4,12 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   StyleSheet,
   Text,
 } from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import { router } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { supabase } from "@/lib/supabase";
 import { Palette } from "@/constants/Colors";
 
 type FormData = {
@@ -18,55 +17,33 @@ type FormData = {
   password: string;
 };
 
-const DUMMY_USERS = [
-  { email: "test@example.com", password: "password123", name: "Test User", id: "1" },
-];
-
-const MAX_ATTEMPTS = 3;
-
 export default function LoginForm() {
   const {
     control,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
-    defaultValues: { email: "test@example.com", password: "password123" },
+    defaultValues: { email: "", password: "" },
   });
   const [error, setError] = useState<string | null>(null);
-  const [attempts, setAttempts] = useState(0);
 
   const onSubmit = async (data: FormData) => {
     setError(null);
-    if (attempts >= MAX_ATTEMPTS) {
-      setError("Too many failed attempts. Please try again later.");
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: data.email,
+      password: data.password,
+    });
+    if (signInError) {
+      setError(signInError.message);
       return;
     }
-    await new Promise((r) => setTimeout(r, 900));
-    const user = DUMMY_USERS.find(
-      (u) => u.email === data.email && u.password === data.password
-    );
-    if (user) {
-      setAttempts(0);
-      await AsyncStorage.setItem("isAuthenticated", "true");
-      await AsyncStorage.setItem("userData", JSON.stringify({ id: user.id, name: user.name, email: user.email }));
-      router.replace("/(tabs)/user");
-    } else {
-      setAttempts((p) => p + 1);
-      setError(`Invalid credentials. ${MAX_ATTEMPTS - attempts - 1} attempts remaining.`);
-    }
+    router.replace("/(tabs)/user");
   };
 
-  const handleForgotPassword = () => {
-    Alert.alert("Reset Password", "A reset link will be sent to your email.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Send Link",
-        onPress: () => Alert.alert("Sent", "Password reset link sent!"),
-      },
-    ]);
+  const handleForgotPassword = async () => {
+    // No-op if no email entered — just show a note
+    setError("Password reset: enter your email above, then try again via the Supabase dashboard.");
   };
-
-  const locked = attempts >= MAX_ATTEMPTS;
 
   return (
     <View style={styles.container}>
@@ -91,7 +68,6 @@ export default function LoginForm() {
                 autoCorrect={false}
                 onChangeText={onChange}
                 value={value}
-                editable={!locked}
               />
             </View>
             {errors.email && <Text style={styles.fieldError}>{errors.email.message}</Text>}
@@ -118,7 +94,6 @@ export default function LoginForm() {
                 secureTextEntry
                 onChangeText={onChange}
                 value={value}
-                editable={!locked}
               />
             </View>
             {errors.password && <Text style={styles.fieldError}>{errors.password.message}</Text>}
@@ -139,12 +114,12 @@ export default function LoginForm() {
       {/* Global error */}
       {error && <Text style={styles.globalError}>{error}</Text>}
 
-      {/* Login button — small, centered */}
+      {/* Login button */}
       <View style={styles.buttonRow}>
         <TouchableOpacity
-          style={[styles.loginButton, (isSubmitting || locked) && styles.loginButtonDisabled]}
+          style={[styles.loginButton, isSubmitting && styles.loginButtonDisabled]}
           onPress={handleSubmit(onSubmit)}
-          disabled={isSubmitting || locked}
+          disabled={isSubmitting}
           activeOpacity={0.82}
         >
           {isSubmitting ? (

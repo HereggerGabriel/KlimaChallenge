@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(powershell -NoProfile:*)",
-      "Bash(node scripts/generate-session-doc-2026-03-14.js)"
+      "Bash(node scripts/generate-session-doc-2026-03-14.js)",
+      "Bash(node -e \":*)"
     ]
   }
 }

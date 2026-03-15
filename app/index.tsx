@@ -7,14 +7,14 @@ import Animated, {
   withDelay,
 } from "react-native-reanimated";
 import { router } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar } from "expo-status-bar";
 import { Palette } from "@/constants/Colors";
+import { supabase } from "@/lib/supabase";
 
 async function getInitialRoute(): Promise<"/onboarding" | "/(tabs)/user"> {
   try {
-    const auth = await AsyncStorage.getItem("isAuthenticated");
-    return auth === "true" ? "/(tabs)/user" : "/onboarding";
+    const { data } = await supabase.auth.getSession();
+    return data.session ? "/(tabs)/user" : "/onboarding";
   } catch {
     return "/onboarding";
   }

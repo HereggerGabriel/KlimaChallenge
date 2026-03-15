@@ -1,28 +1,39 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Palette } from '@/constants/Colors';
+import { getLevelTitle } from '@/utils/levelSystem';
 
 interface UserLevelCardProps {
   level: number;
   currentXP: number;
   xpToNextLevel: number;
+  onQuestsPress?: () => void;
 }
 
-const getLevelTitle = (level: number): string => {
-  if (level < 5) return 'Novice Explorer';
-  if (level < 10) return 'Adventure Seeker';
-  if (level < 15) return 'Journey Master';
-  if (level < 20) return 'Travel Expert';
-  if (level < 25) return 'Globe Trotter';
-  if (level < 30) return 'World Wanderer';
-  return 'Legendary Voyager';
-};
-
-export default function UserLevelCard({ level, currentXP, xpToNextLevel }: UserLevelCardProps) {
-  const progress = (currentXP / xpToNextLevel) * 100;
+export default function UserLevelCard({ level, currentXP, xpToNextLevel, onQuestsPress }: UserLevelCardProps) {
+  const progress = Math.min((currentXP / xpToNextLevel) * 100, 100);
   const title = getLevelTitle(level);
+  const barWidth = useSharedValue(0);
+
+  useEffect(() => {
+    barWidth.value = withTiming(progress, {
+      duration: 600,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [progress]);
+
+  const barStyle = useAnimatedStyle(() => ({
+    width: `${barWidth.value}%`,
+  }));
 
   return (
     <LinearGradient
@@ -35,13 +46,11 @@ export default function UserLevelCard({ level, currentXP, xpToNextLevel }: UserL
         <ThemedText style={styles.levelText}>Level {level}</ThemedText>
         <ThemedText style={styles.titleText}>{title}</ThemedText>
       </View>
-      
+
       <View style={styles.progressBar}>
-        <View 
-          style={[styles.progressFill, { width: `${progress}%` }]}
-        />
+        <Animated.View style={[styles.progressFill, barStyle]} />
       </View>
-      
+
       <View style={styles.footer}>
         <ThemedText style={styles.xpText}>
           {currentXP} / {xpToNextLevel} XP
@@ -50,6 +59,14 @@ export default function UserLevelCard({ level, currentXP, xpToNextLevel }: UserL
           {Math.round(progress)}%
         </ThemedText>
       </View>
+
+      {onQuestsPress && (
+        <TouchableOpacity style={styles.questsButton} onPress={onQuestsPress} activeOpacity={0.75}>
+          <MaterialIcons name="assignment" size={14} color="rgba(255,255,255,0.6)" />
+          <ThemedText style={styles.questsButtonText}>Quests & Achievements</ThemedText>
+          <MaterialIcons name="chevron-right" size={16} color="rgba(255,255,255,0.4)" />
+        </TouchableOpacity>
+      )}
     </LinearGradient>
   );
 }
@@ -99,4 +116,20 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.8)',
     fontSize: 14,
   },
-}); 
+  questsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.12)',
+  },
+  questsButtonText: {
+    flex: 1,
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+});
