@@ -5,20 +5,24 @@ export const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: Palette.blue.dark,
+	},
+	scrollContent: {
 		padding: 20,
+		paddingTop: 52,
+		paddingBottom: 48,
+	},
+	loadingContainer: {
+		flex: 1,
+		backgroundColor: Palette.blue.dark,
+		alignItems: "center",
+		justifyContent: "center",
 	},
 	header: {
 		marginBottom: 24,
-		paddingTop: 8,
 	},
 	headerTitle: {
 		color: "#fff",
 		marginBottom: 4,
-	},
-	headerSubRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
 	},
 	subtitle: {
 		fontSize: 15,
@@ -33,6 +37,14 @@ export const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		alignItems: "center",
 		marginBottom: 16,
+	},
+	sectionTitleRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 7,
+	},
+	sectionTitle: {
+		color: "#fff",
 	},
 	addButton: {
 		flexDirection: "row",
@@ -49,38 +61,46 @@ export const styles = StyleSheet.create({
 		fontWeight: "600",
 	},
 	tripCard: {
-		padding: 16,
+		flexDirection: "row",
 		borderRadius: 14,
 		marginBottom: 12,
 		backgroundColor: "rgba(255,255,255,0.07)",
 		borderWidth: 1,
 		borderColor: "rgba(255,255,255,0.12)",
+		overflow: "hidden",
+	},
+	tripAccentBar: {
+		width: 4,
+	},
+	tripCardContent: {
+		flex: 1,
+		padding: 14,
 	},
 	tripHeader: {
 		flexDirection: "row",
 		justifyContent: "space-between",
 		alignItems: "flex-start",
-		marginBottom: 12,
+		marginBottom: 10,
 	},
 	tripTitle: {
-		fontSize: 16,
+		fontSize: 15,
 		fontWeight: "600",
 		color: "#fff",
-		marginBottom: 4,
+		marginBottom: 3,
 	},
 	tripDate: {
-		fontSize: 13,
+		fontSize: 12,
 		color: "rgba(255,255,255,0.5)",
 	},
 	tripCost: {
-		fontSize: 18,
+		fontSize: 17,
 		fontWeight: "700",
 		color: Palette.green.mid,
 	},
 	tripDetails: {
 		flexDirection: "row",
 		flexWrap: "wrap",
-		gap: 12,
+		gap: 10,
 	},
 	tripDetail: {
 		flexDirection: "row",
@@ -88,12 +108,21 @@ export const styles = StyleSheet.create({
 		gap: 4,
 	},
 	tripDetailText: {
-		fontSize: 13,
+		fontSize: 12,
 		color: "rgba(255,255,255,0.55)",
 	},
-	sectionTitle: {
-		marginBottom: 12,
-		color: "#fff",
+	showAllButton: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		gap: 5,
+		paddingVertical: 12,
+		marginTop: 4,
+	},
+	showAllText: {
+		fontSize: 13,
+		color: Palette.blue.light,
+		fontWeight: "500",
 	},
 	favoritesGrid: {
 		flexDirection: "row",
@@ -161,5 +190,23 @@ export const styles = StyleSheet.create({
 	favoriteDistance: {
 		fontSize: 12,
 		color: "rgba(255,255,255,0.5)",
+	},
+	logoutSection: {
+		marginTop: 36,
+	},
+	logoutButton: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		gap: 8,
+		paddingVertical: 14,
+		borderRadius: 12,
+		borderWidth: 1.5,
+		borderColor: Palette.red.light,
+	},
+	logoutButtonText: {
+		color: Palette.red.light,
+		fontSize: 15,
+		fontWeight: "600",
 	},
 });

@@ -29,9 +29,11 @@ export const loadTrips = async (): Promise<Trip[]> => {
     const storedTrips = await AsyncStorage.getItem(STORAGE_KEY);
     if (storedTrips) {
       const parsedTrips = JSON.parse(storedTrips);
-      return parsedTrips.map((trip: Trip & { date: string }) => ({
+      return parsedTrips.map((trip: any) => ({
         ...trip,
         date: new Date(trip.date),
+        distance: parseFloat(trip.distance) || 0,
+        cost: parseFloat(trip.cost) || 0,
       }));
     }
     return initialTrips;

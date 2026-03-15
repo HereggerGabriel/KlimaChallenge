@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ScrollView, TouchableOpacity, View, Alert } from "react-native";
+import { ScrollView, TouchableOpacity, View, ActivityIndicator } from "react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, {
 	useSharedValue,
@@ -13,6 +13,7 @@ import { Palette } from "@/constants/Colors";
 import { router } from "expo-router";
 import { FinancialOverview } from "@/components/ui/FinancialOverview";
 import { QuickAddTripModal } from "@/components/ui/QuickAddTripModal";
+import { TripDetailModal } from "@/components/ui/TripDetailModal";
 import UserLevelCard from "@/components/ui/UserLevelCard";
 import {
 	calculateLevel,
@@ -25,6 +26,19 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Trip } from "@/types/trip";
 import { loadTrips, saveTrips } from "@/services/tripStorage";
 import { styles } from "./user_styles";
+
+const TRIPS_PREVIEW = 5;
+
+const TRANSPORT_ACCENT: Record<string, string> = {
+	Bus: Palette.blue.mid,
+	Train: Palette.green.mid,
+	Tram: Palette.blue.light,
+	Subway: Palette.green.dark,
+};
+
+function transportAccent(type: string): string {
+	return TRANSPORT_ACCENT[type] ?? Palette.blue.mid;
+}
 
 type FavoriteTrip = {
 	origin: string;
@@ -116,10 +130,12 @@ function FavoriteCard({ fav, onAdd }: { fav: FavoriteTrip; onAdd: () => void }) 
 
 export default function UserScreen() {
 	const [showQuickAdd, setShowQuickAdd] = useState(false);
+	const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
 	const [trips, setTrips] = useState<Trip[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [userXP, setUserXP] = useState(0);
 	const [userLevel, setUserLevel] = useState(1);
+	const [showAllTrips, setShowAllTrips] = useState(false);
 
 	useEffect(() => {
 		const init = async () => {
@@ -128,10 +144,18 @@ export default function UserScreen() {
 			setIsLoading(false);
 
 			const storedXP = await AsyncStorage.getItem("userXP");
-			if (storedXP) {
-				const xp = parseInt(storedXP);
-				setUserXP(xp);
-				setUserLevel(calculateLevel(xp));
+			const parsedXP = storedXP ? parseInt(storedXP) : NaN;
+			if (!isNaN(parsedXP)) {
+				setUserXP(parsedXP);
+				setUserLevel(calculateLevel(parsedXP));
+			} else {
+				const seeded = loaded.reduce(
+					(total, trip) => total + getXPForTrip(trip.distance, trip.transportType),
+					0,
+				);
+				await AsyncStorage.setItem("userXP", seeded.toString());
+				setUserXP(seeded);
+				setUserLevel(calculateLevel(seeded));
 			}
 		};
 		init();
@@ -145,22 +169,24 @@ export default function UserScreen() {
 
 	const favorites = computeFavorites(trips);
 
-	const handleLogout = () => {
-		Alert.alert("Log out", "Are you sure?", [
-			{ text: "Cancel", style: "cancel" },
-			{
-				text: "Log out",
-				style: "destructive",
-				onPress: async () => {
-					await AsyncStorage.multiRemove(["isAuthenticated", "userData"]);
-					router.replace("/onboarding");
-				},
-			},
-		]);
+	const handleLogout = async () => {
+		await AsyncStorage.multiRemove(["isAuthenticated", "userData"]);
+		router.replace("/onboarding");
 	};
 
-	const handleTripPress = (tripId: string) => {
-		router.push(`/trip/${tripId}` as any);
+	const handleTripPress = (trip: Trip) => {
+		setSelectedTrip(trip);
+	};
+
+	const handleDeleteTrip = async (tripId: string) => {
+		const trip = trips.find((t) => t.id === tripId);
+		if (!trip) return;
+		const removedXP = getXPForTrip(trip.distance, trip.transportType);
+		const newXP = Math.max(0, userXP - removedXP);
+		await AsyncStorage.setItem("userXP", newXP.toString());
+		setUserXP(newXP);
+		setUserLevel(calculateLevel(newXP));
+		setTrips((prev) => prev.filter((t) => t.id !== tripId));
 	};
 
 	const handleFavoritePress = async (fav: FavoriteTrip) => {
@@ -230,34 +256,24 @@ export default function UserScreen() {
 
 	const totalCost = trips.reduce((sum, trip) => sum + trip.cost, 0);
 	const totalDistance = trips.reduce((sum, trip) => sum + trip.distance, 0);
+	const visibleTrips = showAllTrips ? trips : trips.slice(0, TRIPS_PREVIEW);
 
 	if (isLoading) {
 		return (
-			<View style={styles.container}>
-				<ThemedText>Loading trips...</ThemedText>
+			<View style={styles.loadingContainer}>
+				<ActivityIndicator size="large" color={Palette.green.mid} />
 			</View>
 		);
 	}
 
 	return (
-		<ScrollView style={styles.container}>
+		<ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+			{/* Header */}
 			<View style={styles.header}>
 				<ThemedText type="title" style={styles.headerTitle}>
 					My Climate Journey
 				</ThemedText>
-				<View style={styles.headerSubRow}>
-					<ThemedText style={styles.subtitle}>Track your impact and savings</ThemedText>
-					<TouchableOpacity
-						onPress={handleLogout}
-						hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-					>
-						<IconSymbol
-							name="rectangle.portrait.and.arrow.right"
-							size={22}
-							color={Palette.red.light}
-						/>
-					</TouchableOpacity>
-				</View>
+				<ThemedText style={styles.subtitle}>Track your impact and savings</ThemedText>
 			</View>
 
 			<UserLevelCard
@@ -273,11 +289,15 @@ export default function UserScreen() {
 				klimaTicketCost={1400.0}
 			/>
 
+			{/* Favorites */}
 			{favorites.length > 0 && (
 				<View style={styles.section}>
-					<ThemedText type="subtitle" style={styles.sectionTitle}>
-						Favorites
-					</ThemedText>
+					<View style={styles.sectionTitleRow}>
+						<IconSymbol name="star.fill" size={16} color={Palette.green.mid} />
+						<ThemedText type="subtitle" style={styles.sectionTitle}>
+							Favorites
+						</ThemedText>
+					</View>
 					<View style={styles.favoritesGrid}>
 						{favorites.map((fav) => (
 							<FavoriteCard
@@ -290,54 +310,97 @@ export default function UserScreen() {
 				</View>
 			)}
 
+			{/* Recent Trips */}
 			<View style={styles.section}>
 				<View style={styles.sectionHeader}>
-					<ThemedText type="subtitle">Recent Trips</ThemedText>
+					<View style={styles.sectionTitleRow}>
+						<IconSymbol name="clock" size={16} color={Palette.blue.light} />
+						<ThemedText type="subtitle" style={styles.sectionTitle}>
+							Recent Trips
+						</ThemedText>
+					</View>
 					<TouchableOpacity style={styles.addButton} onPress={() => setShowQuickAdd(true)}>
-						<IconSymbol name="plus.circle.fill" size={24} color="#fff" />
+						<IconSymbol name="plus.circle.fill" size={20} color="#fff" />
 						<ThemedText style={styles.addButtonText}>Add Trip</ThemedText>
 					</TouchableOpacity>
 				</View>
 
-				{trips.map((trip) => (
-					<TouchableOpacity key={trip.id} onPress={() => handleTripPress(trip.id)}>
+				{visibleTrips.map((trip) => (
+					<TouchableOpacity key={trip.id} onPress={() => handleTripPress(trip)} activeOpacity={0.75}>
 						<View style={styles.tripCard}>
-							<View style={styles.tripHeader}>
-								<View>
-									<ThemedText style={styles.tripTitle}>
-										{trip.origin} → {trip.destination}
-									</ThemedText>
-									<ThemedText style={styles.tripDate}>
-										{formatDate(trip.date)} {formatTime(trip.date)}
-									</ThemedText>
-								</View>
-								<ThemedText style={styles.tripCost}>€{trip.cost.toFixed(2)}</ThemedText>
-							</View>
-							<View style={styles.tripDetails}>
-								<View style={styles.tripDetail}>
-									<IconSymbol name="bus" size={16} color="rgba(255,255,255,0.45)" />
-									<ThemedText style={styles.tripDetailText}>{trip.transportType}</ThemedText>
-								</View>
-								<View style={styles.tripDetail}>
-									<IconSymbol name="ruler" size={16} color="rgba(255,255,255,0.45)" />
-									<ThemedText style={styles.tripDetailText}>{trip.distance} km</ThemedText>
-								</View>
-								{trip.description ? (
-									<View style={styles.tripDetail}>
-										<IconSymbol name="text.bubble" size={16} color="rgba(255,255,255,0.45)" />
-										<ThemedText style={styles.tripDetailText}>{trip.description}</ThemedText>
+							<View
+								style={[styles.tripAccentBar, { backgroundColor: transportAccent(trip.transportType) }]}
+							/>
+							<View style={styles.tripCardContent}>
+								<View style={styles.tripHeader}>
+									<View style={{ flex: 1, marginRight: 8 }}>
+										<ThemedText style={styles.tripTitle} numberOfLines={1}>
+											{trip.origin} → {trip.destination}
+										</ThemedText>
+										<ThemedText style={styles.tripDate}>
+											{formatDate(trip.date)} · {formatTime(trip.date)}
+										</ThemedText>
 									</View>
-								) : null}
+									<ThemedText style={styles.tripCost}>€{trip.cost.toFixed(2)}</ThemedText>
+								</View>
+								<View style={styles.tripDetails}>
+									<View style={styles.tripDetail}>
+										<IconSymbol name="bus" size={14} color="rgba(255,255,255,0.45)" />
+										<ThemedText style={styles.tripDetailText}>{trip.transportType}</ThemedText>
+									</View>
+									<View style={styles.tripDetail}>
+										<IconSymbol name="ruler" size={14} color="rgba(255,255,255,0.45)" />
+										<ThemedText style={styles.tripDetailText}>{trip.distance} km</ThemedText>
+									</View>
+									{trip.description ? (
+										<View style={styles.tripDetail}>
+											<IconSymbol name="text.bubble" size={14} color="rgba(255,255,255,0.45)" />
+											<ThemedText style={styles.tripDetailText} numberOfLines={1}>
+												{trip.description}
+											</ThemedText>
+										</View>
+									) : null}
+								</View>
 							</View>
 						</View>
 					</TouchableOpacity>
 				))}
+
+				{trips.length > TRIPS_PREVIEW && (
+					<TouchableOpacity
+						style={styles.showAllButton}
+						onPress={() => setShowAllTrips((v) => !v)}
+					>
+						<ThemedText style={styles.showAllText}>
+							{showAllTrips ? "Show less" : `Show all ${trips.length} trips`}
+						</ThemedText>
+						<IconSymbol
+							name={showAllTrips ? "chevron.up" : "chevron.down"}
+							size={14}
+							color={Palette.blue.light}
+						/>
+					</TouchableOpacity>
+				)}
+			</View>
+
+			{/* Logout */}
+			<View style={styles.logoutSection}>
+				<TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+					<IconSymbol name="rectangle.portrait.and.arrow.right" size={18} color={Palette.red.light} />
+					<ThemedText style={styles.logoutButtonText}>Log Out</ThemedText>
+				</TouchableOpacity>
 			</View>
 
 			<QuickAddTripModal
 				visible={showQuickAdd}
 				onClose={() => setShowQuickAdd(false)}
 				onSubmit={handleQuickAddSubmit}
+			/>
+			<TripDetailModal
+				visible={selectedTrip !== null}
+				trip={selectedTrip}
+				onClose={() => setSelectedTrip(null)}
+				onDelete={handleDeleteTrip}
 			/>
 		</ScrollView>
 	);

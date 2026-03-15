@@ -32,7 +32,7 @@ export const addXP = (currentXP: number, amount: number): number => {
 
 export const getXPForTrip = (distance: number, transportType: string): number => {
   let baseXP = 10;
-  const distanceXP = Math.min(distance, 50);
+  const distanceXP = Math.min(distance || 0, 50);
   baseXP += distanceXP;
 
   switch (transportType.toLowerCase()) {
