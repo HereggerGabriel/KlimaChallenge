@@ -60,8 +60,13 @@ type: project
 
 **Remaining — Feature Backlog (priority order):**
 
-1. **Pricing API research** — HAFAS proxy returns no ticket prices. Candidates: ÖBB Scotty API, VAO, scraping ÖBB.at.
-2. **More prefetched route prices** — add Graz, Salzburg, Innsbruck, Linz routes to ROUTE_PRICES in TripRouteFields.
+1. 🔴 **#36 Delete All Trips must also reset quests/achievements** — `handleDeleteAllTrips` clears trips+XP+mainQuestCelebrated but NOT `@claimedQuests`, `@claimedAchievements`, `@dailyQuestSelection`, `@weeklyQuestSelection`. User who resets sees stale claimed state. **Very high priority.**
+2. 🔴 **#37 Remove `initialTrips` demo data fallback** — `loadTrips()` in `tripStorage.ts` returns 10 hardcoded trips when key is missing. New users see fake data. Change fallback to `[]`. Pre-prod blocker.
+3. 🟡 **#38 Profile KlimaTicket dropdown — close on outside tap** — tapping outside the open dropdown does nothing; should close it.
+4. 🟠 **#39 Cloud sync for trips (Supabase)** — trips are AsyncStorage-only; logging in on a new device starts from scratch. Sync to Supabase trips table.
+5. 🔵 **#40 Trip export / CSV download** — useful for tax/Jobticket purposes; export all trips as CSV.
+6. **Pricing API research** — HAFAS proxy returns no ticket prices. Candidates: ÖBB Scotty API, VAO, scraping ÖBB.at.
+7. **More prefetched route prices** — add Graz, Salzburg, Innsbruck, Linz routes to ROUTE_PRICES in TripRouteFields.
 
 **Tech debt (session 11 — completed):**
 

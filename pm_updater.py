@@ -545,5 +545,47 @@ if __name__ == '__main__':
         notes='3 compounding bugs resolved in Delete All Trips feature. STORAGE_KEY=@travelapp_trips (not @trips). loadTrips() returns initialTrips when key missing.',
     )
 
-    # ── 6. Save ───────────────────────────────────────────────────────────
+    # ── 6. New backlog items identified at end of S12 ─────────────────────
+    pm.add_backlog_item(
+        36, 'Bug Fix', 'Delete All Trips — reset quests/achievements too',
+        'handleDeleteAllTrips clears trips+XP+mainQuestCelebrated but not @claimedQuests, @claimedAchievements, @dailyQuestSelection, @weeklyQuestSelection. User who resets sees stale claimed state.',
+        '🔴 Critical', 'XS (30m)', '⬜ Todo', 'S13',
+        'Add removeItem calls for all 4 keys in handleDeleteAllTrips in profile.tsx',
+    )
+    pm.add_backlog_item(
+        37, 'Bug Fix', 'Remove initialTrips demo data fallback',
+        'loadTrips() in tripStorage.ts returns 10 hardcoded dummy trips when key missing. New users see fake data. Pre-prod blocker.',
+        '🔴 Critical', 'XS (15m)', '⬜ Todo', 'S13',
+        'Change fallback from `return initialTrips` to `return []` in tripStorage.ts',
+    )
+    pm.add_backlog_item(
+        38, 'UX', 'Profile dropdown — close on outside tap',
+        'KlimaTicket dropdown in profile stays open when user taps outside. Should dismiss.',
+        '🟡 Medium', 'XS (30m)', '⬜ Todo', 'Any',
+        'Wrap screen in TouchableWithoutFeedback or use onStartShouldSetResponder pattern',
+    )
+    pm.add_backlog_item(
+        39, 'Feature', 'Cloud sync for trips (Supabase)',
+        'Trips stored in AsyncStorage only — new device login starts from scratch. Sync to Supabase trips table.',
+        '🟠 High', 'L (1-2d)', '⬜ Todo', 'Any',
+        'Requires Supabase trips table schema, upsert on save, fetch on login',
+    )
+    pm.add_backlog_item(
+        40, 'Feature', 'Trip export / CSV download',
+        'Allow users to export all trips as CSV for tax/Jobticket purposes.',
+        '🔵 Low', 'S (2-4h)', '⬜ Todo', 'Any',
+        'Use expo-sharing + expo-file-system to write and share CSV',
+    )
+    pm.update_dashboard_metrics(
+        sessions=SESSION,
+        features=35,
+        open_items=10,      # was 5, now +5 new items
+        prev_sessions=SESSION,
+        prev_features=35,
+        prev_open=5,
+        tech_debt_count=0,
+        preprod_count=4,    # initialTrips fallback is also a pre-prod blocker
+    )
+
+    # ── 7. Save ───────────────────────────────────────────────────────────
     pm.save()
