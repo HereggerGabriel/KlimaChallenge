@@ -25,14 +25,14 @@ A React Native / Expo app for tracking public transport trips (bus, train, tram,
 - `app/onboarding.tsx` — 3-slide FRE pager; tappable dots; "Get Started →" only on last slide
 - `app/login.tsx` — ImageBackground + dark gradient, LoginForm
 - `app/register.tsx` — same dark design as login, RegisterForm
-- `app/profile.tsx` — name + KlimaTicket type/cost selector (presets + custom); avatar; entry points to Stats and Achievements
+- `app/profile.tsx` — name + KlimaTicket type/cost selector; avatar; entry points to Stats and Achievements; Danger Zone with Delete All Trips (slide-to-confirm). KlimaTicket uses `TICKET_GROUPS` (nationwide 6 + regional 20 presets with real 2026 prices). `SlideToDelete` uses RNGH `Gesture.Pan().runOnJS(true)` + absolute overlay (NOT RN Modal — RNGH gestures don't work in RN Modal on mobile). `handleDeleteAllTrips` calls `saveTrips([])` — never `removeItem("@trips")` (wrong key + would restore demo data).
 - `app/quests.tsx` — Quests & Achievements screen (segmented control); daily/weekly/milestone quests + achievements grid; main quest featured card
 - `app/stats.tsx` — Stats & Insights screen (new, session 9); overview cards, weekly bar chart, transport mix, top routes, KlimaTicket progress
 - `app/(tabs)/_layout.tsx` — Tabs with hidden tab bar, single screen `user`
 - `app/(tabs)/user.tsx` — main screen (see below)
-- `app/(tabs)/user_styles.tsx` — styles for user.tsx; includes `root: { flex: 1 }`
+- `app/(tabs)/_user_styles.tsx` — styles for user.tsx; includes `root: { flex: 1 }`; prefixed with `_` so Expo Router ignores it
 - `lib/supabase.ts` — singleton Supabase client (AsyncStorage session persistence, Constants fallback for URL/key)
-- `services/tripStorage.ts` — AsyncStorage CRUD for trips; `loadTrips()` coerces distance+cost to float
+- `services/tripStorage.ts` — AsyncStorage CRUD for trips; `loadTrips()` coerces distance+cost to float; storage key is `STORAGE_KEY = "@travelapp_trips"` (NOT `@trips`); **when key is missing, returns `initialTrips` (10 demo trips) — NOT empty array**
 - `services/oebbApi.ts` — OeBB REST API service; base URL `https://oebb.macistry.com/api`; searchStation, searchConnections (returns ConnectionSearchResult), mapTransportType, summariseJourney (with fallback haversine distance), estimateDistanceKm
 - `types/trip.ts` — Trip interface: id, date, origin, destination, transportType, cost, distance, description
 - `utils/levelSystem.ts` — XP/level calc; exports `getLevelTitle`, `getXPForTrip`, `calculateLevel`, etc.
@@ -64,6 +64,7 @@ A React Native / Expo app for tracking public transport trips (bus, train, tram,
 - Wrapped in `<View style={styles.root}>` with `XPToast`, `LevelUpOverlay`, `MainQuestOverlay` outside ScrollView
 - `checkMainQuest(allTrips, ticketCost)` called (with await) after every trip add; one-time flag `@mainQuestCelebrated`
 - `favorites` and `recentPlaces` both memoized with `useMemo([trips])`
+- `useFocusEffect` reloads both profile AND trips+XP from AsyncStorage on every screen focus (added S12 to catch external mutations like Delete All Trips)
 
 **`app/profile.tsx`:**
 - Avatar (initials), name input, KlimaTicket type dropdown (presets + custom), Save button

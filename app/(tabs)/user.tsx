@@ -29,7 +29,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Trip } from "@/types/trip";
 import { loadTrips, saveTrips } from "@/services/tripStorage";
-import { styles } from "./user_styles";
+import { styles } from "./_user_styles";
 import { supabase } from "@/lib/supabase";
 import { TRANSPORT_COLOR } from "@/constants/transport";
 
@@ -178,6 +178,24 @@ export default function UserScreen() {
 
 	useFocusEffect(useCallback(() => {
 		loadProfile();
+		loadTrips().then((loaded) => {
+			setTrips(loaded);
+			AsyncStorage.getItem("userXP").then((storedXP) => {
+				const parsedXP = storedXP ? parseInt(storedXP) : NaN;
+				if (!isNaN(parsedXP)) {
+					setUserXP(parsedXP);
+					setUserLevel(calculateLevel(parsedXP));
+				} else {
+					const seeded = loaded.reduce(
+						(total, trip) => total + getXPForTrip(trip.distance, trip.transportType),
+						0,
+					);
+					AsyncStorage.setItem("userXP", seeded.toString());
+					setUserXP(seeded);
+					setUserLevel(calculateLevel(seeded));
+				}
+			});
+		});
 	}, [loadProfile]));
 
 	useEffect(() => {

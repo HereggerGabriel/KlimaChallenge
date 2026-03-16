@@ -1,0 +1,40 @@
+Bug Report: Delete All Trips — Slider + Deletion
+Feature
+Profile screen → Danger Zone → "Delete All Trips" with slide-to-confirm.
+
+Bug 1: Slider not slideable (first attempt)
+Symptom: Thumb didn't move at all.
+
+Attempt 1 — useNativeDriver: true with PanResponder
+Initial implementation used Animated (RN) + PanResponder with useNativeDriver: true. Why it failed: useNativeDriver: true runs the animation on the native thread, but pan.setValue(x) during the gesture runs on the JS thread — mixing the two breaks the update pipeline. The thumb appeared frozen.
+
+Fix: switched to useNativeDriver: false. Still didn't work on mobile.
+
+Attempt 2 — PanHandlers on thumb only
+PanHandlers were attached to the small 48px thumb circle. Why it failed: users touch the track anywhere, not just the thumb — so the gesture never started. Moved panHandlers to the outer track View. Still not working.
+
+Attempt 3 — switch to RNGH Gesture.Pan() + GestureHandlerRootView inside RN Modal
+PanResponder can be unreliable; switched to the proper RNGH Gesture API with GestureDetector. Wrapped modal content in GestureHandlerRootView. Why it failed on mobile: React Native's Modal renders in a separate native window (UIWindow on iOS, separate window on Android). Adding GestureHandlerRootView inside Modal JSX doesn't correctly register with that window's native gesture recognizer system. Gestures were silently dropped.
+
+Final fix: Replaced RN Modal with an absolute-positioned View overlay (position: absolute, top/left/right/bottom: 0, zIndex: 99) rendered inside the KeyboardAvoidingView. This keeps it inside the app's existing GestureHandlerRootView from \_layout.tsx. Gestures work correctly on both mobile and web.
+
+Bug 2: Slider works on web but onConfirmed never fires
+Symptom: Thumb slides to end, springs back, but nothing is deleted.
+
+Root cause: runOnJS(onConfirmed)() was called inside a Reanimated worklet callback (withSpring(..., {}, callback)). runOnJS is deprecated in Reanimated 4 and doesn't reliably bridge to JS on web.
+
+Fix: Added .runOnJS(true) to the gesture — this makes all gesture callbacks (including onEnd) run on the JS thread directly. Then onConfirmed() is called after a plain setTimeout(350ms) (matching the spring duration), no worklet bridge needed.
+
+Bug 3: Data persisted after confirmed deletion
+Symptom: Slider confirmed, modal closed, navigated back — all trips still visible.
+
+Attempt 1 — trips not reloading on screen focus
+user.tsx loaded trips once on mount; navigating back from profile didn't re-fetch. Added trip+XP reload to useFocusEffect. Still persisted.
+
+Root cause 1 — wrong AsyncStorage key:
+handleDeleteAllTrips called AsyncStorage.removeItem("@trips"). The actual key used by tripStorage.ts is STORAGE_KEY = "@travelapp_trips". The wrong key was a no-op — nothing was deleted.
+
+Root cause 2 — demo data fallback:
+Even if the correct key had been removed, loadTrips() returns initialTrips (10 hardcoded demo trips) when the key is absent. So deletion + key removal would have immediately restored demo data on next load.
+
+Final fix: handleDeleteAllTrips now calls saveTrips([]) (imported from tripStorage.ts). This writes [] to @travelapp_trips. On next loadTrips(), the key exists with value [], so the fallback never triggers and the empty array is returned correctly.

@@ -327,7 +327,7 @@ export default function StatsScreen() {
               {transportData.map((item) => (
                 <View key={item.type} style={styles.transportRow}>
                   <View style={styles.transportLabelWrap}>
-                    <MaterialIcons name={typeIcon(item.type) as any} size={16} color={item.color} />
+                    <MaterialIcons name={transportIcon(item.type) as any} size={16} color={item.color} />
                     <ThemedText style={styles.transportLabel}>{item.type}</ThemedText>
                   </View>
                   <View style={styles.transportBarWrap}>
