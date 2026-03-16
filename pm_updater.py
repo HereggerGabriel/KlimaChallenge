@@ -467,58 +467,82 @@ if __name__ == '__main__':
     """
     pm = PMUpdater()
 
-    SESSION = 11
+    SESSION = 12
     DATE    = '2026-03-16'
-
-    # ── 0. Fix Row 5 headers (one-time repair) ────────────────────────────
-    pm.restore_dashboard_headers()
 
     # ── 1. Dashboard + headers ────────────────────────────────────────────
     pm.update_dashboard_header(SESSION, DATE)
     pm.update_dashboard_metrics(
         sessions=SESSION,
-        features=33,        # no new features this session (pure tech debt)
-        open_items=5,       # 2 feature + 3 pre-prod
-        prev_sessions=10,
+        features=35,        # +2: KlimaTicket presets overhaul + Delete All Trips
+        open_items=5,       # unchanged: 2 feature + 3 pre-prod
+        prev_sessions=11,
         prev_features=33,
-        prev_open=14,       # prev: 10 tech debt + 2 feature + 2 pre-prod
-        tech_debt_count=0,  # all cleared
+        prev_open=5,
+        tech_debt_count=0,
         preprod_count=3,
     )
     pm.add_session_row(
         f'S{SESSION}', DATE, '✅ Done',
-        deliverables='Tech debt sprint: 9 items cleared. Memory files added to git repo.',
-        files='constants/transport.ts (new), user.tsx, stats.tsx, TripRouteFields.tsx, QuickAddTripModal.tsx, user_styles.tsx, tripStorage.ts, .claude/memory/',
-        notes='All tech debt cleared. Transport colors centralised. useMemo, await fixes, dead code removed, light theme removed, debounce added.',
+        deliverables='KlimaTicket presets overhaul (6 nationwide + 20 regional, real 2026 prices). Delete All Trips with slide-to-confirm. Bug fixes: typeIcon crash, Expo Router route warning, RNGH-in-Modal, wrong AsyncStorage key.',
+        files='profile.tsx, stats.tsx, app/(tabs)/user.tsx, app/(tabs)/_user_styles.tsx (renamed)',
+        notes='3 compounding bugs in Delete All Trips: RNGH gestures dead in RN Modal (fixed with absolute overlay), runOnJS broken on web (fixed with .runOnJS(true)+setTimeout), wrong storage key @trips vs @travelapp_trips + initialTrips fallback (fixed with saveTrips([])).',
     )
     pm.update_backlog_header(SESSION, DATE)
 
     # ── 2. Backlog updates ────────────────────────────────────────────────
-    pm.mark_backlog_done(9,  'useMemo([trips]) in user.tsx')
-    pm.mark_backlog_done(25, 'useMemo([trips]) in user.tsx')
-    pm.mark_backlog_done(10, 'constants/transport.ts — TRANSPORT_COLOR + transportIcon()')
-    pm.mark_backlog_done(26, 'await added in handleFavoritePress + handleQuickAddSubmit')
-    pm.mark_backlog_done(27, 'getTripById removed from tripStorage.ts')
-    pm.mark_backlog_done(28, 'theme prop + light styles removed from TripRouteFields')
-    pm.mark_backlog_done(29, 'root style moved to user_styles.tsx; screenStyles removed')
-    pm.mark_backlog_done(30, 'typeIcon() moved to constants/transport.ts as transportIcon()')
-    pm.mark_backlog_done(31, 'eslint-disable comment added above useEffect mount guard')
-    pm.mark_backlog_done(12, '400ms debounce via searchDebounceRef in QuickAddTripModal')
+    # No pre-existing backlog items completed this session (all cleared in S11)
+    # New bug fix backlog items added and immediately resolved:
+    pm.add_backlog_item(
+        32, 'Bug Fix', 'Fix typeIcon reference in stats.tsx',
+        'stats.tsx still referenced typeIcon() after S11 refactor renamed it to transportIcon()',
+        '🔴 Critical', 'XS (30m)', '✅ Done', f'S{SESSION}',
+        'One leftover call at line 330; renamed to transportIcon(item.type)',
+    )
+    pm.add_backlog_item(
+        33, 'Bug Fix', 'Rename user_styles.tsx to _user_styles.tsx',
+        'Expo Router treated user_styles.tsx as a route — missing default export warning',
+        '🟡 Medium', 'XS (15m)', '✅ Done', f'S{SESSION}',
+        'Prefixed with _ (Expo Router ignores underscore files). Updated import in user.tsx.',
+    )
+    pm.add_backlog_item(
+        34, 'Feature', 'KlimaTicket presets overhaul',
+        'Replace placeholder presets with real 2026 Austrian KlimaTicket prices grouped by Nationwide/Regional',
+        '🟠 High', 'S (2-4h)', '✅ Done', f'S{SESSION}',
+        'TICKET_GROUPS: 6 nationwide + 20 regional variants. Grouped dropdown with section headers and description field.',
+    )
+    pm.add_backlog_item(
+        35, 'Feature', 'Delete All Trips with slide-to-confirm',
+        'Danger Zone in profile — slide gesture confirmation before wiping all trips and XP',
+        '🟠 High', 'M (4-8h)', '✅ Done', f'S{SESSION}',
+        'SlideToDelete: RNGH Gesture.Pan().runOnJS(true) + absolute overlay (NOT RN Modal). saveTrips([]) to clear. useFocusEffect reloads trips+XP on return.',
+    )
 
     # ── 3. Feature Registry ───────────────────────────────────────────────
-    # No new features this session
+    pm.add_feature(
+        34, 'KlimaTicket Presets Overhaul', 'Feature', f'S{SESSION}',
+        'app/profile.tsx',
+        '26 presets in TICKET_GROUPS (nationwide 6 + regional 20) with real 2026 prices, descriptions, period field for monthly tickets. Grouped dropdown UI.',
+        xp_impact='No',
+    )
+    pm.add_feature(
+        35, 'Delete All Trips', 'Feature', f'S{SESSION}',
+        'app/profile.tsx, app/(tabs)/user.tsx',
+        'Danger Zone section → slide-to-confirm overlay → clears trips + XP + mainQuestCelebrated. useFocusEffect reloads state on return.',
+        xp_impact='Yes',
+    )
 
     # ── 4. Milestones ─────────────────────────────────────────────────────
-    pm.add_velocity_row(f'S{SESSION}', 'Mar 16', 0, 33, 9, 'Tech Debt')
+    pm.add_velocity_row(f'S{SESSION}', 'Mar 16', 2, 35, 0, 'Feature + Bug Fix')
     pm.update_sprint_plan(f'S{SESSION}', status_override='Done', confidence='Completed')
 
     # ── 5. Architecture ───────────────────────────────────────────────────
     pm.add_arch_session(
         f'S{SESSION}', DATE,
-        files_added='constants/transport.ts, .claude/memory/ (project memory in git)',
-        key_decisions='Canonical transport colors: Bus=blue.mid, Train=green.mid, Tram=red.light, Subway=green.dark. Memory files now version-controlled in .claude/memory/.',
+        files_added='None (profile.tsx, user.tsx, stats.tsx modified)',
+        key_decisions='RNGH gestures do NOT work inside RN Modal on mobile — use absolute-positioned View overlay instead. saveTrips([]) to clear trips (removeItem would trigger initialTrips fallback). useFocusEffect reloads trips+XP on every screen focus.',
         asyncstorage_keys='None added',
-        notes='Pure tech debt session. All 9 remaining debt items resolved.',
+        notes='3 compounding bugs resolved in Delete All Trips feature. STORAGE_KEY=@travelapp_trips (not @trips). loadTrips() returns initialTrips when key missing.',
     )
 
     # ── 6. Save ───────────────────────────────────────────────────────────
