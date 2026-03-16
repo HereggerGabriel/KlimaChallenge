@@ -6,7 +6,9 @@ import {
 	TouchableOpacity,
 	ScrollView,
 	TextInput,
+	Platform,
 } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { ThemedText } from "@/components/ThemedText";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Palette } from "@/constants/Colors";
@@ -59,9 +61,8 @@ export function TripDetailModal({ visible, trip, onClose, onDelete, onEdit, rece
 	const [editDistance, setEditDistance] = useState("");
 	const [editDescription, setEditDescription] = useState("");
 	const [editDate, setEditDate] = useState(new Date());
-	const [editHour, setEditHour] = useState("00");
-	const [editMinute, setEditMinute] = useState("00");
 	const [showDatePicker, setShowDatePicker] = useState(false);
+	const [showTimePicker, setShowTimePicker] = useState(false);
 	const [showTransportPicker, setShowTransportPicker] = useState(false);
 
 	// Populate form when entering edit mode
@@ -75,9 +76,8 @@ export function TripDetailModal({ visible, trip, onClose, onDelete, onEdit, rece
 			setEditDistance(trip.distance.toString());
 			setEditDescription(trip.description ?? "");
 			setEditDate(d);
-			setEditHour(d.getHours().toString().padStart(2, "0"));
-			setEditMinute(d.getMinutes().toString().padStart(2, "0"));
 			setShowDatePicker(false);
+			setShowTimePicker(false);
 			setShowTransportPicker(false);
 		}
 	}, [mode, trip]);
@@ -110,12 +110,6 @@ export function TripDetailModal({ visible, trip, onClose, onDelete, onEdit, rece
 		const cost = parseFloat(editCost);
 		const distance = parseFloat(editDistance);
 		if (!editOrigin || !editDestination || isNaN(cost) || isNaN(distance)) return;
-		const finalDate = new Date(editDate);
-		finalDate.setHours(
-			Math.min(23, Math.max(0, parseInt(editHour) || 0)),
-			Math.min(59, Math.max(0, parseInt(editMinute) || 0)),
-			0, 0,
-		);
 		onEdit(trip.id, {
 			origin: editOrigin.trim(),
 			destination: editDestination.trim(),
@@ -123,16 +117,10 @@ export function TripDetailModal({ visible, trip, onClose, onDelete, onEdit, rece
 			cost,
 			distance,
 			description: editDescription.trim(),
-			date: finalDate,
+			date: editDate,
 		});
 		setMode("view");
 	};
-
-	const dateOptions: Date[] = Array.from({ length: 7 }, (_, i) => {
-		const day = new Date();
-		day.setDate(day.getDate() - i);
-		return day;
-	});
 
 	return (
 		<Modal
@@ -239,7 +227,6 @@ export function TripDetailModal({ visible, trip, onClose, onDelete, onEdit, rece
 								onDistanceChange={setEditDistance}
 								transportType={editTransportType}
 								recentPlaces={recentPlaces}
-								theme="dark"
 							/>
 
 							{/* Transport type */}
@@ -281,72 +268,73 @@ export function TripDetailModal({ visible, trip, onClose, onDelete, onEdit, rece
 							<ThemedText style={styles.fieldLabel}>Date</ThemedText>
 							<TouchableOpacity
 								style={styles.editInput}
-								onPress={() => setShowDatePicker((v) => !v)}
+								onPress={() => { setShowTimePicker(false); setShowDatePicker((v) => !v); }}
 							>
 								<ThemedText style={styles.editInputText}>
 									{editDate.toLocaleDateString("en-AT", {
 										weekday: "short",
 										day: "numeric",
 										month: "short",
+										year: "numeric",
 									})}
 								</ThemedText>
 							</TouchableOpacity>
 							{showDatePicker && (
-								<View style={styles.pickerList}>
-									{dateOptions.map((day) => (
-										<TouchableOpacity
-											key={day.toISOString()}
-											style={[
-												styles.pickerOption,
-												day.toDateString() === editDate.toDateString() &&
-													styles.pickerOptionSelected,
-											]}
-											onPress={() => {
-												setEditDate(day);
-												setShowDatePicker(false);
-											}}
-										>
-											<ThemedText
-												style={[
-													styles.pickerOptionText,
-													day.toDateString() === editDate.toDateString() &&
-														styles.pickerOptionTextSelected,
-												]}
-											>
-												{day.toLocaleDateString("en-AT", {
-													weekday: "long",
-													day: "numeric",
-													month: "long",
-												})}
-											</ThemedText>
+								<>
+									<DateTimePicker
+										value={editDate}
+										mode="date"
+										display={Platform.OS === "ios" ? "spinner" : "default"}
+										onChange={(_, selected) => {
+											if (Platform.OS === "android") setShowDatePicker(false);
+											if (selected) {
+												const d = new Date(selected);
+												d.setHours(editDate.getHours(), editDate.getMinutes(), 0, 0);
+												setEditDate(d);
+											}
+										}}
+										textColor="#fff"
+										themeVariant="dark"
+									/>
+									{Platform.OS === "ios" && (
+										<TouchableOpacity onPress={() => setShowDatePicker(false)} style={styles.pickerDoneButton}>
+											<ThemedText style={styles.pickerDoneText}>Done</ThemedText>
 										</TouchableOpacity>
-									))}
-								</View>
+									)}
+								</>
 							)}
 
 							{/* Time */}
 							<ThemedText style={styles.fieldLabel}>Time</ThemedText>
-							<View style={styles.timeRow}>
-								<TextInput
-									style={[styles.editInput, styles.timeInput]}
-									value={editHour}
-									onChangeText={(v) => setEditHour(v.replace(/\D/g, "").slice(0, 2))}
-									keyboardType="number-pad"
-									placeholder="HH"
-									placeholderTextColor="rgba(255,255,255,0.3)"
-									maxLength={2}
-								/>
-								<ThemedText style={styles.timeSeparator}>:</ThemedText>
-								<TextInput
-									style={[styles.editInput, styles.timeInput]}
-									value={editMinute}
-									onChangeText={(v) => setEditMinute(v.replace(/\D/g, "").slice(0, 2))}
-									keyboardType="number-pad"
-									placeholder="MM"
-									placeholderTextColor="rgba(255,255,255,0.3)"
-									maxLength={2}
-								/>
-							</View>
+							<TouchableOpacity
+								style={styles.editInput}
+								onPress={() => { setShowDatePicker(false); setShowTimePicker((v) => !v); }}
+							>
+								<ThemedText style={styles.editInputText}>
+									{editDate.toLocaleTimeString("en-AT", { hour: "2-digit", minute: "2-digit", hour12: false })}
+								</ThemedText>
+							</TouchableOpacity>
+							{showTimePicker && (
+								<>
+									<DateTimePicker
+										value={editDate}
+										mode="time"
+										display={Platform.OS === "ios" ? "spinner" : "default"}
+										is24Hour={true}
+										onChange={(_, selected) => {
+											if (Platform.OS === "android") setShowTimePicker(false);
+											if (selected) setEditDate(selected);
+										}}
+										textColor="#fff"
+										themeVariant="dark"
+									/>
+									{Platform.OS === "ios" && (
+										<TouchableOpacity onPress={() => setShowTimePicker(false)} style={styles.pickerDoneButton}>
+											<ThemedText style={styles.pickerDoneText}>Done</ThemedText>
+										</TouchableOpacity>
+									)}
+								</>
+							)}
 
 							{/* Description */}
 							<ThemedText style={styles.fieldLabel}>Note (optional)</ThemedText>
@@ -559,6 +547,17 @@ const styles = StyleSheet.create({
 		color: "#fff",
 		fontWeight: "600",
 	},
+	pickerDoneButton: {
+		alignItems: "flex-end",
+		paddingHorizontal: 4,
+		paddingVertical: 6,
+		marginBottom: 4,
+	},
+	pickerDoneText: {
+		color: Palette.green.mid,
+		fontSize: 15,
+		fontWeight: "600",
+	},
 	saveButton: {
 		marginTop: 20,
 		backgroundColor: Palette.green.mid,
@@ -575,20 +574,6 @@ const styles = StyleSheet.create({
 		color: "#fff",
 		fontSize: 15,
 		fontWeight: "700",
-	},
-	timeRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-	},
-	timeInput: {
-		flex: 1,
-		textAlign: "center",
-	},
-	timeSeparator: {
-		fontSize: 20,
-		fontWeight: "700",
-		color: "#fff",
 	},
 	cancelEditButton: {
 		marginTop: 10,

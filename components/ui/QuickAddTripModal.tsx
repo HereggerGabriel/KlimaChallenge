@@ -10,6 +10,8 @@ import {
 	KeyboardAvoidingView,
 	Platform,
 } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
@@ -42,10 +44,7 @@ type QuickAddTripModalProps = {
 const TRANSPORT_TYPES = ["Bus", "Train", "Tram", "Subway"];
 
 export function QuickAddTripModal({ visible, onClose, onSubmit, recentPlaces = [] }: QuickAddTripModalProps) {
-	const now = new Date();
-	const [date, setDate] = useState(now);
-	const [hour, setHour] = useState(now.getHours().toString().padStart(2, "0"));
-	const [minute, setMinute] = useState(now.getMinutes().toString().padStart(2, "0"));
+	const [date, setDate] = useState(new Date());
 	const [origin, setOrigin] = useState("");
 	const [destination, setDestination] = useState("");
 	const [transportType, setTransportType] = useState("");
@@ -53,6 +52,7 @@ export function QuickAddTripModal({ visible, onClose, onSubmit, recentPlaces = [
 	const [description, setDescription] = useState("");
 	const [distance, setDistance] = useState("");
 	const [showDatePicker, setShowDatePicker] = useState(false);
+	const [showTimePicker, setShowTimePicker] = useState(false);
 	const [showTransportPicker, setShowTransportPicker] = useState(false);
 
 	const [connections, setConnections] = useState<OebbJourney[]>([]);
@@ -92,8 +92,6 @@ export function QuickAddTripModal({ visible, onClose, onSubmit, recentPlaces = [
 		setTransportType(mapTransportType(journey));
 		if (summary.price?.amount !== undefined) setCost(String(summary.price.amount));
 		if (summary.distanceKm > 0) setDistance(String(summary.distanceKm));
-		setHour(summary.dep.getHours().toString().padStart(2, "0"));
-		setMinute(summary.dep.getMinutes().toString().padStart(2, "0"));
 		const descParts = [
 			`${origin.trim()} → ${destination.trim()}`,
 			summary.depLabel,
@@ -119,14 +117,8 @@ export function QuickAddTripModal({ visible, onClose, onSubmit, recentPlaces = [
 
 	const handleSubmit = () => {
 		if (!origin || !destination || !transportType || !cost || !distance) return;
-		const finalDate = new Date(date);
-		finalDate.setHours(
-			Math.min(23, Math.max(0, parseInt(hour) || 0)),
-			Math.min(59, Math.max(0, parseInt(minute) || 0)),
-			0, 0,
-		);
 		onSubmit({
-			date: finalDate,
+			date,
 			origin,
 			destination,
 			transportType,
@@ -134,10 +126,7 @@ export function QuickAddTripModal({ visible, onClose, onSubmit, recentPlaces = [
 			description: description.trim() || undefined,
 			distance: parseFloat(distance),
 		});
-		const reset = new Date();
-		setDate(reset);
-		setHour(reset.getHours().toString().padStart(2, "0"));
-		setMinute(reset.getMinutes().toString().padStart(2, "0"));
+		setDate(new Date());
 		setOrigin("");
 		setDestination("");
 		setTransportType("");
@@ -149,43 +138,6 @@ export function QuickAddTripModal({ visible, onClose, onSubmit, recentPlaces = [
 		setSelectedConnectionIndex(null);
 		setConnectionError("");
 		onClose();
-	};
-
-	const renderDatePicker = () => {
-		if (!showDatePicker) return null;
-		const today = new Date();
-		const dates: Date[] = Array.from({ length: 7 }, (_, i) => {
-			const d = new Date(today);
-			d.setDate(today.getDate() - i);
-			return d;
-		});
-		return (
-			<Modal visible={showDatePicker} transparent animationType="slide" onRequestClose={() => setShowDatePicker(false)}>
-				<View style={styles.datePickerOverlay}>
-					<ThemedView style={styles.datePickerContent}>
-						<View style={styles.datePickerHeader}>
-							<ThemedText type="subtitle">Select Date</ThemedText>
-							<TouchableOpacity onPress={() => setShowDatePicker(false)}>
-								<IconSymbol name="xmark.circle.fill" size={24} color="rgba(255,255,255,0.5)" />
-							</TouchableOpacity>
-						</View>
-						<ScrollView style={styles.datePickerList}>
-							{dates.map((d) => (
-								<TouchableOpacity
-									key={d.toISOString()}
-									style={[styles.dateOption, d.toDateString() === date.toDateString() && styles.dateOptionSelected]}
-									onPress={() => { setDate(d); setShowDatePicker(false); }}
-								>
-									<ThemedText style={[styles.dateOptionText, d.toDateString() === date.toDateString() && styles.dateOptionTextSelected]}>
-										{d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
-									</ThemedText>
-								</TouchableOpacity>
-							))}
-						</ScrollView>
-					</ThemedView>
-				</View>
-			</Modal>
-		);
 	};
 
 	const renderConnectionPicker = () => {
@@ -226,135 +178,182 @@ export function QuickAddTripModal({ visible, onClose, onSubmit, recentPlaces = [
 	};
 
 	return (
-		<>
-			{renderDatePicker()}
-			<Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-				<KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-					<ScrollView contentContainerStyle={styles.modalScrollContent} keyboardShouldPersistTaps="always" showsVerticalScrollIndicator={false}>
-						<ThemedView style={styles.modalContent}>
-							<View style={styles.header}>
-								<ThemedText type="subtitle">Quick Add Trip</ThemedText>
-								<TouchableOpacity onPress={onClose}>
-									<IconSymbol name="xmark.circle.fill" size={24} color="rgba(255,255,255,0.5)" />
-								</TouchableOpacity>
-							</View>
+		<Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+			<KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+				<ScrollView contentContainerStyle={styles.modalScrollContent} keyboardShouldPersistTaps="always" showsVerticalScrollIndicator={false}>
+					<ThemedView style={styles.modalContent}>
+						<View style={styles.header}>
+							<ThemedText type="subtitle">Quick Add Trip</ThemedText>
+							<TouchableOpacity onPress={onClose}>
+								<IconSymbol name="xmark.circle.fill" size={24} color="rgba(255,255,255,0.5)" />
+							</TouchableOpacity>
+						</View>
 
-							{/* Origin, Swap, Destination */}
-							<TripRouteFields
-								origin={origin}
-								onOriginChange={(v) => { setOrigin(v); setShowConnections(false); setSelectedConnectionIndex(null); }}
-								destination={destination}
-								onDestinationChange={(v) => { setDestination(v); setShowConnections(false); setSelectedConnectionIndex(null); }}
-								cost={cost}
-								onCostChange={setCost}
-								distance={distance}
-								onDistanceChange={setDistance}
-								transportType={transportType}
-								recentPlaces={recentPlaces}
-								theme="dark"
-								showDistance={false}
-							/>
+						{/* Origin, Swap, Destination */}
+						<TripRouteFields
+							origin={origin}
+							onOriginChange={(v) => { setOrigin(v); setShowConnections(false); setSelectedConnectionIndex(null); }}
+							destination={destination}
+							onDestinationChange={(v) => { setDestination(v); setShowConnections(false); setSelectedConnectionIndex(null); }}
+							cost={cost}
+							onCostChange={setCost}
+							distance={distance}
+							onDistanceChange={setDistance}
+							transportType={transportType}
+							recentPlaces={recentPlaces}
+							showDistance={false}
+						/>
 
-							{/* ÖBB Search */}
-							<ThemedText style={styles.fieldLabel}>Connection</ThemedText>
-							{canSearch && (
-								<TouchableOpacity
-									style={[styles.searchButton, loadingConnections && styles.searchButtonDisabled]}
-									onPress={handleSearchOebb}
-									disabled={loadingConnections}
-								>
-									{loadingConnections
-										? <ActivityIndicator size="small" color="#fff" />
-										: <IconSymbol name="magnifyingglass" size={16} color="#fff" />
-									}
-									<ThemedText style={styles.searchButtonText}>
-										{loadingConnections ? "Searching…" : "Find Connections"}
-									</ThemedText>
-								</TouchableOpacity>
-							)}
-							{connectionError ? <ThemedText style={styles.errorText}>{connectionError}</ThemedText> : null}
-							{renderConnectionPicker()}
-
-							{/* Date */}
-							<TouchableOpacity style={styles.dateButton} onPress={() => setShowDatePicker(true)}>
-								<IconSymbol name="calendar" size={20} color="rgba(255,255,255,0.5)" />
-								<ThemedText style={styles.dateButtonText}>
-									{date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+						{/* ÖBB Search */}
+						<ThemedText style={styles.fieldLabel}>Connection</ThemedText>
+						{canSearch && (
+							<TouchableOpacity
+								style={[styles.searchButton, loadingConnections && styles.searchButtonDisabled]}
+								onPress={handleSearchOebb}
+								disabled={loadingConnections}
+							>
+								{loadingConnections
+									? <ActivityIndicator size="small" color="#fff" />
+									: <IconSymbol name="magnifyingglass" size={16} color="#fff" />
+								}
+								<ThemedText style={styles.searchButtonText}>
+									{loadingConnections ? "Searching…" : "Find Connections"}
 								</ThemedText>
 							</TouchableOpacity>
+						)}
+						{connectionError ? <ThemedText style={styles.errorText}>{connectionError}</ThemedText> : null}
+						{renderConnectionPicker()}
 
-							{/* Time */}
-							<View style={styles.timeRow}>
-								<IconSymbol name="clock" size={20} color="rgba(255,255,255,0.5)" />
-								<TextInput style={styles.timeInput} value={hour} onChangeText={(v) => setHour(v.replace(/\D/g, "").slice(0, 2))} keyboardType="number-pad" placeholder="HH" placeholderTextColor="#666" maxLength={2} />
-								<ThemedText style={styles.timeSeparator}>:</ThemedText>
-								<TextInput style={styles.timeInput} value={minute} onChangeText={(v) => setMinute(v.replace(/\D/g, "").slice(0, 2))} keyboardType="number-pad" placeholder="MM" placeholderTextColor="#666" maxLength={2} />
-							</View>
-
-							{/* Transport Type */}
-							<TouchableOpacity style={styles.dateButton} onPress={() => setShowTransportPicker(true)}>
-								<IconSymbol name="bus" size={20} color="rgba(255,255,255,0.5)" />
-								<ThemedText style={[styles.dateButtonText, !transportType && styles.dateButtonPlaceholder]}>
-								{transportType || "Select transport type"}
+						{/* Date */}
+						<TouchableOpacity
+							style={styles.pickerButton}
+							onPress={() => { setShowTimePicker(false); setShowDatePicker((v) => !v); }}
+						>
+							<MaterialIcons name="calendar-today" size={20} color="rgba(255,255,255,0.5)" />
+							<ThemedText style={styles.pickerButtonText}>
+								{date.toLocaleDateString("en-AT", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
 							</ThemedText>
-							</TouchableOpacity>
-							{showTransportPicker && (
-								<View style={styles.transportPicker}>
-									{TRANSPORT_TYPES.map((type) => (
-										<TouchableOpacity
-											key={type}
-											style={[styles.transportOption, transportType === type && styles.transportOptionSelected]}
-											onPress={() => { setTransportType(type); setShowTransportPicker(false); }}
-										>
-											<ThemedText style={[styles.transportOptionText, transportType === type && styles.transportOptionTextSelected]}>
-												{type}
-											</ThemedText>
-										</TouchableOpacity>
-									))}
-								</View>
-							)}
-
-							{/* Cost */}
-							<ThemedText style={styles.fieldLabel}>Ticket Price</ThemedText>
-							<View style={styles.inputContainer}>
-								<ThemedText style={styles.affix}>€</ThemedText>
-								<TextInput style={styles.input} value={cost} onChangeText={setCost} placeholder="0.00" keyboardType="decimal-pad" placeholderTextColor="rgba(255,255,255,0.3)" />
-							</View>
-
-							{/* Distance */}
-							<ThemedText style={styles.fieldLabel}>Distance</ThemedText>
-							<View style={styles.inputContainer}>
-								<TextInput style={[styles.input, { marginLeft: 0 }]} value={distance} onChangeText={setDistance} placeholder="0.0" keyboardType="decimal-pad" placeholderTextColor="rgba(255,255,255,0.3)" />
-								<ThemedText style={styles.affix}>km</ThemedText>
-								{(origin.trim().length > 0 && destination.trim().length > 0) && (
-									<TouchableOpacity style={styles.estimateButton} onPress={handleEstimate} disabled={estimatingDistance}>
-										{estimatingDistance
-											? <ActivityIndicator size="small" color="#fff" />
-											: <ThemedText style={styles.estimateButtonText}>Estimate</ThemedText>
+						</TouchableOpacity>
+						{showDatePicker && (
+							<>
+								<DateTimePicker
+									value={date}
+									mode="date"
+									display={Platform.OS === "ios" ? "spinner" : "default"}
+									onChange={(_, selected) => {
+										if (Platform.OS === "android") setShowDatePicker(false);
+										if (selected) {
+											const d = new Date(selected);
+											d.setHours(date.getHours(), date.getMinutes(), 0, 0);
+											setDate(d);
 										}
+									}}
+									textColor="#fff"
+									themeVariant="dark"
+								/>
+								{Platform.OS === "ios" && (
+									<TouchableOpacity onPress={() => setShowDatePicker(false)} style={styles.pickerDoneButton}>
+										<ThemedText style={styles.pickerDoneText}>Done</ThemedText>
 									</TouchableOpacity>
 								)}
-							</View>
+							</>
+						)}
 
-							{/* Description */}
-							<View style={styles.inputContainer}>
-								<IconSymbol name="text.bubble" size={20} color="rgba(255,255,255,0.5)" />
-								<TextInput style={styles.input} value={description} onChangeText={setDescription} placeholder="Description (optional)" placeholderTextColor="rgba(255,255,255,0.3)" />
-							</View>
+						{/* Time */}
+						<TouchableOpacity
+							style={styles.pickerButton}
+							onPress={() => { setShowDatePicker(false); setShowTimePicker((v) => !v); }}
+						>
+							<MaterialIcons name="access-time" size={20} color="rgba(255,255,255,0.5)" />
+							<ThemedText style={styles.pickerButtonText}>
+								{date.toLocaleTimeString("en-AT", { hour: "2-digit", minute: "2-digit", hour12: false })}
+							</ThemedText>
+						</TouchableOpacity>
+						{showTimePicker && (
+							<>
+								<DateTimePicker
+									value={date}
+									mode="time"
+									display={Platform.OS === "ios" ? "spinner" : "default"}
+									is24Hour={true}
+									onChange={(_, selected) => {
+										if (Platform.OS === "android") setShowTimePicker(false);
+										if (selected) setDate(selected);
+									}}
+									textColor="#fff"
+									themeVariant="dark"
+								/>
+								{Platform.OS === "ios" && (
+									<TouchableOpacity onPress={() => setShowTimePicker(false)} style={styles.pickerDoneButton}>
+										<ThemedText style={styles.pickerDoneText}>Done</ThemedText>
+									</TouchableOpacity>
+								)}
+							</>
+						)}
 
-							{/* Submit */}
-							<TouchableOpacity
-								style={[styles.submitButton, (!origin || !destination || !cost || !distance) && styles.submitButtonDisabled]}
-								onPress={handleSubmit}
-								disabled={!origin || !destination || !cost || !distance}
-							>
-								<ThemedText style={styles.submitButtonText}>Add Trip</ThemedText>
-							</TouchableOpacity>
-						</ThemedView>
-					</ScrollView>
-				</KeyboardAvoidingView>
-			</Modal>
-		</>
+						{/* Transport Type */}
+						<TouchableOpacity style={styles.pickerButton} onPress={() => setShowTransportPicker(true)}>
+							<IconSymbol name="bus" size={20} color="rgba(255,255,255,0.5)" />
+							<ThemedText style={[styles.pickerButtonText, !transportType && styles.pickerButtonPlaceholder]}>
+								{transportType || "Select transport type"}
+							</ThemedText>
+						</TouchableOpacity>
+						{showTransportPicker && (
+							<View style={styles.transportPicker}>
+								{TRANSPORT_TYPES.map((type) => (
+									<TouchableOpacity
+										key={type}
+										style={[styles.transportOption, transportType === type && styles.transportOptionSelected]}
+										onPress={() => { setTransportType(type); setShowTransportPicker(false); }}
+									>
+										<ThemedText style={[styles.transportOptionText, transportType === type && styles.transportOptionTextSelected]}>
+											{type}
+										</ThemedText>
+									</TouchableOpacity>
+								))}
+							</View>
+						)}
+
+						{/* Cost */}
+						<ThemedText style={styles.fieldLabel}>Ticket Price</ThemedText>
+						<View style={styles.inputContainer}>
+							<ThemedText style={styles.affix}>€</ThemedText>
+							<TextInput style={styles.input} value={cost} onChangeText={setCost} placeholder="0.00" keyboardType="decimal-pad" placeholderTextColor="rgba(255,255,255,0.3)" />
+						</View>
+
+						{/* Distance */}
+						<ThemedText style={styles.fieldLabel}>Distance</ThemedText>
+						<View style={styles.inputContainer}>
+							<TextInput style={[styles.input, { marginLeft: 0 }]} value={distance} onChangeText={setDistance} placeholder="0.0" keyboardType="decimal-pad" placeholderTextColor="rgba(255,255,255,0.3)" />
+							<ThemedText style={styles.affix}>km</ThemedText>
+							{(origin.trim().length > 0 && destination.trim().length > 0) && (
+								<TouchableOpacity style={styles.estimateButton} onPress={handleEstimate} disabled={estimatingDistance}>
+									{estimatingDistance
+										? <ActivityIndicator size="small" color="#fff" />
+										: <ThemedText style={styles.estimateButtonText}>Estimate</ThemedText>
+									}
+								</TouchableOpacity>
+							)}
+						</View>
+
+						{/* Description */}
+						<View style={styles.inputContainer}>
+							<IconSymbol name="text.bubble" size={20} color="rgba(255,255,255,0.5)" />
+							<TextInput style={styles.input} value={description} onChangeText={setDescription} placeholder="Description (optional)" placeholderTextColor="rgba(255,255,255,0.3)" />
+						</View>
+
+						{/* Submit */}
+						<TouchableOpacity
+							style={[styles.submitButton, (!origin || !destination || !cost || !distance) && styles.submitButtonDisabled]}
+							onPress={handleSubmit}
+							disabled={!origin || !destination || !cost || !distance}
+						>
+							<ThemedText style={styles.submitButtonText}>Add Trip</ThemedText>
+						</TouchableOpacity>
+					</ThemedView>
+				</ScrollView>
+			</KeyboardAvoidingView>
+		</Modal>
 	);
 }
 
@@ -419,7 +418,7 @@ const styles = StyleSheet.create({
 	connectionPriceSelected: { color: Palette.green.light },
 	connectionNoPrice: { fontSize: 14, color: "rgba(255,255,255,0.3)" },
 	connectionMeta: { fontSize: 12, color: "rgba(255,255,255,0.4)" },
-	dateButton: {
+	pickerButton: {
 		flexDirection: "row",
 		alignItems: "center",
 		backgroundColor: "rgba(255,255,255,0.08)",
@@ -428,11 +427,22 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 14,
 		paddingVertical: 11,
 		borderRadius: 10,
-		marginTop: 13,
-		marginBottom: 13,
+		marginTop: 10,
+		marginBottom: 4,
 	},
-	dateButtonText: { marginLeft: 8, fontSize: 15, color: "#fff" },
-	dateButtonPlaceholder: { color: "rgba(255,255,255,0.3)" },
+	pickerButtonText: { marginLeft: 8, fontSize: 15, color: "#fff" },
+	pickerButtonPlaceholder: { color: "rgba(255,255,255,0.3)" },
+	pickerDoneButton: {
+		alignItems: "flex-end",
+		paddingHorizontal: 14,
+		paddingVertical: 6,
+		marginBottom: 4,
+	},
+	pickerDoneText: {
+		color: Palette.green.mid,
+		fontSize: 15,
+		fontWeight: "600",
+	},
 	inputContainer: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -463,15 +473,4 @@ const styles = StyleSheet.create({
 	transportOptionSelected: { backgroundColor: Palette.blue.mid },
 	transportOptionText: { color: "rgba(255,255,255,0.7)", fontSize: 16 },
 	transportOptionTextSelected: { color: "#fff", fontWeight: "600" },
-	datePickerOverlay: { flex: 1, backgroundColor: "rgba(0, 0, 0, 0.6)", justifyContent: "center", alignItems: "center" },
-	datePickerContent: { width: "90%", maxWidth: 400, backgroundColor: Palette.blue.dark, borderRadius: 12, padding: 20, borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 5 },
-	datePickerHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
-	datePickerList: { maxHeight: 300 },
-	dateOption: { padding: 16, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)" },
-	dateOptionSelected: { backgroundColor: Palette.blue.mid },
-	dateOptionText: { color: "rgba(255,255,255,0.8)", fontSize: 16 },
-	dateOptionTextSelected: { color: "#fff", fontWeight: "600" },
-	timeRow: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255,255,255,0.08)", borderWidth: 1, borderColor: "rgba(255,255,255,0.15)", paddingHorizontal: 14, paddingVertical: 11, borderRadius: 10, marginBottom: 13, gap: 8 },
-	timeInput: { flex: 1, fontSize: 16, color: "#fff", textAlign: "center", backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 6, paddingVertical: 4 },
-	timeSeparator: { fontSize: 20, fontWeight: "700", color: "rgba(255,255,255,0.6)" },
 });

@@ -51,6 +51,12 @@ type: project
 28. ~~**Quests entry point (UserLevelCard)**~~ — DONE. Bottom row tap → /quests.
 29. ~~**Achievements entry point (profile)**~~ — DONE. "View Achievements" button → /quests?tab=achievements.
 
+**Completed (session 14, 2026-03-16):**
+
+40. ~~**#42 Manual date/time for trips (backfill)**~~ — DONE. Native `@react-native-community/datetimepicker` (plugin added to app.config.ts). iOS: spinner inline + "Done" button. Android: system dialog. Single `date` Date state in both modals — no more separate hour/minute strings. Requires custom dev build (not Expo Go).
+41. ~~**Recent trips rework**~~ — DONE. Main screen: date group headers ("Today"/"Yesterday"/date) on 5-trip preview; cards simplified to transport+time. "See all X trips" navigates to new `/trips` screen. New `app/trips.tsx`: filter chips (All/Bus/Train/Tram/Subway), full date-grouped list, swipe-left-to-delete (RNGH Pan, -80px threshold, red zone, 200ms fly-off). New `utils/tripGrouping.ts` shared helper. Deleted dead stubs `app/new-trip.tsx` + `app/trip/[id].tsx`.
+42. ~~**Profile layout rework + My Trips shortcut**~~ — DONE. New order: Avatar → Display Name + KlimaTicket + Save → nav shortcuts group (Stats / Achievements / My Trips) → Danger Zone. "My Trips" navigates to `/trips`.
+
 **Completed (session 13, 2026-03-17):**
 
 36. ~~**#36 Delete All — reset quests/achievements**~~ — DONE. `AsyncStorage.multiRemove` for all 4 quest/achievement keys in `handleDeleteAllTrips`.
@@ -65,10 +71,9 @@ type: project
 32. ~~**Stats entry point (profile)**~~ — DONE. "Stats & Insights" button in profile → /stats.
 33. ~~**Normalise trip.date on load**~~ — CLOSED. Already resolved; `loadTrips()` does `date: new Date(trip.date)` on parse.
 
-**Remaining — Feature Backlog (priority order, as of S13):**
+**Remaining — Feature Backlog (priority order, as of S14):**
 
 - 🟠 **#39** Cloud sync for trips (Supabase) — L effort
-- 🟠 **#42** Manual date/time for trips (backfill) — S effort
 - 🟠 **#43** Streak system — M effort
 - 🟠 **#44** Onboarding rework package — L effort, Pre-launch target
 - 🟡 **#45** Haptic feedback — XS effort

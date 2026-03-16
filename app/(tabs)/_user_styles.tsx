@@ -242,6 +242,15 @@ export const styles = StyleSheet.create({
 		color: "#fff",
 		fontWeight: "600",
 	},
+	dateGroupHeader: {
+		fontSize: 11,
+		fontWeight: "700",
+		color: "rgba(255,255,255,0.4)",
+		letterSpacing: 0.8,
+		textTransform: "uppercase",
+		marginBottom: 8,
+		marginTop: 4,
+	},
 	logoutSection: {
 		marginTop: 36,
 	},

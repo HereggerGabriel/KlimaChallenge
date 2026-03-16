@@ -31,7 +31,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     "expo-build-properties",
     "expo-font",
     "expo-router",
-    "expo-web-browser"
+    "expo-web-browser",
+    "@react-native-community/datetimepicker"
   ],
   extra: {
     supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,

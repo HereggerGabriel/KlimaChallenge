@@ -26,7 +26,7 @@ type TicketPreset = {
 	label: string;
 	cost: number;
 	description: string;
-	period?: "month"; // undefined = year
+	period?: "month";
 };
 
 const TICKET_GROUPS: { group: string; presets: TicketPreset[] }[] = [
@@ -218,29 +218,7 @@ export default function ProfileScreen() {
 					</View>
 				</View>
 
-				{/* Stats shortcut */}
-				<TouchableOpacity
-					style={styles.achievementsButton}
-					onPress={() => router.push('/stats')}
-					activeOpacity={0.8}
-				>
-					<MaterialIcons name="insights" size={20} color={Palette.blue.light} />
-					<ThemedText style={styles.achievementsButtonText}>Stats & Insights</ThemedText>
-					<MaterialIcons name="chevron-right" size={20} color="rgba(255,255,255,0.4)" />
-				</TouchableOpacity>
-
-				{/* Achievements shortcut */}
-				<TouchableOpacity
-					style={styles.achievementsButton}
-					onPress={() => router.push({ pathname: '/quests', params: { tab: 'achievements' } })}
-					activeOpacity={0.8}
-				>
-					<MaterialIcons name="emoji-events" size={20} color={Palette.green.mid} />
-					<ThemedText style={styles.achievementsButtonText}>View Achievements</ThemedText>
-					<MaterialIcons name="chevron-right" size={20} color="rgba(255,255,255,0.4)" />
-				</TouchableOpacity>
-
-				{/* Name */}
+				{/* Display Name */}
 				<ThemedText style={styles.label}>Display Name</ThemedText>
 				<TextInput
 					style={styles.input}
@@ -358,6 +336,39 @@ export default function ProfileScreen() {
 					<ThemedText style={styles.saveButtonText}>{saved ? "Saved!" : "Save Changes"}</ThemedText>
 				</TouchableOpacity>
 
+				{/* Navigation shortcuts */}
+				<View style={styles.navSection}>
+					<TouchableOpacity
+						style={styles.navButton}
+						onPress={() => router.push('/stats')}
+						activeOpacity={0.8}
+					>
+						<MaterialIcons name="insights" size={20} color={Palette.blue.light} />
+						<ThemedText style={styles.navButtonText}>Stats & Insights</ThemedText>
+						<MaterialIcons name="chevron-right" size={20} color="rgba(255,255,255,0.4)" />
+					</TouchableOpacity>
+
+					<TouchableOpacity
+						style={styles.navButton}
+						onPress={() => router.push({ pathname: '/quests', params: { tab: 'achievements' } })}
+						activeOpacity={0.8}
+					>
+						<MaterialIcons name="emoji-events" size={20} color={Palette.green.mid} />
+						<ThemedText style={styles.navButtonText}>View Achievements</ThemedText>
+						<MaterialIcons name="chevron-right" size={20} color="rgba(255,255,255,0.4)" />
+					</TouchableOpacity>
+
+					<TouchableOpacity
+						style={styles.navButton}
+						onPress={() => router.push('/trips')}
+						activeOpacity={0.8}
+					>
+						<MaterialIcons name="format-list-bulleted" size={20} color={Palette.blue.light} />
+						<ThemedText style={styles.navButtonText}>My Trips</ThemedText>
+						<MaterialIcons name="chevron-right" size={20} color="rgba(255,255,255,0.4)" />
+					</TouchableOpacity>
+				</View>
+
 				{/* Danger Zone */}
 				<View style={styles.dangerZone}>
 					<ThemedText style={styles.dangerZoneLabel}>Danger Zone</ThemedText>
@@ -379,7 +390,7 @@ export default function ProfileScreen() {
 				</TouchableWithoutFeedback>
 			)}
 
-			{/* Delete confirmation overlay (absolute, stays inside GestureHandlerRootView) */}
+			{/* Delete confirmation overlay */}
 			{showDeleteModal && (
 				<View style={styles.modalOverlay}>
 					<View style={styles.modalCard}>
@@ -580,24 +591,6 @@ const styles = StyleSheet.create({
 	customBlock: {
 		marginTop: 16,
 	},
-	achievementsButton: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: 10,
-		backgroundColor: 'rgba(255,255,255,0.07)',
-		borderWidth: 1,
-		borderColor: 'rgba(255,255,255,0.12)',
-		borderRadius: 12,
-		paddingHorizontal: 16,
-		paddingVertical: 14,
-		marginBottom: 28,
-	},
-	achievementsButtonText: {
-		flex: 1,
-		color: '#fff',
-		fontSize: 15,
-		fontWeight: '600',
-	},
 	saveButton: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -611,6 +604,27 @@ const styles = StyleSheet.create({
 	saveButtonText: {
 		color: "#fff",
 		fontSize: 16,
+		fontWeight: "600",
+	},
+	navSection: {
+		marginTop: 32,
+		gap: 10,
+	},
+	navButton: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 10,
+		backgroundColor: "rgba(255,255,255,0.07)",
+		borderWidth: 1,
+		borderColor: "rgba(255,255,255,0.12)",
+		borderRadius: 12,
+		paddingHorizontal: 16,
+		paddingVertical: 14,
+	},
+	navButtonText: {
+		flex: 1,
+		color: "#fff",
+		fontSize: 15,
 		fontWeight: "600",
 	},
 	dangerZone: {

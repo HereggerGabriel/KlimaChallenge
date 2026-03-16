@@ -1043,6 +1043,143 @@ if __name__ == "__main__":
         notes       = "Catch fetch errors in oebbApi.ts and surface via a state flag in QuickAddTripModal. No retry logic needed.",
     )
 
+    # ═══════════════════════════════════════════════════════════════════════════
+    # SESSION 14 — 2026-03-16
+    # DateTimePicker + Recent Trips screen rework + Profile nav rework
+    # ═══════════════════════════════════════════════════════════════════════════
+
+    # ── S14-1. DASHBOARD KPIs ─────────────────────────────────────────────────
+    pm.update_dashboard_kpis(
+        sessions  = 14,
+        features  = 42,   # 39 (S13) + 3 new (DateTimePicker, Trips screen, Profile nav)
+        backlog   = 13,   # #42 now done; 13 open items remain
+        tech_debt = 0,
+        blockers  = 5,    # PP1-PP5 unchanged
+    )
+
+    # ── S14-2. VELOCITY ROW ───────────────────────────────────────────────────
+    pm.add_velocity_row(
+        session    = "S14",
+        date       = "Mar 16",
+        focus      = "DateTimePicker + full Trips screen + profile nav rework",
+        features_n = 3,
+        category   = "Feature / UX",
+    )
+
+    # ── S14-3. SESSION DIARY ROW ──────────────────────────────────────────────
+    pm.add_session_row(
+        session      = "S14",
+        date         = "2026-03-16",
+        scope        = "Native DateTimePicker · Trips list screen · Profile layout rework",
+        what         = (
+            "#42 DateTimePicker: replaced custom 7-day date scroll + manual HH:MM inputs with "
+            "@react-native-community/datetimepicker in both QuickAddTripModal and TripDetailModal. "
+            "iOS: spinner display inline + Done button. Android: system dialog. Single Date state (no hour/minute strings). "
+            "Plugin added to app.config.ts. Requires custom dev build (not Expo Go). "
+            "Recent Trips rework: main screen now groups preview trips by date (date group headers). "
+            "New app/trips.tsx screen: filter chips (All/Bus/Train/Tram/Subway), full date-grouped list, "
+            "swipe-left-to-delete (RNGH Pan, -80px threshold, red zone, 200ms fly-off). "
+            "'See all X trips' navigates to /trips. New utils/tripGrouping.ts shared helper "
+            "(formatDateLabel, groupTripsByDate). Deleted dead stubs app/new-trip.tsx + app/trip/[id].tsx. "
+            "Profile rework: new layout order — Avatar → Display Name + KlimaTicket + Save → "
+            "navSection (Stats / Achievements / My Trips) → Danger Zone. "
+            "My Trips button added (MaterialIcons format-list-bulleted, routes to /trips). "
+            "Files: app.config.ts, components/ui/QuickAddTripModal.tsx, components/ui/TripDetailModal.tsx, "
+            "app/(tabs)/user.tsx, app/(tabs)/_user_styles.tsx, app/trips.tsx (new), "
+            "app/profile.tsx, utils/tripGrouping.ts (new)"
+        ),
+        why          = (
+            "DateTimePicker: users had no way to backfill past trips — critical real-world usage gap. "
+            "Trips screen: inline 'show all' expansion had no filter/delete; a dedicated screen matches "
+            "the mental model of a full trip history. "
+            "Profile rework: display name + KlimaTicket were buried below nav shortcuts; "
+            "moving them above improves discoverability and data-entry flow."
+        ),
+        problems     = (
+            "CRLF + 4-tab indentation in user.tsx and profile.tsx caused Edit tool to repeatedly fail "
+            "string matching. Diagnosed with cat -A, resolved by writing complete file rewrites. "
+            "Typo in user.tsx Write (missing } in JSX) caused cascade of TS parse errors — fixed with targeted edit. "
+            "theme='dark' prop removal from TripRouteFields caused TS error (prop removed in S11 tech debt)."
+        ),
+        alternatives = (
+            "DateTimePicker: expo-datetime-picker considered but requires native module build anyway; "
+            "@react-native-community/datetimepicker chosen as more stable and widely used. "
+            "Trips screen: ScrollView-based swipe vs RNGH Pan — RNGH chosen for correct gesture priority "
+            "negotiation with parent ScrollView (activeOffsetX + failOffsetY)."
+        ),
+        decisions    = (
+            "DateTimePicker requires custom dev build — document in project state. "
+            "Swipe card needs opaque backgroundColor (blue.dark) to hide semi-transparent card bleed over red delete zone. "
+            "Cross-screen sync: trips.tsx writes directly to AsyncStorage; user.tsx picks up via useFocusEffect (no shared state needed). "
+            "CRLF files must be fully rewritten — Edit tool cannot reliably match Windows line endings."
+        ),
+        features_n   = 3,
+        effort       = "~5h",
+        thesis_tag   = "UX Design / Interaction Design",
+    )
+
+    # ── S14-4. MARK BACKLOG ITEMS DONE ───────────────────────────────────────
+    pm.mark_backlog_done(
+        "42", "S14",
+        "Native DateTimePicker in both modals; iOS spinner+Done, Android dialog; single Date state"
+    )
+
+    # ── S14-5. FEATURE REGISTRY ───────────────────────────────────────────────
+    pm.add_feature(
+        num         = 40,
+        name        = "Native DateTimePicker for trip date/time",
+        category    = "UX",
+        session     = "S14",
+        files       = "QuickAddTripModal.tsx, TripDetailModal.tsx, app.config.ts",
+        description = (
+            "Replaced custom 7-day scroll + HH:MM text inputs with @react-native-community/datetimepicker. "
+            "iOS: spinner inline + Done button. Android: system dialog. Single Date state."
+        ),
+        xp_impact   = "—",
+        thesis_tag  = "UX Design",
+    )
+    pm.add_feature(
+        num         = 41,
+        name        = "All Trips screen with filter + swipe-to-delete",
+        category    = "Feature",
+        session     = "S14",
+        files       = "app/trips.tsx (new), utils/tripGrouping.ts (new), app/(tabs)/user.tsx",
+        description = (
+            "New /trips stack screen: filter chips, date-grouped list, RNGH swipe-to-delete. "
+            "Main screen preview grouped by date with 'See all' navigation."
+        ),
+        xp_impact   = "Yes",
+        thesis_tag  = "UX Design",
+    )
+    pm.add_feature(
+        num         = 42,
+        name        = "Profile nav rework + My Trips shortcut",
+        category    = "UI",
+        session     = "S14",
+        files       = "app/profile.tsx",
+        description = (
+            "New profile layout: Display Name + KlimaTicket above nav shortcuts. "
+            "navSection group (Stats / Achievements / My Trips). My Trips routes to /trips."
+        ),
+        xp_impact   = "—",
+        thesis_tag  = "Interface Design",
+    )
+
+    # ── S14-6. GOTCHA: CRLF files + Edit tool ─────────────────────────────────
+    pm.add_gotcha(
+        area     = "CRLF files + Edit tool string matching",
+        rule     = "Files with Windows CRLF line endings must be fully rewritten — never use targeted Edit.",
+        why      = (
+            "The Edit tool matches exact byte strings. CRLF (\\r\\n) line endings cause every match to "
+            "fail silently or partially, leading to cascading TS errors or phantom rewrites. "
+            "Diagnosed via cat -A; the only reliable fix is a full Write of the affected file."
+        ),
+        broken   = "Edit silently fails, file unchanged; downstream TS errors if a partial write occurs.",
+        session  = "S14",
+        severity = "🟠 High",
+        thesis   = "Platform limitations / DX",
+    )
+
     # ── 7. SAVE ───────────────────────────────────────────────────────────────
     pm.save()
     print("\n=== Done. Narrative columns (Reflection, Theory Reference) "

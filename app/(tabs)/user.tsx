@@ -32,9 +32,9 @@ import { loadTrips, saveTrips } from "@/services/tripStorage";
 import { styles } from "./_user_styles";
 import { supabase } from "@/lib/supabase";
 import { TRANSPORT_COLOR } from "@/constants/transport";
+import { groupTripsByDate } from "@/utils/tripGrouping";
 
 const TRIPS_PREVIEW = 5;
-
 
 type FavoriteTrip = {
 	origin: string;
@@ -131,7 +131,6 @@ export default function UserScreen() {
 	const [isLoading, setIsLoading] = useState(true);
 	const [userXP, setUserXP] = useState(0);
 	const [userLevel, setUserLevel] = useState(1);
-	const [showAllTrips, setShowAllTrips] = useState(false);
 	const [xpGained, setXpGained] = useState<number | null>(null);
 	const [levelUpData, setLevelUpData] = useState<{ level: number } | null>(null);
 	const [userName, setUserName] = useState("");
@@ -308,17 +307,6 @@ export default function UserScreen() {
 		await checkMainQuest(updatedTrips, klimaTicketCost);
 	};
 
-	const formatDate = (date: Date) => {
-		const d = date instanceof Date ? date : new Date(date);
-		const today = new Date();
-		const yesterday = new Date(today);
-		yesterday.setDate(yesterday.getDate() - 1);
-
-		if (d.toDateString() === today.toDateString()) return "Today";
-		if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
-		return d.toLocaleDateString("en-AT", { month: "short", day: "numeric" });
-	};
-
 	const formatTime = (date: Date) => {
 		const d = date instanceof Date ? date : new Date(date);
 		return d.toLocaleTimeString("en-AT", { hour: "2-digit", minute: "2-digit", hour12: false });
@@ -326,7 +314,7 @@ export default function UserScreen() {
 
 	const totalCost = trips.reduce((sum, trip) => sum + trip.cost, 0);
 	const totalDistance = trips.reduce((sum, trip) => sum + trip.distance, 0);
-	const visibleTrips = showAllTrips ? trips : trips.slice(0, TRIPS_PREVIEW);
+	const previewGroups = useMemo(() => groupTripsByDate(trips.slice(0, TRIPS_PREVIEW)), [trips]);
 
 	const recentPlaces = useMemo(() => {
 		const counts = new Map<string, number>();
@@ -430,60 +418,43 @@ export default function UserScreen() {
 					</View>
 				)}
 
-				{visibleTrips.map((trip) => (
-					<TouchableOpacity key={trip.id} onPress={() => handleTripPress(trip)} activeOpacity={0.75}>
-						<View style={styles.tripCard}>
-							<View
-								style={[styles.tripAccentBar, { backgroundColor: TRANSPORT_COLOR[trip.transportType] ?? Palette.blue.mid }]}
-							/>
-							<View style={styles.tripCardContent}>
-								<View style={styles.tripHeader}>
-									<View style={{ flex: 1, marginRight: 8 }}>
-										<ThemedText style={styles.tripTitle} numberOfLines={1}>
-											{trip.origin} → {trip.destination}
-										</ThemedText>
-										<ThemedText style={styles.tripDate}>
-											{formatDate(trip.date)} · {formatTime(trip.date)}
-										</ThemedText>
-									</View>
-									<ThemedText style={styles.tripCost}>€{trip.cost.toFixed(2)}</ThemedText>
-								</View>
-								<View style={styles.tripDetails}>
-									<View style={styles.tripDetail}>
-										<IconSymbol name="bus" size={14} color="rgba(255,255,255,0.45)" />
-										<ThemedText style={styles.tripDetailText}>{trip.transportType}</ThemedText>
-									</View>
-									<View style={styles.tripDetail}>
-										<IconSymbol name="ruler" size={14} color="rgba(255,255,255,0.45)" />
-										<ThemedText style={styles.tripDetailText}>{trip.distance} km</ThemedText>
-									</View>
-									{trip.description ? (
-										<View style={styles.tripDetail}>
-											<IconSymbol name="text.bubble" size={14} color="rgba(255,255,255,0.45)" />
-											<ThemedText style={styles.tripDetailText} numberOfLines={1}>
-												{trip.description}
-											</ThemedText>
+				{previewGroups.map((group) => (
+					<View key={group.label}>
+						<ThemedText style={styles.dateGroupHeader}>{group.label}</ThemedText>
+						{group.trips.map((trip) => (
+							<TouchableOpacity key={trip.id} onPress={() => handleTripPress(trip)} activeOpacity={0.75}>
+								<View style={styles.tripCard}>
+									<View
+										style={[styles.tripAccentBar, { backgroundColor: TRANSPORT_COLOR[trip.transportType] ?? Palette.blue.mid }]}
+									/>
+									<View style={styles.tripCardContent}>
+										<View style={styles.tripHeader}>
+											<View style={{ flex: 1, marginRight: 8 }}>
+												<ThemedText style={styles.tripTitle} numberOfLines={1}>
+													{trip.origin} → {trip.destination}
+												</ThemedText>
+												<ThemedText style={styles.tripDate}>
+													{trip.transportType} · {formatTime(trip.date)}
+												</ThemedText>
+											</View>
+											<ThemedText style={styles.tripCost}>€{trip.cost.toFixed(2)}</ThemedText>
 										</View>
-									) : null}
+									</View>
 								</View>
-							</View>
-						</View>
-					</TouchableOpacity>
+							</TouchableOpacity>
+						))}
+					</View>
 				))}
 
 				{trips.length > TRIPS_PREVIEW && (
 					<TouchableOpacity
 						style={styles.showAllButton}
-						onPress={() => setShowAllTrips((v) => !v)}
+						onPress={() => router.push("/trips")}
 					>
 						<ThemedText style={styles.showAllText}>
-							{showAllTrips ? "Show less" : `Show all ${trips.length} trips`}
+							See all {trips.length} trips
 						</ThemedText>
-						<IconSymbol
-							name={showAllTrips ? "chevron.up" : "chevron.down"}
-							size={14}
-							color={Palette.blue.light}
-						/>
+						<IconSymbol name="chevron.right" size={14} color={Palette.blue.light} />
 					</TouchableOpacity>
 				)}
 			</View>
@@ -529,4 +500,3 @@ export default function UserScreen() {
 		</View>
 	);
 }
-

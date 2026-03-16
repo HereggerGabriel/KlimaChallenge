@@ -1,17 +1,17 @@
 ---
 name: TravelApp current project state
-description: Current state of the TravelApp React Native / Expo project as of 2026-03-17 session 13
+description: Current state of the TravelApp React Native / Expo project as of 2026-03-16 session 14
 type: project
 ---
 
 A React Native / Expo app for tracking public transport trips (bus, train, tram, subway) in Austria. Users log trips, track costs vs. KlimaTicket savings, earn XP/levels, complete quests, unlock achievements, and view stats & insights.
 
-**Stack:** Expo SDK 54, Expo Router v6 (file-based), TypeScript, AsyncStorage, react-native-gesture-handler ~2.28.0, react-native-reanimated ~4.1.1, react-native-svg 15.12.1, Supabase (real auth — project `vbjpigfbwvetsaoxpogd`), NativeWind (CSS), expo-linear-gradient, @expo/vector-icons/MaterialIcons. No axios — uses built-in fetch. Note: `react-native-gifted-charts` was tried and removed (Metro bundler resolution bug).
+**Stack:** Expo SDK 54, Expo Router v6 (file-based), TypeScript, AsyncStorage, react-native-gesture-handler ~2.28.0, react-native-reanimated ~4.1.1, react-native-svg 15.12.1, Supabase (real auth — project `vbjpigfbwvetsaoxpogd`), NativeWind (CSS), expo-linear-gradient, @expo/vector-icons/MaterialIcons, @react-native-community/datetimepicker (native date/time picker, plugin added to app.config.ts). No axios — uses built-in fetch. Note: `react-native-gifted-charts` was tried and removed (Metro bundler resolution bug).
 
 **Route architecture:**
 - Pre-auth flow: `/` → `/onboarding` → `/login` → `/(tabs)/user`
 - Auth gate: `supabase.auth.getSession()` in splash screen
-- Non-tab screens (stack-routed): `/quests`, `/stats`, `/profile`
+- Non-tab screens (stack-routed): `/quests`, `/stats`, `/profile`, `/trips`
 - `app/index.tsx` (splash): checks Supabase session → routes to `/(tabs)/user` or `/onboarding`
 - Logout: `supabase.auth.signOut()`, routes to `/onboarding`
 
@@ -25,28 +25,30 @@ A React Native / Expo app for tracking public transport trips (bus, train, tram,
 - `app/onboarding.tsx` — 3-slide FRE pager; tappable dots; "Get Started →" only on last slide
 - `app/login.tsx` — ImageBackground + dark gradient, LoginForm
 - `app/register.tsx` — same dark design as login, RegisterForm
-- `app/profile.tsx` — name + KlimaTicket type/cost selector; avatar; entry points to Stats and Achievements; Danger Zone with Delete All Trips (slide-to-confirm). KlimaTicket uses `TICKET_GROUPS` (nationwide 6 + regional 20 presets with real 2026 prices). `SlideToDelete` uses RNGH `Gesture.Pan().runOnJS(true)` + absolute overlay (NOT RN Modal — RNGH gestures don't work in RN Modal on mobile). `handleDeleteAllTrips` calls `saveTrips([])` + `AsyncStorage.multiRemove` for all 4 quest/achievement keys. KlimaTicket dropdown closes on outside tap via absolute `TouchableWithoutFeedback` overlay (zIndex 10); dropdown at zIndex 11.
+- `app/profile.tsx` — Layout order: avatar → Display Name + KlimaTicket selector + Save → nav shortcuts group (Stats & Insights / View Achievements / My Trips) → Danger Zone. KlimaTicket uses `TICKET_GROUPS` (nationwide 6 + regional 20 presets with real 2026 prices). `SlideToDelete` uses RNGH `Gesture.Pan().runOnJS(true)` + absolute overlay. KlimaTicket dropdown closes on outside tap via absolute `TouchableWithoutFeedback` overlay (zIndex 10); dropdown at zIndex 11.
 - `app/quests.tsx` — Quests & Achievements screen (segmented control); daily/weekly/milestone quests + achievements grid; main quest featured card
-- `app/stats.tsx` — Stats & Insights screen (new, session 9); overview cards, weekly bar chart, transport mix, top routes, KlimaTicket progress
+- `app/stats.tsx` — Stats & Insights screen; overview cards, weekly bar chart, transport mix, top routes, KlimaTicket progress
+- `app/trips.tsx` — Full trips list screen. Header (back + "All Trips" + count), filter chips (All/Bus/Train/Tram/Subway), date-grouped list, swipe-left-to-delete (RNGH Pan, -80px threshold, red zone revealed, 200ms fly-off + setTimeout), tap → TripDetailModal. Handles own XP updates + persists to AsyncStorage. useFocusEffect reloads on focus.
 - `app/(tabs)/_layout.tsx` — Tabs with hidden tab bar, single screen `user`
 - `app/(tabs)/user.tsx` — main screen (see below)
-- `app/(tabs)/_user_styles.tsx` — styles for user.tsx; includes `root: { flex: 1 }`; prefixed with `_` so Expo Router ignores it
+- `app/(tabs)/_user_styles.tsx` — styles for user.tsx; includes `root: { flex: 1 }`, `dateGroupHeader` style; prefixed with `_` so Expo Router ignores it
 - `lib/supabase.ts` — singleton Supabase client (AsyncStorage session persistence, Constants fallback for URL/key)
-- `services/tripStorage.ts` — AsyncStorage CRUD for trips; `loadTrips()` coerces distance+cost to float; storage key is `STORAGE_KEY = "@travelapp_trips"` (NOT `@trips`); **when key is missing, returns `initialTrips` (10 demo trips) — NOT empty array**
+- `services/tripStorage.ts` — AsyncStorage CRUD for trips; `loadTrips()` coerces distance+cost to float; storage key is `STORAGE_KEY = "@travelapp_trips"` (NOT `@trips`); **when key is missing, returns `[]` (NOT initialTrips demo data)**
 - `services/oebbApi.ts` — OeBB REST API service; base URL `https://oebb.macistry.com/api`; searchStation, searchConnections (returns ConnectionSearchResult), mapTransportType, summariseJourney (with fallback haversine distance), estimateDistanceKm
 - `types/trip.ts` — Trip interface: id, date, origin, destination, transportType, cost, distance, description
 - `utils/levelSystem.ts` — XP/level calc; exports `getLevelTitle`, `getXPForTrip`, `calculateLevel`, etc.
 - `utils/questSystem.ts` — Quest types, DAILY_QUEST_POOL (8), WEEKLY_QUEST_POOL (8), MILESTONE_QUESTS (9), MAIN_QUEST_ID/XP/CELEBRATED_KEY, pickRandomQuests, getClaimKey, timeUntilMidnight, daysUntilMonday
 - `utils/achievementSystem.ts` — Achievement types, ACHIEVEMENTS (19), ACHIEVEMENT_CATEGORIES, computeStreak, computeSavedVsCar
+- `utils/tripGrouping.ts` — Shared helpers: `formatDateLabel(date)` → "Today"/"Yesterday"/"Mon 16 Mar 2026"; `groupTripsByDate(trips)` → `TripGroup[]` ({label, trips}[]). Used by both user.tsx and trips.tsx.
 - `constants/Colors.ts` — exports `Palette` (custom 9-color system)
 - `constants/transport.ts` — exports `TRANSPORT_COLOR` (Bus=blue.mid, Train=green.mid, Tram=red.light, Subway=green.dark) and `transportIcon(type)` returning MaterialIcons name; single source of truth for transport styling
 - `components/ui/LoginForm.tsx` — Supabase signInWithPassword, dark Palette style
 - `components/ui/RegisterForm.tsx` — Supabase signUp with name metadata, dark Palette style, success state
 - `components/ui/FinancialOverview.tsx` — collapsible savings card; donut circle (SVG) is tappable → `onStatsPress` prop → `/stats`
 - `components/ui/UserLevelCard.tsx` — XP/level display, animated progress bar; bottom row links to `/quests` via `onQuestsPress` prop
-- `components/ui/QuickAddTripModal.tsx` — add trip modal; fully dark theme; uses TripRouteFields
-- `components/ui/TripDetailModal.tsx` — trip detail + edit + delete modal; uses TripRouteFields in edit mode
-- `components/ui/TripRouteFields.tsx` — shared route input component; price autofill, distance estimate, suggestions dropdown; dark theme only (light theme removed S11)
+- `components/ui/QuickAddTripModal.tsx` — add trip modal; fully dark theme; uses TripRouteFields; date/time via native `DateTimePicker` (spinner on iOS, dialog on Android; iOS has "Done" button); single `date` Date state (no separate hour/minute); connection autofill sets full date from summary.dep
+- `components/ui/TripDetailModal.tsx` — trip detail + edit + delete modal; uses TripRouteFields in edit mode; date/time via native `DateTimePicker` same pattern as QuickAdd; single `editDate` Date state
+- `components/ui/TripRouteFields.tsx` — shared route input component; price autofill, distance estimate, suggestions dropdown; dark theme only (light theme removed S11); no `theme` prop
 - `components/ui/XPToast.tsx` — floating "+XP" badge animation (Reanimated spring+float)
 - `components/ui/LevelUpOverlay.tsx` — full-screen level-up celebration overlay (auto-dismisses ~2.8s)
 - `components/ui/MainQuestOverlay.tsx` — full-screen Main Quest celebration (6 floating stars, card spring-in, stats, Claim CTA); triggered when totalCost >= klimaTicketCost for the first time
@@ -59,15 +61,25 @@ A React Native / Expo app for tracking public transport trips (bus, train, tram,
 2. `UserLevelCard` — animated XP bar; bottom row: "Quests & Achievements" → `/quests`
 3. `FinancialOverview` — collapsible financial card; donut tappable → `/stats`
 4. Favorites section (hold-to-add RNGH); star icon in title
-5. Recent Trips — clock icon; shows 5 by default; "Show all X / Show less" toggle; transport accent bars; tap opens TripDetailModal
+5. Recent Trips — clock icon; shows 5 trips **grouped by date** (date group headers); "See all X trips" navigates to `/trips`; trip cards show transport type + time (date removed from card, shown in header); tap opens TripDetailModal
 6. Log Out button — red-bordered, bottom of screen
 - Wrapped in `<View style={{flex:1}}>` with `XPToast`, `LevelUpOverlay`, `MainQuestOverlay` outside ScrollView
 - `checkMainQuest(allTrips, ticketCost)` called after every trip add; one-time flag `@mainQuestCelebrated`
-- `useFocusEffect` reloads both profile AND trips+XP from AsyncStorage on every screen focus (added S12 to catch external mutations like Delete All Trips)
+- `useFocusEffect` reloads both profile AND trips+XP from AsyncStorage on every screen focus
+- No `showAllTrips` state — expand-in-place removed
 
 **`app/profile.tsx`:**
-- Avatar (initials), name input, KlimaTicket type dropdown (presets + custom), Save button
-- Entry points: "Stats & Insights" → `/stats`; "View Achievements" → `/quests?tab=achievements`
+- Layout order: Avatar → Display Name + KlimaTicket selector + Save → nav shortcuts (Stats, Achievements, My Trips) → Danger Zone
+- Nav shortcuts use `navButton`/`navSection` styles (gap: 10 between buttons, marginTop: 32 from Save)
+
+**`app/trips.tsx`:**
+- Stack-pushed full trips list at `/trips`
+- Filter chips: All / Bus / Train / Tram / Subway
+- All trips grouped by date using `groupTripsByDate`
+- SwipeableTripCard: RNGH Pan + Reanimated, swipe left past -80px → red delete zone revealed → card flies off → `onDelete()` after 200ms setTimeout
+- Tap → TripDetailModal (view/edit with XP delta)
+- Own delete/edit handlers that persist to AsyncStorage + saveTrips()
+- user.tsx reloads on focus via useFocusEffect (picks up changes made in trips.tsx)
 
 **`app/quests.tsx`:**
 - AsyncStorage keys: `@claimedQuests` (JSON array of claim keys), `@claimedAchievements` (JSON array of IDs), `@dailyQuestSelection`, `@weeklyQuestSelection`
@@ -109,3 +121,10 @@ A React Native / Expo app for tracking public transport trips (bus, train, tram,
 - Email confirmation currently DISABLED for dev (re-enable before production)
 
 **Pending assets:** `onboard1.png`, `onboard2.png`, `loginbg.png` (user to place in `assets/images/`)
+
+**DateTimePicker notes:**
+- Package: `@react-native-community/datetimepicker` (plugin registered in app.config.ts)
+- Requires a custom dev build — does NOT work in standard Expo Go
+- iOS: `display="spinner"` renders inline; show "Done" button to dismiss
+- Android: `display="default"` shows system dialog; close on onChange
+- Both modals use a single `Date` state (no separate hour/minute strings); date picker preserves existing time when changing date
