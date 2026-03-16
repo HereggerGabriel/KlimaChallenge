@@ -509,6 +509,14 @@ export default function QuestsScreen() {
         {/* ── Quests tab ── */}
         {activeTab === 'quests' && (
           <View>
+            {trips.length === 0 && (
+              <View style={styles.emptyBanner}>
+                <MaterialIcons name="directions-transit" size={20} color={Palette.blue.light} />
+                <ThemedText style={styles.emptyBannerText}>
+                  Log your first trip to start making quest progress
+                </ThemedText>
+              </View>
+            )}
             <MainQuestFeaturedCard
               totalCost={totalCost}
               klimaTicketCost={klimaTicketCost}
@@ -925,6 +933,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: 2,
+  },
+
+  // Empty banner
+  emptyBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: Palette.blue.mid + '22',
+    borderWidth: 1,
+    borderColor: Palette.blue.light + '33',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 16,
+  },
+  emptyBannerText: {
+    flex: 1,
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.55)',
+    lineHeight: 18,
   },
 
   // Main quest featured card

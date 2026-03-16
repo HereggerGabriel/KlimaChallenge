@@ -1,591 +1,1049 @@
 """
-KlimaChallenge PM Updater
-=========================
-Persistent helper script for updating KlimaChallenge_PM.xlsx.
-Designed to be called by Claude at the start/end of each session.
+pm_updater.py — KlimaChallenge PM Excel Updater
+================================================
+Designed for the v4 seven-sheet structure. Claude Code runs this at the
+end of each session to update all structured data. Narrative columns
+(Reflection, Theory Reference, detailed diary text) are left with
+placeholder prompts so the human can enrich them via the web interface.
 
-Usage:
-    pm = PMUpdater()
-    pm.start_session(10, '2026-03-16')        # updates header + metrics
-    pm.add_session_row(...)                    # dashboard timeline
-    pm.add_velocity_row(...)                   # milestones velocity
-    pm.update_sprint_plan(...)                 # milestones sprint plan
-    pm.update_milestone(...)                   # milestone tracker
-    pm.mark_backlog_done(id, notes)            # backlog item -> done
-    pm.add_backlog_item(...)                   # new backlog item
-    pm.update_backlog_notes(id, notes)         # update backlog notes only
-    pm.add_feature(...)                        # feature registry
-    pm.add_arch_session(...)                   # architecture session log
-    pm.save()                                  # write to disk
+Usage: fill in the __main__ block at the bottom and run:
+    python pm_updater.py
+
+Sheets handled:
+    📊 Dashboard       — KPI numbers + velocity table
+    📓 Session Diary   — one row per session (structured fields only)
+    📐 Decision Log    — ADR entries when a major decision was made
+    📋 Backlog         — mark items done, add new items
+    ⚠️ Gotchas         — add newly discovered platform rules
+    🎯 Milestones      — update milestone status / completion
+    ✅ Feature Registry — add newly shipped features
 """
 
-import openpyxl
 import sys
+sys.stdout.reconfigure(encoding="utf-8")
+
+from openpyxl import load_workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
 import os
 
-sys.stdout.reconfigure(encoding='utf-8')
+# ── Palette (must match build_pm_v3.py exactly) ───────────────────────────────
+BLUE_DARK    = "00334F"
+BLUE_MID     = "0B6C8A"
+BLUE_XLIGHT  = "D6EEF5"
+GREEN_DARK   = "418880"
+GREEN_MID    = "3FB28F"
+GREEN_XLIGHT = "E8F5E9"
+RED_MID      = "E95B20"
+RED_XLIGHT   = "FFF0ED"
+AMBER        = "F59E0B"
+AMBER_LIGHT  = "FEF3C7"
+WHITE        = "FFFFFF"
+OFF_WHITE    = "F8FAFB"
+LIGHT_GRAY   = "EDF2F5"
+MID_GRAY     = "C8D8E4"
+TEXT_DARK    = "1A2E3B"
+TEXT_MID     = "2D4A5A"
+TEXT_LIGHT   = "5A7A8A"
+PURPLE       = "7C3AED"
+PURPLE_LIGHT = "EDE9FE"
 
-FILE = os.path.join(os.path.dirname(__file__), 'KlimaChallenge_PM.xlsx')
+PLACEHOLDER  = "[To be completed via web interface]"
 
-# ── Sheet name constants ──────────────────────────────────────────────────────
-SH_DASHBOARD  = '📊 Dashboard'
-SH_BACKLOG    = '📋 Backlog & Tasks'
-SH_MILESTONES = '🎯 Milestones'
-SH_ARCH       = '🏗️ Architecture'
-SH_FEATURES   = '✅ Feature Registry'
+# ── Style helpers ─────────────────────────────────────────────────────────────
+def _fill(hex_color):
+    return PatternFill("solid", fgColor=hex_color)
+
+def _font(bold=False, size=9, color=TEXT_DARK, italic=False):
+    return Font(bold=bold, size=size, color=color, italic=italic, name="Arial")
+
+def _align(h="left", v="center", wrap=True):
+    return Alignment(horizontal=h, vertical=v, wrap_text=wrap)
+
+def _border(color=MID_GRAY):
+    s = Side(style="thin", color=color)
+    return Border(top=s, bottom=s, left=s, right=s)
+
+def _style(cell, bg=WHITE, fg=TEXT_DARK, bold=False, size=9,
+           h="left", v="center", wrap=True, italic=False, border_color=MID_GRAY):
+    """Apply full style to a single cell."""
+    cell.fill    = _fill(bg)
+    cell.font    = _font(bold=bold, size=size, color=fg, italic=italic)
+    cell.alignment = _align(h=h, v=v, wrap=wrap)
+    cell.border  = _border(color=border_color)
+
+def _row_bg(row_index, shade_even=True):
+    """Alternating row background — even rows get LIGHT_GRAY."""
+    return LIGHT_GRAY if (row_index % 2 == 0) == shade_even else WHITE
 
 
+# ─────────────────────────────────────────────────────────────────────────────
 class PMUpdater:
-    def __init__(self, path=FILE):
+    """
+    Loads the v4 KlimaChallenge PM Excel file and exposes methods for
+    every routine post-session update. All methods are idempotent:
+    they skip silently if the target row already exists.
+
+    Intended workflow
+    -----------------
+    1. Claude Code fills in the __main__ block below.
+    2. Runs this script at the end of each session.
+    3. Structured data (KPIs, new rows, status changes) are updated.
+    4. Narrative columns are populated with PLACEHOLDER text.
+    5. Human enriches narrative columns via the web interface.
+    """
+
+    def __init__(self, path: str):
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"PM file not found: {path}")
         self.path = path
-        self.wb = openpyxl.load_workbook(path)
+        self.wb   = load_workbook(path)
+        # Sheet name → workbook sheet mapping (tolerates emoji prefixes)
+        self._sheets = {ws.title: ws for ws in self.wb.worksheets}
 
-    def save(self):
-        self.wb.save(self.path)
-        print(f'Saved: {self.path}')
+    def save(self, path: str = None):
+        """Save to the original path or a new path if specified."""
+        out = path or self.path
+        self.wb.save(out)
+        print(f"  ✓ Saved: {out}")
 
-    # ── Internal helpers ──────────────────────────────────────────────────────
+    def _get_sheet(self, name_fragment: str):
+        """Find a sheet by partial name match (handles emoji prefixes)."""
+        for title, ws in self._sheets.items():
+            if name_fragment.lower() in title.lower():
+                return ws
+        raise KeyError(f"Sheet containing '{name_fragment}' not found. "
+                       f"Available: {list(self._sheets.keys())}")
 
-    def _find_row(self, ws, col_a_value):
-        """Return 1-based row number where column A == col_a_value, or None."""
-        for i, row in enumerate(ws.iter_rows(values_only=True), 1):
-            if row[0] == col_a_value:
-                return i
-        return None
-
-    def _find_row_containing(self, ws, col_a_substr):
-        """Return 1-based row number where column A contains the substring."""
-        for i, row in enumerate(ws.iter_rows(values_only=True), 1):
-            if row[0] and isinstance(row[0], str) and col_a_substr.lower() in row[0].lower():
-                return i
-        return None
-
-    def _last_data_row(self, ws):
-        """Return 1-based index of the last row that has any data."""
-        last = 0
-        for i, row in enumerate(ws.iter_rows(values_only=True), 1):
-            if any(v is not None for v in row):
-                last = i
+    def _find_last_data_row(self, ws, start_row: int, col: str = "A") -> int:
+        """
+        Walk down from start_row in column col and return the last row
+        that has a non-None value. Returns start_row - 1 if nothing found
+        (i.e. the table is empty).
+        """
+        last = start_row - 1
+        for row in ws.iter_rows(min_row=start_row, min_col=1, max_col=1):
+            cell = row[0]
+            if cell.value is not None:
+                last = cell.row
         return last
 
-    def _set_row(self, ws, row_num, values: dict):
-        """Set cells in a row. values = {col_letter: value}."""
-        for col, val in values.items():
-            ws[f'{col}{row_num}'].value = val
-
-    # ── DASHBOARD ─────────────────────────────────────────────────────────────
-
-    def update_dashboard_header(self, session_n: int, date: str):
-        """Update 'Session X Complete | Date: ...' banner."""
-        ws = self.wb[SH_DASHBOARD]
-        ws['A2'].value = f'Session {session_n} Complete  |  Date: {date}  |  Platform: React Native / Expo'
-
-    def restore_dashboard_headers(self):
+    def _find_row_containing(self, ws, search_value, col_index: int = 1,
+                              start_row: int = 1) -> int:
         """
-        Restore Row 5 to its correct column-label state.
-        Row 5 = headers; Row 6 = current values; Row 7 = previous-session values.
+        Return the row number of the first cell in col_index that contains
+        search_value (case-insensitive substring match). Returns -1 if not found.
         """
-        ws = self.wb[SH_DASHBOARD]
-        ws['A5'].value = 'Sessions Completed'
-        ws['C5'].value = 'Features Shipped'
-        ws['E5'].value = 'Backlog Items Left'
-        ws['G5'].value = 'Tech Debt Items'
-        ws['I5'].value = 'Pre-Prod Blockers'
-        print('Dashboard: Row 5 headers restored')
+        for row in ws.iter_rows(min_row=start_row):
+            cell = row[col_index - 1]
+            if cell.value and search_value.lower() in str(cell.value).lower():
+                return cell.row
+        return -1
 
-    def update_dashboard_metrics(
-        self,
-        sessions: int,
-        features: int,
-        open_items: int,
-        prev_sessions: int,
-        prev_features: int,
-        prev_open: int,
-        tech_debt_count: int,
-        preprod_count: int = None,   # leave None to keep existing value
-    ):
+    # ──────────────────────────────────────────────────────────────────────────
+    # 📊 DASHBOARD
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def update_dashboard_kpis(self, sessions: int, features: int,
+                               backlog: int, tech_debt: int, blockers: int):
         """
-        Update the KPI tile rows.
-        Row 5 = column headers (never overwrite — call restore_dashboard_headers if needed).
-        Row 6 = current values (big numbers).
-        Row 7 = previous-session values (shown as delta reference).
+        Shift current KPI values (row 6) into the 'previous' note (row 7),
+        then write new values into row 6.
+
+        Parameters
+        ----------
+        sessions   : total sessions completed to date
+        features   : total features shipped to date
+        backlog    : open backlog items remaining AFTER this session
+        tech_debt  : open tech debt items remaining AFTER this session
+        blockers   : pre-production blockers remaining AFTER this session
         """
-        ws = self.wb[SH_DASHBOARD]
-        # Current (row 6)
-        ws['A6'].value = sessions
-        ws['C6'].value = features
-        ws['E6'].value = open_items
-        ws['G6'].value = tech_debt_count
-        if preprod_count is not None:
-            ws['I6'].value = preprod_count
-        # Previous (row 7)
-        ws['A7'].value = str(prev_sessions)
-        ws['C7'].value = str(prev_features)
-        ws['E7'].value = str(prev_open)
+        ws = self._get_sheet("Dashboard")
+        print(f"  Updating Dashboard KPIs — sessions={sessions}, "
+              f"features={features}, backlog={backlog}, "
+              f"tech_debt={tech_debt}, blockers={blockers}")
 
-    def add_session_row(
-        self,
-        session_id: str,   # e.g. 'S10'
-        date: str,
-        status: str,
-        deliverables: str,
-        files: str,
-        notes: str,
-    ):
+        # Read current row-6 values as 'previous' before overwriting
+        prev_vals = {}
+        for merged in ws.merged_cells.ranges:
+            top_left = ws.cell(merged.min_row, merged.min_col)
+            if merged.min_row == 6:
+                prev_vals[merged.min_col] = top_left.value
+
+        # The five KPI value cells are at columns A, C, E, G, I (row 6)
+        # They are merged pairs: A6:B6, C6:D6, E6:F6, G6:H6, I6:J6
+        new_vals = {1: sessions, 3: features, 5: backlog, 7: tech_debt, 9: blockers}
+        color_map = {1: BLUE_DARK, 3: GREEN_DARK, 5: AMBER, 7: GREEN_MID, 9: RED_MID}
+
+        for col, val in new_vals.items():
+            cell = ws.cell(row=6, column=col)
+            cell.value = str(val)
+            _style(cell, bg=LIGHT_GRAY, fg=color_map[col],
+                   bold=True, size=22, h="center", wrap=False)
+
+        # Update the note row (row 7) with the new previous values
+        prev_str = (f"prev sessions: {prev_vals.get(1,'–')} / "
+                    f"{prev_vals.get(3,'–')} / {prev_vals.get(5,'–')} / "
+                    f"{prev_vals.get(7,'–')} / {prev_vals.get(9,'–')}   "
+                    "· Open Backlog = open feature/bug items; "
+                    "Pre-Prod Blockers = separate infra items not counted above")
+        note_cell = ws.cell(row=7, column=1)
+        note_cell.value = prev_str
+        _style(note_cell, bg=OFF_WHITE, fg=TEXT_LIGHT, italic=True, size=8)
+
+    def add_velocity_row(self, session: str, date: str, focus: str,
+                          features_n: int, category: str):
         """
-        Append a session row to the SESSION TIMELINE table.
-        Inserts after the last Sx row found.
+        Append a new row to the velocity table on the Dashboard.
+        The table starts with a header at row 21 and data from row 22 onward.
+
+        Parameters
+        ----------
+        session    : e.g. "S13"
+        date       : e.g. "Mar 17"
+        focus      : short description of the session's main theme
+        features_n : number of features shipped (0 for debt/infra sessions)
+        category   : e.g. "Feature / Bug Fix"
         """
-        ws = self.wb[SH_DASHBOARD]
-        # Find the last 'Sx' row
-        last_session_row = None
-        for i, row in enumerate(ws.iter_rows(values_only=True), 1):
-            if row[0] and isinstance(row[0], str) and row[0].startswith('S') and row[0][1:].isdigit():
-                last_session_row = i
-        target_row = (last_session_row + 1) if last_session_row else self._last_data_row(ws) + 1
+        ws = self._get_sheet("Dashboard")
 
-        # Only write if not already there
-        if ws.cell(row=target_row, column=1).value != session_id:
-            self._set_row(ws, target_row, {
-                'A': session_id, 'B': date, 'C': status,
-                'D': deliverables, 'E': files, 'F': notes,
-            })
-            print(f'Dashboard: added {session_id} at row {target_row}')
-        else:
-            print(f'Dashboard: {session_id} already exists at row {target_row}, skipping')
+        # Find last velocity data row (header is row 21, data starts row 22)
+        last_r = self._find_last_data_row(ws, start_row=22)
 
-    # ── BACKLOG & TASKS ───────────────────────────────────────────────────────
-
-    def update_backlog_header(self, session_n: int, date: str):
-        ws = self.wb[SH_BACKLOG]
-        ws['A2'].value = f'Priority-ordered remaining work  |  Updated {date}  |  Session {session_n} complete'
-
-    def mark_backlog_done(self, item_id: int, notes: str = None):
-        """Mark a backlog item as done by its # (column A)."""
-        ws = self.wb[SH_BACKLOG]
-        row = self._find_row(ws, item_id)
-        if row is None:
-            print(f'Backlog: item #{item_id} not found')
-            return
-        ws[f'G{row}'].value = '✅ Done'
-        if notes:
-            ws[f'I{row}'].value = notes
-        print(f'Backlog: #{item_id} marked Done (row {row})')
-
-    def update_backlog_notes(self, item_id: int, notes: str):
-        """Update only the notes column for a backlog item."""
-        ws = self.wb[SH_BACKLOG]
-        row = self._find_row(ws, item_id)
-        if row is None:
-            print(f'Backlog: item #{item_id} not found')
-            return
-        ws[f'I{row}'].value = notes
-        print(f'Backlog: #{item_id} notes updated (row {row})')
-
-    def add_backlog_item(
-        self,
-        item_id: int,
-        category: str,       # e.g. 'Tech Debt', 'Feature', 'Bug Fix'
-        task: str,
-        description: str,
-        priority: str,       # e.g. '🔵 Low', '🟡 Medium', '🟠 High', '🔴 Critical'
-        effort: str,         # e.g. 'XS (30m)', 'S (2-4h)', 'M (4-8h)', 'L (1-2d)'
-        status: str = '⬜ Todo',
-        session_target: str = 'Any',
-        notes: str = None,
-    ):
-        """Append a new backlog item. Skips if item_id already exists."""
-        ws = self.wb[SH_BACKLOG]
-        if self._find_row(ws, item_id) is not None:
-            print(f'Backlog: #{item_id} already exists, skipping')
-            return
-        r = self._last_data_row(ws) + 1
-        self._set_row(ws, r, {
-            'A': item_id, 'B': category, 'C': task, 'D': description,
-            'E': priority, 'F': effort, 'G': status, 'H': session_target, 'I': notes,
-        })
-        print(f'Backlog: #{item_id} "{task}" added at row {r}')
-
-    # ── MILESTONES ────────────────────────────────────────────────────────────
-
-    def update_milestone(
-        self,
-        name: str,           # e.g. 'M6: Stats & Insights'
-        status: str,         # e.g. '✅ Complete', '⬜ Planned', '🔄 In Progress'
-        completion_pct: str, # e.g. '100%', '60%'
-        target_date: str = None,
-        deliverables: str = None,
-        notes: str = None,
-    ):
-        """Update a milestone row by name match in column A."""
-        ws = self.wb[SH_MILESTONES]
-        row = self._find_row_containing(ws, name)
-        if row is None:
-            print(f'Milestones: "{name}" not found')
-            return
-        ws[f'C{row}'].value = status
-        ws[f'D{row}'].value = completion_pct
-        if target_date:
-            ws[f'B{row}'].value = target_date
-        if deliverables:
-            ws[f'E{row}'].value = deliverables
-        if notes:
-            ws[f'G{row}'].value = notes
-        print(f'Milestones: "{name}" updated (row {row})')
-
-    def add_velocity_row(
-        self,
-        session_id: str,      # e.g. 'S10'
-        date_label: str,      # e.g. 'Mar 16'
-        features_shipped: int,
-        cumulative_total: int,
-        tech_debt_items: int = 0,
-        category_mix: str = '',
-    ):
-        """
-        Append a row to the FEATURE VELOCITY table.
-        Inserts after the last velocity Sx row.
-        """
-        ws = self.wb[SH_MILESTONES]
-        # Velocity rows: find the block starting at 'FEATURE VELOCITY'
-        vel_start = self._find_row_containing(ws, 'FEATURE VELOCITY')
-        if vel_start is None:
-            print('Milestones: FEATURE VELOCITY section not found')
-            return
-        # Find last Sx row after vel_start
-        last_vel_row = None
-        for i in range(vel_start + 1, ws.max_row + 1):
-            val = ws.cell(row=i, column=1).value
-            if val and isinstance(val, str) and val.startswith('S') and val[1:].isdigit():
-                last_vel_row = i
-        target_row = (last_vel_row + 1) if last_vel_row else vel_start + 2
-
-        if ws.cell(row=target_row, column=1).value != session_id:
-            self._set_row(ws, target_row, {
-                'A': session_id, 'B': date_label, 'C': features_shipped,
-                'D': cumulative_total, 'E': tech_debt_items, 'F': category_mix,
-            })
-            print(f'Milestones velocity: {session_id} added at row {target_row}')
-        else:
-            print(f'Milestones velocity: {session_id} already exists, skipping')
-
-    def update_sprint_plan(
-        self,
-        session_id: str,       # e.g. 'S10'
-        focus: str = None,
-        planned_items: str = None,
-        effort: str = None,
-        risk: str = None,
-        confidence: str = None,
-        status_override: str = None,  # e.g. 'Done'
-    ):
-        """
-        Update a sprint plan row in the SESSION / SPRINT PLAN table.
-        Finds the Sx row in the sprint plan section (below 'SESSION / SPRINT PLAN').
-        """
-        ws = self.wb[SH_MILESTONES]
-        sprint_start = self._find_row_containing(ws, 'SPRINT PLAN')
-        if sprint_start is None:
-            print('Milestones: SPRINT PLAN section not found')
-            return
-        # Find the Sx row in the sprint section
-        for i in range(sprint_start + 1, ws.max_row + 1):
-            if ws.cell(row=i, column=1).value == session_id:
-                if focus:           ws[f'C{i}'].value = focus
-                if planned_items:   ws[f'D{i}'].value = planned_items
-                if effort:          ws[f'E{i}'].value = effort
-                if risk:            ws[f'F{i}'].value = risk
-                if confidence:      ws[f'G{i}'].value = confidence
-                if status_override: ws[f'E{i}'].value = status_override
-                print(f'Milestones sprint: {session_id} updated (row {i})')
+        # Idempotency: skip if this session already exists in the table
+        for row in ws.iter_rows(min_row=22, max_col=1):
+            if row[0].value == session:
+                print(f"  ⚠️  Velocity row for {session} already exists — skipping.")
                 return
-        print(f'Milestones sprint: {session_id} not found after row {sprint_start}')
 
-    def add_sprint_plan_row(
-        self,
-        session_id: str,
-        target_date: str,
-        focus: str,
-        planned_items: str,
-        effort: str,
-        risk: str,
-        confidence: str,
-    ):
-        """Add a new sprint plan row (for future sessions not yet in the table)."""
-        ws = self.wb[SH_MILESTONES]
-        sprint_start = self._find_row_containing(ws, 'SPRINT PLAN')
-        if sprint_start is None:
-            return
-        # Find last sprint Sx row
-        last_sprint_row = None
-        for i in range(sprint_start + 1, ws.max_row + 1):
-            val = ws.cell(row=i, column=1).value
-            if val and isinstance(val, str) and val.startswith('S') and val[1:].isdigit():
-                last_sprint_row = i
-        target_row = (last_sprint_row + 1) if last_sprint_row else sprint_start + 2
-        if ws.cell(row=target_row, column=1).value != session_id:
-            self._set_row(ws, target_row, {
-                'A': session_id, 'B': target_date, 'C': focus,
-                'D': planned_items, 'E': effort, 'F': risk, 'G': confidence,
-            })
-            print(f'Milestones sprint: {session_id} added at row {target_row}')
+        r = last_r + 1
+        ws.row_dimensions[r].height = 18
 
-    # ── ARCHITECTURE ──────────────────────────────────────────────────────────
+        # Compute cumulative total by summing column D from row 22 to last_r
+        cumulative = 0
+        for row in ws.iter_rows(min_row=22, max_row=last_r, min_col=4, max_col=4):
+            for cell in row:
+                if isinstance(cell.value, int):
+                    cumulative += cell.value
+        cumulative += features_n
 
-    def add_arch_session(
-        self,
-        session_id: str,      # e.g. 'S10'
-        date: str,
-        files_added: str,
-        key_decisions: str,
-        asyncstorage_keys: str = 'None added',
-        notes: str = '',
-    ):
-        """Append a row to the SESSION LOG in the Architecture sheet."""
-        ws = self.wb[SH_ARCH]
-        # Find SESSION LOG section
-        log_start = self._find_row_containing(ws, 'SESSION LOG')
-        if log_start is None:
-            print('Architecture: SESSION LOG section not found')
-            return
-        # Find last Sx row after log_start
-        last_log_row = None
-        for i in range(log_start + 1, ws.max_row + 1):
-            val = ws.cell(row=i, column=1).value
-            if val and isinstance(val, str) and (val.startswith('S') and (val[1:].isdigit() or '-' in val)):
-                last_log_row = i
-        target_row = (last_log_row + 1) if last_log_row else log_start + 2
+        shade = (r % 2 == 0)
+        bg = LIGHT_GRAY if shade else WHITE
+        max_feats = 9
+        bar_n = round((features_n / max_feats) * 10) if features_n > 0 else 0
+        bar = "█" * bar_n + "░" * (10 - bar_n)
+        bar_color = GREEN_MID if features_n >= 5 else (
+            GREEN_DARK if features_n > 0 else TEXT_LIGHT)
 
-        if ws.cell(row=target_row, column=1).value != session_id:
-            self._set_row(ws, target_row, {
-                'A': session_id, 'B': date, 'C': files_added,
-                'D': key_decisions, 'E': asyncstorage_keys, 'F': notes,
-            })
-            print(f'Architecture: {session_id} session log added at row {target_row}')
-        else:
-            print(f'Architecture: {session_id} already exists, skipping')
+        cols = [
+            ("A", session,    {"bold": True, "fg": BLUE_MID, "wrap": False}),
+            ("B", date,       {}),
+            ("C", focus,      {"wrap": True}),
+            ("D", features_n if features_n > 0 else "—",
+                  {"h": "center",
+                   "fg": GREEN_DARK if features_n > 0 else TEXT_LIGHT,
+                   "bold": features_n >= 5}),
+            ("E", category,   {"fg": TEXT_MID, "italic": True}),
+            ("F", cumulative if features_n > 0 else "—",
+                  {"h": "center", "fg": BLUE_MID, "bold": True}),
+            ("G", bar,        {"fg": bar_color}),
+        ]
+        for col_letter, val, style in cols:
+            cell = ws[f"{col_letter}{r}"]
+            cell.value = val
+            _style(cell, bg=bg,
+                   fg=style.get("fg", TEXT_DARK),
+                   bold=style.get("bold", False),
+                   italic=style.get("italic", False),
+                   h=style.get("h", "left"),
+                   wrap=style.get("wrap", False))
 
-    def update_arch_stack_row(self, layer_name: str, updates: dict):
+        print(f"  Added velocity row: {session} · {features_n} features · "
+              f"cumulative {cumulative}")
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # 📓 SESSION DIARY
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def add_session_row(self, session: str, date: str, scope: str,
+                         what: str, why: str, problems: str,
+                         alternatives: str, decisions: str,
+                         features_n: int, effort: str, thesis_tag: str,
+                         reflection: str = PLACEHOLDER):
         """
-        Update a row in the TECHNOLOGY STACK table by layer name.
-        updates = {'B': 'new tech', 'C': 'new version', ...}
+        Insert a new session row into the Session Diary, just before
+        the colour-legend row at the bottom of the table.
+
+        The `reflection` parameter defaults to a placeholder — it is
+        intentionally left for enrichment via the web interface after
+        the session, when retrospective distance is possible.
+
+        Parameters
+        ----------
+        session      : e.g. "S13"
+        date         : e.g. "2026-03-17"
+        scope        : one-line session theme
+        what         : deliverables and files changed
+        why          : motivation and design rationale
+        problems     : problems encountered
+        alternatives : approaches rejected
+        decisions    : standing rules / gotchas for future reference
+        features_n   : number of features shipped
+        effort       : estimated effort e.g. "~4h"
+        thesis_tag   : e.g. "Gamification Theory / UX Design"
+        reflection   : retrospective reflection (leave as PLACEHOLDER)
         """
-        ws = self.wb[SH_ARCH]
-        row = self._find_row(ws, layer_name)
-        if row is None:
-            print(f'Architecture: stack row "{layer_name}" not found')
+        ws = self._get_sheet("Session Diary")
+
+        # Idempotency: skip if session already exists
+        if self._find_row_containing(ws, session, col_index=1, start_row=5) != -1:
+            print(f"  ⚠️  Session Diary row for {session} already exists — skipping.")
             return
-        for col, val in updates.items():
-            ws[f'{col}{row}'].value = val
-        print(f'Architecture: stack row "{layer_name}" updated (row {row})')
 
-    def update_arch_gotcha(self, col_a_substr: str, new_warning: str):
-        """Update the 'Gotcha / Warning' column (D) of a design decision row."""
-        ws = self.wb[SH_ARCH]
-        row = self._find_row_containing(ws, col_a_substr)
-        if row is None:
-            print(f'Architecture: gotcha row containing "{col_a_substr}" not found')
-            return
-        ws[f'D{row}'].value = new_warning
-        print(f'Architecture: gotcha updated (row {row})')
+        # Find the legend row (contains "Column colour guide")
+        # Insert before it so the legend stays at the bottom
+        legend_r = self._find_row_containing(
+            ws, "Column colour guide", col_index=1, start_row=5)
 
-    # ── FEATURE REGISTRY ──────────────────────────────────────────────────────
+        if legend_r == -1:
+            # No legend row found — append after last data row
+            legend_r = self._find_last_data_row(ws, start_row=5) + 2
 
-    def add_feature(
-        self,
-        feature_id: int,
-        name: str,
-        category: str,      # e.g. 'Feature', 'UI', 'UX', 'Gamification', 'Bug Fix'
-        session: str,       # e.g. 'S10'
-        primary_files: str,
-        description: str,
-        xp_impact: str = 'No',
-        status: str = '✅',
-    ):
-        """Append a feature to the Feature Registry. Skips if feature_id exists."""
-        ws = self.wb[SH_FEATURES]
-        if self._find_row(ws, feature_id) is not None:
-            print(f'Feature Registry: #{feature_id} already exists, skipping')
-            return
-        r = self._last_data_row(ws) + 1
-        self._set_row(ws, r, {
-            'A': feature_id, 'B': name, 'C': category, 'D': session,
-            'E': primary_files, 'F': description, 'G': xp_impact, 'H': status,
-        })
-        print(f'Feature Registry: #{feature_id} "{name}" added at row {r}')
+        # Insert a blank row at legend_r, pushing everything down
+        ws.insert_rows(legend_r)
+        r = legend_r
 
-    # ── CONVENIENCE: full session update ─────────────────────────────────────
+        # Count existing data rows to determine alternating shade
+        data_rows = legend_r - 5  # rows 5..(legend_r-1) were data rows
+        shade = (data_rows // 2) % 2 == 0
+        bg = LIGHT_GRAY if shade else WHITE
 
-    def end_of_session(
-        self,
-        session_n: int,
-        date: str,
-        # Dashboard
-        deliverables: str,
-        files_changed: str,
-        session_notes: str,
-        # Metrics
-        total_features: int,
-        open_items: int,
-        tech_debt_count: int,
-        # Architecture session log
-        arch_files_added: str,
-        arch_decisions: str,
-        arch_asyncstorage: str = 'None added',
-        arch_notes: str = '',
-    ):
+        ws.row_dimensions[r].height = 90
+
+        # Column order matches the v3 header: A-L
+        row_data = [
+            ("A", session,      {"bold": True, "fg": BLUE_MID, "v": "top",
+                                 "h": "center", "wrap": False}),
+            ("B", date,         {"fg": TEXT_MID, "v": "top"}),
+            ("C", scope,        {"bold": True, "fg": BLUE_DARK, "v": "top"}),
+            ("D", what,         {"v": "top"}),
+            ("E", why,          {"fg": GREEN_DARK, "v": "top"}),
+            ("F", problems,     {"fg": RED_MID, "v": "top"}),
+            ("G", alternatives, {"fg": TEXT_MID, "italic": True, "v": "top"}),
+            ("H", decisions,    {"fg": BLUE_MID, "v": "top"}),
+            ("I", str(features_n) if features_n > 0 else "—",
+                  {"h": "center", "v": "top",
+                   "fg": GREEN_MID if features_n > 0 else TEXT_LIGHT,
+                   "bold": features_n > 0}),
+            ("J", effort,       {"h": "center", "v": "top", "fg": TEXT_MID}),
+            ("K", thesis_tag,   {"fg": AMBER, "italic": True, "v": "top"}),
+            ("L", reflection,   {"fg": PURPLE, "v": "top",
+                                 "italic": reflection == PLACEHOLDER}),
+        ]
+
+        for col_letter, val, style in row_data:
+            cell = ws[f"{col_letter}{r}"]
+            cell.value = val
+            _style(cell, bg=bg,
+                   fg=style.get("fg", TEXT_DARK),
+                   bold=style.get("bold", False),
+                   italic=style.get("italic", False),
+                   h=style.get("h", "left"),
+                   v=style.get("v", "center"),
+                   wrap=True)
+
+        print(f"  Added Session Diary row: {session} · {scope} · "
+              f"{features_n} features")
+        if reflection == PLACEHOLDER:
+            print(f"  ℹ️  Reflection column left as placeholder — "
+                  f"enrich via web interface after the session.")
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # 📐 DECISION LOG
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def add_adr(self, n: int, area: str, context: str, options: str,
+                 decision: str, criteria: str, reversal: str, session: str,
+                 bg_color: str = BLUE_XLIGHT):
         """
-        Convenience wrapper — call once at end of session.
-        Updates: header, metrics, dashboard timeline, arch session log.
-        You still call mark_backlog_done / add_backlog_item / add_feature separately.
+        Append a new Architecture Decision Record to the Decision Log.
+
+        Parameters
+        ----------
+        n          : ADR number (integer)
+        area       : short name e.g. "Chart Library Choice"
+        context    : what forced this decision
+        options    : options that were considered (pipe-separated or prose)
+        decision   : what was decided and why
+        criteria   : criteria used to evaluate options
+        reversal   : what would need to change if this decision is reversed
+        session    : session in which the decision was made e.g. "S13"
+        bg_color   : row background colour (default BLUE_XLIGHT)
         """
-        sid = f'S{session_n}'
-        prev_n = session_n - 1
-        prev_features = total_features - 0  # caller provides total; prev derived elsewhere
+        ws = self._get_sheet("Decision Log")
 
-        self.update_dashboard_header(session_n, date)
-        self.update_dashboard_metrics(
-            sessions=session_n,
-            features=total_features,
-            open_items=open_items,
-            prev_sessions=prev_n,
-            prev_features=total_features,   # will be overridden by caller if needed
-            prev_open=open_items,
-            tech_debt_count=tech_debt_count,
-        )
-        self.add_session_row(sid, date, '✅ Done', deliverables, files_changed, session_notes)
-        self.update_backlog_header(session_n, date)
-        self.add_arch_session(sid, date, arch_files_added, arch_decisions, arch_asyncstorage, arch_notes)
-        print(f'End-of-session {sid} update complete.')
+        # Idempotency: skip if ADR number or area already exists
+        for row in ws.iter_rows(min_row=5, max_col=2):
+            if str(row[0].value) == str(n) or (
+                    row[1].value and area.lower() in row[1].value.lower()):
+                print(f"  ⚠️  ADR #{n} ({area}) already exists — skipping.")
+                return
+
+        last_r = self._find_last_data_row(ws, start_row=5)
+        r = last_r + 1
+        ws.row_dimensions[r].height = 80
+
+        row_data = [
+            ("A", str(n),    {"bold": True, "fg": BLUE_MID, "h": "center"}),
+            ("B", area,      {"bold": True, "fg": BLUE_DARK}),
+            ("C", context,   {"fg": TEXT_DARK}),
+            ("D", options,   {"fg": TEXT_MID, "italic": True}),
+            ("E", decision,  {"fg": GREEN_DARK}),
+            ("F", criteria,  {"fg": TEXT_DARK}),
+            ("G", reversal,  {"fg": RED_MID}),
+            ("H", session,   {"h": "center", "fg": BLUE_MID, "bold": True}),
+        ]
+
+        for col_letter, val, style in row_data:
+            cell = ws[f"{col_letter}{r}"]
+            cell.value = val
+            _style(cell, bg=bg_color,
+                   fg=style.get("fg", TEXT_DARK),
+                   bold=style.get("bold", False),
+                   italic=style.get("italic", False),
+                   h=style.get("h", "left"),
+                   v="top")
+
+        print(f"  Added ADR #{n}: {area}")
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # 📋 BACKLOG
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def mark_backlog_done(self, identifier: str, session_completed: str,
+                           notes: str = ""):
+        """
+        Find a backlog item by its # number or task name substring and
+        mark it as done. Updates the Status cell to "✅ Done", changes
+        the row fill to GREEN_XLIGHT, and appends to the Notes column.
+
+        Parameters
+        ----------
+        identifier        : item # as string (e.g. "36") or task name fragment
+        session_completed : e.g. "S13"
+        notes             : optional completion note appended to existing notes
+        """
+        ws = self._get_sheet("Backlog")
+
+        # Search column A (item #) then column C (task name)
+        target_row = -1
+        for row in ws.iter_rows(min_row=6):
+            num_cell  = row[0]   # column A
+            task_cell = row[2]   # column C
+            if (str(num_cell.value) == str(identifier) or
+                    (task_cell.value and
+                     identifier.lower() in str(task_cell.value).lower())):
+                target_row = num_cell.row
+                break
+
+        if target_row == -1:
+            print(f"  ⚠️  Backlog item '{identifier}' not found.")
+            return
+
+        ws.row_dimensions[target_row].height = 28
+
+        # Update status column (G = index 7)
+        status_cell = ws.cell(row=target_row, column=7)
+        status_cell.value = "✅ Done"
+        _style(status_cell, bg=GREEN_XLIGHT, fg=GREEN_DARK, bold=True)
+
+        # Update target column (H = index 8) with session completed
+        target_cell = ws.cell(row=target_row, column=8)
+        target_cell.value = session_completed
+        _style(target_cell, bg=GREEN_XLIGHT, fg=GREEN_DARK)
+
+        # Append to notes column (I = index 9)
+        notes_cell = ws.cell(row=target_row, column=9)
+        existing   = notes_cell.value or ""
+        suffix     = f"  ·  Completed {session_completed}"
+        if notes:
+            suffix += f" — {notes}"
+        notes_cell.value = existing + suffix
+        _style(notes_cell, bg=GREEN_XLIGHT, fg=TEXT_MID, italic=True)
+
+        # Re-shade all other cells in the row to green
+        for col_idx in range(1, 7):
+            cell = ws.cell(row=target_row, column=col_idx)
+            cell.fill = _fill(GREEN_XLIGHT)
+            cell.font = _font(size=9, color=TEXT_LIGHT,
+                              bold=(col_idx in [1, 3]))
+
+        print(f"  Marked backlog item '{identifier}' as done ({session_completed})")
+
+    def add_backlog_item(self, num: str, category: str, task: str,
+                          description: str, priority: str, effort: str,
+                          target: str, notes: str, status: str = "⬜ Todo"):
+        """
+        Add a new item to the OPEN section of the backlog, inserted just
+        before the Pre-Production Checklist section header.
+
+        Parameters
+        ----------
+        num         : item number as string, e.g. "41" or "—"
+        category    : e.g. "Feature", "Bug Fix", "Tech Debt", "UX"
+        task        : short task name
+        description : full description of the work required
+        priority    : e.g. "🔴 Critical", "🟠 High", "🟡 Medium", "🔵 Low"
+        effort      : e.g. "XS (30m)", "S (2-4h)", "M (4-8h)", "L (1-2d)"
+        target      : e.g. "S13", "Any", "Pre-launch"
+        notes       : implementation notes, links to ADRs, etc.
+        status      : defaults to "⬜ Todo"
+        """
+        ws = self._get_sheet("Backlog")
+
+        # Idempotency: skip if item number or task already exists
+        for row in ws.iter_rows(min_row=6, max_col=3):
+            if (str(row[0].value) == str(num) or
+                    (row[2].value and
+                     task.lower() in str(row[2].value).lower())):
+                print(f"  ⚠️  Backlog item '{num} — {task}' already exists — skipping.")
+                return
+
+        # Find the "PRE-PRODUCTION CHECKLIST" section header to insert before it
+        pre_prod_r = self._find_row_containing(
+            ws, "PRE-PRODUCTION", col_index=1, start_row=6)
+        if pre_prod_r == -1:
+            # Fall back to appending after the last open item
+            pre_prod_r = self._find_last_data_row(ws, start_row=6) + 1
+
+        ws.insert_rows(pre_prod_r)
+        r = pre_prod_r
+
+        # Unmerge any cells on this row (insert_rows can land inside a merged range)
+        for mr in list(ws.merged_cells.ranges):
+            if mr.min_row <= r <= mr.max_row:
+                ws.unmerge_cells(str(mr))
+
+        priority_fills = {
+            "🔴 Critical": RED_XLIGHT,
+            "🟠 High":     "FFF4EC",
+            "🟡 Medium":   AMBER_LIGHT,
+            "🔵 Low":      BLUE_XLIGHT,
+        }
+        priority_colors = {
+            "🔴 Critical": RED_MID,
+            "🟠 High":     "E95B20",
+            "🟡 Medium":   AMBER,
+            "🔵 Low":      BLUE_MID,
+        }
+        bg = priority_fills.get(priority, LIGHT_GRAY)
+
+        ws.row_dimensions[r].height = 48
+        for col_idx, (val, style) in enumerate([
+            (str(num),      {"bold": True, "fg": TEXT_DARK}),
+            (category,      {}),
+            (task,          {"bold": True}),
+            (description,   {}),
+            (priority,      {"fg": priority_colors.get(priority, TEXT_DARK),
+                             "bold": "Critical" in priority}),
+            (effort,        {}),
+            (status,        {}),
+            (target,        {}),
+            (notes,         {"italic": True, "fg": TEXT_MID}),
+        ], start=1):
+            cell = ws.cell(row=r, column=col_idx)
+            cell.value = val
+            _style(cell, bg=bg,
+                   fg=style.get("fg", TEXT_DARK),
+                   bold=style.get("bold", False),
+                   italic=style.get("italic", False))
+
+        print(f"  Added backlog item: {num} — {task} ({priority})")
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # ⚠️ GOTCHAS
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def add_gotcha(self, area: str, rule: str, why: str, broken: str,
+                    session: str, severity: str, thesis: str):
+        """
+        Append a new gotcha to the Gotchas sheet.
+
+        Parameters
+        ----------
+        area     : short area name e.g. "Supabase session refresh"
+        rule     : the rule to follow in one clear sentence
+        why      : full context — why does this rule exist?
+        broken   : what breaks if the rule is ignored (be specific)
+        session  : session where this was discovered e.g. "S13"
+        severity : "🔴 Critical" | "🟠 High" | "🟡 Medium" | "🔵 Info"
+        thesis   : e.g. "Platform limitations / Auth"
+        """
+        ws = self._get_sheet("Gotchas")
+
+        # Idempotency: skip if area already exists
+        if self._find_row_containing(ws, area, col_index=1, start_row=5) != -1:
+            print(f"  ⚠️  Gotcha '{area}' already exists — skipping.")
+            return
+
+        sev_bg = {
+            "🔴 Critical": RED_XLIGHT,
+            "🟠 High":     "FFF4EC",
+            "🟡 Medium":   AMBER_LIGHT,
+            "🔵 Info":     BLUE_XLIGHT,
+        }
+        sev_fg = {
+            "🔴 Critical": RED_MID,
+            "🟠 High":     "E95B20",
+            "🟡 Medium":   AMBER,
+            "🔵 Info":     BLUE_MID,
+        }
+
+        last_r = self._find_last_data_row(ws, start_row=5)
+        r = last_r + 1
+        ws.row_dimensions[r].height = 56
+        bg = sev_bg.get(severity, WHITE)
+
+        for col_letter, val, style in [
+            ("A", area,     {"bold": True, "fg": BLUE_DARK}),
+            ("B", rule,     {"bold": True,
+                             "fg": RED_MID if "Critical" in severity
+                             else TEXT_DARK}),
+            ("C", why,      {}),
+            ("D", broken,   {"fg": RED_MID, "italic": True}),
+            ("E", session,  {"h": "center", "fg": BLUE_MID}),
+            ("F", severity, {"h": "center",
+                             "fg": sev_fg.get(severity, TEXT_DARK),
+                             "bold": True}),
+            ("G", thesis,   {"fg": AMBER, "italic": True}),
+        ]:
+            cell = ws[f"{col_letter}{r}"]
+            cell.value = val
+            _style(cell, bg=bg,
+                   fg=style.get("fg", TEXT_DARK),
+                   bold=style.get("bold", False),
+                   italic=style.get("italic", False),
+                   h=style.get("h", "left"))
+
+        print(f"  Added gotcha: {area} ({severity})")
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # 🎯 MILESTONES
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def update_milestone(self, milestone_id: str, status: str,
+                          completion: str, blockers: str = "—"):
+        """
+        Find a milestone row by its ID (e.g. "M7") and update its
+        status, completion percentage, and blockers columns.
+
+        Parameters
+        ----------
+        milestone_id : e.g. "M7"
+        status       : e.g. "✅ Complete" or "🔄 In Progress"
+        completion   : e.g. "100%" or "60%"
+        blockers     : updated blockers string, or "—" if none
+        """
+        ws = self._get_sheet("Milestones")
+        target_row = self._find_row_containing(
+            ws, milestone_id, col_index=1, start_row=6)
+
+        if target_row == -1:
+            print(f"  ⚠️  Milestone '{milestone_id}' not found.")
+            return
+
+        done = status.startswith("✅")
+        bg   = GREEN_XLIGHT if done else AMBER_LIGHT
+        color = GREEN_DARK if done else AMBER
+
+        # Column D = status (col 4), F = blockers (col 6)
+        # Re-shade all cells in the row
+        for col_idx in range(1, 8):
+            cell = ws.cell(row=target_row, column=col_idx)
+            cell.fill = _fill(bg)
+
+        status_cell = ws.cell(row=target_row, column=4)
+        status_cell.value = f"{status}  ({completion})"
+        _style(status_cell, bg=bg, fg=color, bold=True)
+
+        blockers_cell = ws.cell(row=target_row, column=6)
+        blockers_cell.value = blockers
+        _style(blockers_cell, bg=bg, fg=TEXT_DARK)
+
+        print(f"  Updated milestone {milestone_id}: {status} ({completion})")
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # ✅ FEATURE REGISTRY
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def add_feature(self, num: int, name: str, category: str,
+                     session: str, files: str, description: str,
+                     xp_impact: str, also_modified: str = "—",
+                     theory_ref: str = PLACEHOLDER,
+                     thesis_tag: str = "—"):
+        """
+        Append a new feature row to the Feature Registry.
+
+        The `theory_ref` parameter defaults to PLACEHOLDER — for
+        gamification features this should be enriched via the web
+        interface with appropriate academic citations.
+
+        Parameters
+        ----------
+        num           : feature number (integer)
+        name          : feature name
+        category      : e.g. "Feature", "UI", "UX", "Gamification", "Bug Fix"
+        session       : session delivered e.g. "S13"
+        files         : primary files affected
+        description   : one-sentence description
+        xp_impact     : e.g. "—", "Yes", "Affects XP", "Display"
+        also_modified : sessions where the feature was later modified
+        theory_ref    : academic theory reference (leave as PLACEHOLDER
+                        if not yet determined)
+        thesis_tag    : e.g. "Gamification Theory"
+        """
+        ws = self._get_sheet("Feature Registry")
+
+        # Idempotency: skip if feature number already exists
+        for row in ws.iter_rows(min_row=5, max_col=1):
+            if str(row[0].value) == str(num):
+                print(f"  ⚠️  Feature #{num} ({name}) already exists — skipping.")
+                return
+
+        cat_bg = {
+            "Core":         BLUE_XLIGHT,
+            "UI":           PURPLE_LIGHT,
+            "UX":           GREEN_XLIGHT,
+            "Auth":         "FEF9C3",
+            "Onboarding":   "FEF9C3",
+            "Feature":      "E0F2FE",
+            "Gamification": GREEN_XLIGHT,
+            "Settings":     LIGHT_GRAY,
+            "Refactor":     LIGHT_GRAY,
+            "Bug Fix":      RED_XLIGHT,
+            "Stats":        BLUE_XLIGHT,
+            "PM":           LIGHT_GRAY,
+        }
+        thesis_map = {
+            "Core":         "Data Architecture",
+            "UI":           "Interface Design",
+            "UX":           "UX Design",
+            "Auth":         "Auth Architecture",
+            "Onboarding":   "FRE Design",
+            "Feature":      "Feature Design",
+            "Gamification": "Gamification Theory",
+            "Settings":     "User Configuration",
+            "Refactor":     "Software Quality",
+            "Bug Fix":      "Bug Analysis",
+            "Stats":        "Data Visualisation",
+            "PM":           "Development Process",
+        }
+
+        bg = cat_bg.get(category, WHITE)
+        if thesis_tag == "—":
+            thesis_tag = thesis_map.get(category, "—")
+
+        last_r = self._find_last_data_row(ws, start_row=5)
+        r = last_r + 1
+        ws.row_dimensions[r].height = 30
+
+        row_data = [
+            ("A", num,          {"h": "center", "bold": True, "fg": BLUE_MID}),
+            ("B", name,         {"bold": True}),
+            ("C", category,     {"fg": TEXT_MID}),
+            ("D", session,      {"h": "center", "fg": BLUE_MID}),
+            ("E", also_modified,{"fg": TEXT_MID, "italic": True, "h": "center"}),
+            ("F", files,        {"fg": TEXT_MID, "italic": True}),
+            ("G", description,  {}),
+            ("H", xp_impact,    {"h": "center",
+                                  "fg": GREEN_DARK if xp_impact not in
+                                  ["—", "Display"] else TEXT_LIGHT}),
+            ("I", theory_ref,   {"fg": PURPLE,
+                                  "italic": theory_ref == PLACEHOLDER}),
+            ("J", thesis_tag,   {"fg": AMBER, "italic": True}),
+        ]
+
+        for col_letter, val, style in row_data:
+            cell = ws[f"{col_letter}{r}"]
+            cell.value = str(val) if not isinstance(val, str) else val
+            _style(cell, bg=bg,
+                   fg=style.get("fg", TEXT_DARK),
+                   bold=style.get("bold", False),
+                   italic=style.get("italic", False),
+                   h=style.get("h", "left"))
+
+        print(f"  Added feature #{num}: {name} ({category}, {session})")
+        if theory_ref == PLACEHOLDER:
+            print(f"  ℹ️  Theory Reference left as placeholder — "
+                  f"enrich via web interface if gamification-related.")
+
+    def update_feature_modified(self, num: int, session: str):
+        """
+        Add a session to the 'Also Modified In' column (E) of an
+        existing feature row.
+
+        Parameters
+        ----------
+        num     : feature number
+        session : session to append e.g. "S13"
+        """
+        ws = self._get_sheet("Feature Registry")
+        for row in ws.iter_rows(min_row=5, max_col=5):
+            if str(row[0].value) == str(num):
+                cell = row[4]  # column E = index 4
+                existing = cell.value or "—"
+                if session in existing:
+                    print(f"  ⚠️  Feature #{num} already shows {session} in "
+                          f"'Also Modified In' — skipping.")
+                    return
+                cell.value = existing.replace("—", "").strip()
+                cell.value = (cell.value + f", {session}").lstrip(", ")
+                print(f"  Updated feature #{num} 'Also Modified In' → {cell.value}")
+                return
+        print(f"  ⚠️  Feature #{num} not found in Feature Registry.")
 
 
-# ── CLI usage ─────────────────────────────────────────────────────────────────
-if __name__ == '__main__':
-    """
-    Template for Claude to fill in at end of each session.
-    Edit SESSION, DATE and the calls below, then run: python pm_updater.py
-    """
-    pm = PMUpdater()
+# ─────────────────────────────────────────────────────────────────────────────
+# __main__ — Claude Code fills this block and runs the script each session
+# ─────────────────────────────────────────────────────────────────────────────
+if __name__ == "__main__":
 
-    SESSION = 12
-    DATE    = '2026-03-16'
+    # ── PATH ─────────────────────────────────────────────────────────────────
+    PM_PATH = r"f:\projects\TravelApp\travelapp\KlimaChallenge_PM_v4.xlsx"
 
-    # ── 1. Dashboard + headers ────────────────────────────────────────────
-    pm.update_dashboard_header(SESSION, DATE)
-    pm.update_dashboard_metrics(
-        sessions=SESSION,
-        features=35,        # +2: KlimaTicket presets overhaul + Delete All Trips
-        open_items=5,       # unchanged: 2 feature + 3 pre-prod
-        prev_sessions=11,
-        prev_features=33,
-        prev_open=5,
-        tech_debt_count=0,
-        preprod_count=3,
+    pm = PMUpdater(PM_PATH)
+
+    print("\n=== KlimaChallenge PM Updater ===\n")
+
+    # ── 1. DASHBOARD KPIs ─────────────────────────────────────────────────────
+    # Update with the new totals AFTER this session.
+    # sessions   = total sessions completed including this one
+    # features   = cumulative features shipped (all sessions)
+    # backlog    = open backlog items remaining AFTER this session
+    # tech_debt  = open tech debt items remaining AFTER this session
+    # blockers   = pre-production blockers remaining AFTER this session
+    pm.update_dashboard_kpis(
+        sessions  = 13,
+        features  = 39,
+        backlog   = 14,   # #41 now done; 11 new items added; net open = 14
+        tech_debt = 0,
+        blockers  = 3,
     )
+
+    # ── 2. VELOCITY ROW ───────────────────────────────────────────────────────
+    pm.add_velocity_row(
+        session    = "S13",
+        date       = "Mar 17",
+        focus      = "Bug fixes #36/#37/#41 + UX #38 + backlog brainstorm (11 new items)",
+        features_n = 4,
+        category   = "Bug Fix / UX",
+    )
+
+    # ── 3. SESSION DIARY ROW ─────────────────────────────────────────────────
     pm.add_session_row(
-        f'S{SESSION}', DATE, '✅ Done',
-        deliverables='KlimaTicket presets overhaul (6 nationwide + 20 regional, real 2026 prices). Delete All Trips with slide-to-confirm. Bug fixes: typeIcon crash, Expo Router route warning, RNGH-in-Modal, wrong AsyncStorage key.',
-        files='profile.tsx, stats.tsx, app/(tabs)/user.tsx, app/(tabs)/_user_styles.tsx (renamed)',
-        notes='3 compounding bugs in Delete All Trips: RNGH gestures dead in RN Modal (fixed with absolute overlay), runOnJS broken on web (fixed with .runOnJS(true)+setTimeout), wrong storage key @trips vs @travelapp_trips + initialTrips fallback (fixed with saveTrips([])).',
+        session      = "S13",
+        date         = "2026-03-17",
+        scope        = "Bug fixes #36/#37/#41 + UX fix #38 + full backlog brainstorm",
+        what         = (
+            "Fixed #36: handleDeleteAllTrips now clears @claimedQuests, @claimedAchievements, "
+            "@dailyQuestSelection, @weeklyQuestSelection via AsyncStorage.multiRemove. "
+            "Fixed #37: loadTrips() fallback changed from initialTrips to []. "
+            "Fixed #38: KlimaTicket dropdown closes on outside tap via absolute TouchableWithoutFeedback overlay. "
+            "Fixed #41: Stats screen — proper empty state (icon + CTA) replaces broken zero-data sections when totalTrips=0. "
+            "Quests screen — info banner added when trips.length=0. "
+            "Backlog brainstorm: 11 new items #41-#51 added. "
+            "pm_updater.py replaced with new v4-compatible version; merged cell bug in add_backlog_item fixed. "
+            "Files: app/stats.tsx, app/quests.tsx, app/profile.tsx, services/tripStorage.ts, pm_updater.py"
+        ),
+        why          = (
+            "#36/#37 are pre-prod blockers. "
+            "#38: open dropdown with no dismiss was a jarring UX gap. "
+            "#41: new users (post #37 fix) hit blank/broken screens immediately — empty states are critical for first impression."
+        ),
+        problems     = (
+            "pm_updater merged cell bug: add_backlog_item landed on openpyxl merged cell rows, "
+            "silently writing only column A. Fixed by calling ws.unmerge_cells() before writing."
+        ),
+        alternatives = (
+            "#38: TouchableWithoutFeedback wrapping ScrollView considered (interferes with scroll) — "
+            "absolute overlay chosen instead. "
+            "#41 Stats: considered keeping KlimaTicket card in empty state — removed to keep empty state clean."
+        ),
+        decisions    = (
+            "AsyncStorage.multiRemove is correct for atomic batch key deletion. "
+            "Absolute overlay (zIndex 10) is the standard dismiss pattern for inline dropdowns inside ScrollViews. "
+            "Stats empty state replaces ALL data sections when 0 trips — avoids zero-value noise."
+        ),
+        features_n   = 4,
+        effort       = "~3h",
+        thesis_tag   = "Bug Analysis / UX Design",
     )
-    pm.update_backlog_header(SESSION, DATE)
 
-    # ── 2. Backlog updates ────────────────────────────────────────────────
-    # No pre-existing backlog items completed this session (all cleared in S11)
-    # New bug fix backlog items added and immediately resolved:
-    pm.add_backlog_item(
-        32, 'Bug Fix', 'Fix typeIcon reference in stats.tsx',
-        'stats.tsx still referenced typeIcon() after S11 refactor renamed it to transportIcon()',
-        '🔴 Critical', 'XS (30m)', '✅ Done', f'S{SESSION}',
-        'One leftover call at line 330; renamed to transportIcon(item.type)',
-    )
-    pm.add_backlog_item(
-        33, 'Bug Fix', 'Rename user_styles.tsx to _user_styles.tsx',
-        'Expo Router treated user_styles.tsx as a route — missing default export warning',
-        '🟡 Medium', 'XS (15m)', '✅ Done', f'S{SESSION}',
-        'Prefixed with _ (Expo Router ignores underscore files). Updated import in user.tsx.',
-    )
-    pm.add_backlog_item(
-        34, 'Feature', 'KlimaTicket presets overhaul',
-        'Replace placeholder presets with real 2026 Austrian KlimaTicket prices grouped by Nationwide/Regional',
-        '🟠 High', 'S (2-4h)', '✅ Done', f'S{SESSION}',
-        'TICKET_GROUPS: 6 nationwide + 20 regional variants. Grouped dropdown with section headers and description field.',
-    )
-    pm.add_backlog_item(
-        35, 'Feature', 'Delete All Trips with slide-to-confirm',
-        'Danger Zone in profile — slide gesture confirmation before wiping all trips and XP',
-        '🟠 High', 'M (4-8h)', '✅ Done', f'S{SESSION}',
-        'SlideToDelete: RNGH Gesture.Pan().runOnJS(true) + absolute overlay (NOT RN Modal). saveTrips([]) to clear. useFocusEffect reloads trips+XP on return.',
-    )
+    # ── 4. MARK BACKLOG ITEMS DONE ────────────────────────────────────────────
+    pm.mark_backlog_done("36", "S13", "AsyncStorage.multiRemove for all 4 quest/achievement keys in handleDeleteAllTrips")
+    pm.mark_backlog_done("37", "S13", "Changed fallback from `return initialTrips` to `return []` in tripStorage.ts")
+    pm.mark_backlog_done("38", "S13", "Absolute TouchableWithoutFeedback overlay (zIndex 10) closes dropdown; dropdown at zIndex 11")
+    pm.mark_backlog_done("41", "S13", "Stats: full empty state replacing data sections. Quests: info banner.")
 
-    # ── 3. Feature Registry ───────────────────────────────────────────────
+    # ── 5. FEATURE REGISTRY ───────────────────────────────────────────────────
     pm.add_feature(
-        34, 'KlimaTicket Presets Overhaul', 'Feature', f'S{SESSION}',
-        'app/profile.tsx',
-        '26 presets in TICKET_GROUPS (nationwide 6 + regional 20) with real 2026 prices, descriptions, period field for monthly tickets. Grouped dropdown UI.',
-        xp_impact='No',
+        num           = 36,
+        name          = "Delete All — full quest/achievement state reset",
+        category      = "Bug Fix",
+        session       = "S13",
+        files         = "app/profile.tsx",
+        description   = "handleDeleteAllTrips now clears all 4 quest/achievement AsyncStorage keys atomically alongside trips+XP.",
+        xp_impact     = "Yes",
     )
     pm.add_feature(
-        35, 'Delete All Trips', 'Feature', f'S{SESSION}',
-        'app/profile.tsx, app/(tabs)/user.tsx',
-        'Danger Zone section → slide-to-confirm overlay → clears trips + XP + mainQuestCelebrated. useFocusEffect reloads state on return.',
-        xp_impact='Yes',
+        num           = 37,
+        name          = "Remove initialTrips demo data fallback",
+        category      = "Bug Fix",
+        session       = "S13",
+        files         = "services/tripStorage.ts",
+        description   = "loadTrips() now returns [] when storage key is absent — new users start with an empty trip list.",
+        xp_impact     = "—",
+    )
+    pm.add_feature(
+        num           = 38,
+        name          = "Dropdown close on outside tap",
+        category      = "UX",
+        session       = "S13",
+        files         = "app/profile.tsx",
+        description   = "KlimaTicket dropdown dismisses when tapping outside via absolute overlay — consistent with modal dismiss patterns.",
+        xp_impact     = "—",
+    )
+    pm.add_feature(
+        num           = 39,
+        name          = "Empty states — Stats & Quests screens",
+        category      = "UX",
+        session       = "S13",
+        files         = "app/stats.tsx, app/quests.tsx",
+        description   = "Stats: full empty state with icon + CTA replaces zero-data sections. Quests: info banner when trips=0.",
+        xp_impact     = "—",
     )
 
-    # ── 4. Milestones ─────────────────────────────────────────────────────
-    pm.add_velocity_row(f'S{SESSION}', 'Mar 16', 2, 35, 0, 'Feature + Bug Fix')
-    pm.update_sprint_plan(f'S{SESSION}', status_override='Done', confidence='Completed')
+    # ── 6. NEW BACKLOG ITEMS (brainstorm S13) ────────────────────────────────
+    # 🔴 Critical
+    pm.add_backlog_item(
+        num         = "41",
+        category    = "UX",
+        task        = "Empty states — Stats & Quests screens",
+        description = "New users (post #37 fix) land on Stats with empty/broken charts and Quests with all progress at 0. Both screens need proper empty state UI guiding users to add their first trip.",
+        priority    = "🔴 Critical",
+        effort      = "S (2-4h)",
+        target      = "S14",
+        notes       = "Stats: replace chart with illustration + CTA. Quests: show locked state with 'Add a trip to start earning XP' prompt.",
+    )
+    # 🟠 High
+    pm.add_backlog_item(
+        num         = "42",
+        category    = "UX",
+        task        = "Manual date/time for trips",
+        description = "Users can only log trips at the current moment. No way to backfill yesterday's commute. A date/time picker on the Add Trip modal is needed for real-world usage.",
+        priority    = "🟠 High",
+        effort      = "S (2-4h)",
+        target      = "Any",
+        notes       = "Add DateTimePicker (expo-datetime-picker or RN DateTimePicker) to QuickAddTripModal. Default to now, allow past dates.",
+    )
+    pm.add_backlog_item(
+        num         = "43",
+        category    = "Gamification",
+        task        = "Streak system",
+        description = "Track consecutive days the user logs at least one trip. Display streak on UserLevelCard. Streak loss is a powerful retention mechanic (loss aversion). Fits thesis well.",
+        priority    = "🟠 High",
+        effort      = "M (4-8h)",
+        target      = "Any",
+        notes       = "AsyncStorage key @currentStreak + @lastTripDate. Streak breaks if no trip logged by midnight. Consider streak freeze item as future extension.",
+    )
+    pm.add_backlog_item(
+        num         = "44",
+        category    = "Onboarding",
+        task        = "Onboarding rework package",
+        description = (
+            "Full onboarding overhaul before production: (1) new slide content + real images, "
+            "(2) personalization step — set name + KlimaTicket type inline so users skip empty profile, "
+            "(3) 'Add your first trip' prompt on completion. Package with PP3 (onboarding images)."
+        ),
+        priority    = "🟠 High",
+        effort      = "L (1-2d)",
+        target      = "Pre-launch",
+        notes       = "Supersedes PP3. Low current priority but must ship before production. Personalization step reduces time-to-value significantly.",
+    )
+    # 🟡 Medium
+    pm.add_backlog_item(
+        num         = "45",
+        category    = "UX",
+        task        = "Haptic feedback",
+        description = "Add haptic feedback on: trip add confirmation, XP toast, quest claim, level-up, slide-to-delete confirm. Quick win for perceived quality.",
+        priority    = "🟡 Medium",
+        effort      = "XS (1h)",
+        target      = "Any",
+        notes       = "Use expo-haptics. Haptics.impactAsync(ImpactFeedbackStyle.Medium) for most; Heavy for level-up.",
+    )
+    pm.add_backlog_item(
+        num         = "46",
+        category    = "UX",
+        task        = "Trip list search and filter",
+        description = "Once users have 30+ trips the flat list becomes unwieldy. Add search by origin/destination and filter by transport type and/or date range.",
+        priority    = "🟡 Medium",
+        effort      = "M (4-8h)",
+        target      = "Any",
+        notes       = "Filter bar above trip list in user.tsx. Client-side filtering on trips array — no API needed.",
+    )
+    # 🔵 Low
+    pm.add_backlog_item(
+        num         = "47",
+        category    = "Feature",
+        task        = "Recurring trip / one-tap repeat",
+        description = "Allow users to repeat a previous trip with one tap — pre-fills all fields from the last matching trip. Reduces friction for daily commuters.",
+        priority    = "🔵 Low",
+        effort      = "S (2-4h)",
+        target      = "Any",
+        notes       = "Could surface as a 'Repeat' button in TripDetailModal or as a quick-action in the favorites section.",
+    )
+    pm.add_backlog_item(
+        num         = "48",
+        category    = "Feature",
+        task        = "Push notifications",
+        description = "Streak-at-risk reminder (evening if no trip logged), daily quest expiry warning, weekly quest reset notification.",
+        priority    = "🔵 Low",
+        effort      = "M (4-8h)",
+        target      = "Any",
+        notes       = "Requires expo-notifications + user permission prompt. Schedule local notifications — no backend needed for streak/quest reminders.",
+    )
+    pm.add_backlog_item(
+        num         = "49",
+        category    = "Feature",
+        task        = "Shareable achievement cards",
+        description = "When a user unlocks an achievement, offer a screenshot-friendly share card (achievement name, icon, app branding). Social loop and organic marketing.",
+        priority    = "🔵 Low",
+        effort      = "S (2-4h)",
+        target      = "Any",
+        notes       = "Use expo-sharing + react-native-view-shot to capture the card as an image. Trigger from achievement claim.",
+    )
+    pm.add_backlog_item(
+        num         = "50",
+        category    = "Tech Debt",
+        task        = "Clean up stale XP seeding comment in user.tsx",
+        description = "Comment in user.tsx references 'ensuring 10 hardcoded dummy trips grant XP on fresh installs' — no longer true after #37 fix. Misleading for future devs.",
+        priority    = "🔵 Low",
+        effort      = "XS (5m)",
+        target      = "Any",
+        notes       = "One-line comment update in the XP init useEffect block.",
+    )
+    pm.add_backlog_item(
+        num         = "51",
+        category    = "UX",
+        task        = "Offline / API error indicator",
+        description = "When ÖBB API is unreachable, connection search fails silently. Show a small inline 'Offline — manual entry only' notice in QuickAddTripModal when API calls fail.",
+        priority    = "🔵 Low",
+        effort      = "XS (1h)",
+        target      = "Any",
+        notes       = "Catch fetch errors in oebbApi.ts and surface via a state flag in QuickAddTripModal. No retry logic needed.",
+    )
 
-    # ── 5. Architecture ───────────────────────────────────────────────────
-    pm.add_arch_session(
-        f'S{SESSION}', DATE,
-        files_added='None (profile.tsx, user.tsx, stats.tsx modified)',
-        key_decisions='RNGH gestures do NOT work inside RN Modal on mobile — use absolute-positioned View overlay instead. saveTrips([]) to clear trips (removeItem would trigger initialTrips fallback). useFocusEffect reloads trips+XP on every screen focus.',
-        asyncstorage_keys='None added',
-        notes='3 compounding bugs resolved in Delete All Trips feature. STORAGE_KEY=@travelapp_trips (not @trips). loadTrips() returns initialTrips when key missing.',
-    )
-
-    # ── 6. New backlog items identified at end of S12 ─────────────────────
-    pm.add_backlog_item(
-        36, 'Bug Fix', 'Delete All Trips — reset quests/achievements too',
-        'handleDeleteAllTrips clears trips+XP+mainQuestCelebrated but not @claimedQuests, @claimedAchievements, @dailyQuestSelection, @weeklyQuestSelection. User who resets sees stale claimed state.',
-        '🔴 Critical', 'XS (30m)', '⬜ Todo', 'S13',
-        'Add removeItem calls for all 4 keys in handleDeleteAllTrips in profile.tsx',
-    )
-    pm.add_backlog_item(
-        37, 'Bug Fix', 'Remove initialTrips demo data fallback',
-        'loadTrips() in tripStorage.ts returns 10 hardcoded dummy trips when key missing. New users see fake data. Pre-prod blocker.',
-        '🔴 Critical', 'XS (15m)', '⬜ Todo', 'S13',
-        'Change fallback from `return initialTrips` to `return []` in tripStorage.ts',
-    )
-    pm.add_backlog_item(
-        38, 'UX', 'Profile dropdown — close on outside tap',
-        'KlimaTicket dropdown in profile stays open when user taps outside. Should dismiss.',
-        '🟡 Medium', 'XS (30m)', '⬜ Todo', 'Any',
-        'Wrap screen in TouchableWithoutFeedback or use onStartShouldSetResponder pattern',
-    )
-    pm.add_backlog_item(
-        39, 'Feature', 'Cloud sync for trips (Supabase)',
-        'Trips stored in AsyncStorage only — new device login starts from scratch. Sync to Supabase trips table.',
-        '🟠 High', 'L (1-2d)', '⬜ Todo', 'Any',
-        'Requires Supabase trips table schema, upsert on save, fetch on login',
-    )
-    pm.add_backlog_item(
-        40, 'Feature', 'Trip export / CSV download',
-        'Allow users to export all trips as CSV for tax/Jobticket purposes.',
-        '🔵 Low', 'S (2-4h)', '⬜ Todo', 'Any',
-        'Use expo-sharing + expo-file-system to write and share CSV',
-    )
-    pm.update_dashboard_metrics(
-        sessions=SESSION,
-        features=35,
-        open_items=10,      # was 5, now +5 new items
-        prev_sessions=SESSION,
-        prev_features=35,
-        prev_open=5,
-        tech_debt_count=0,
-        preprod_count=4,    # initialTrips fallback is also a pre-prod blocker
-    )
-
-    # ── 7. Save ───────────────────────────────────────────────────────────
+    # ── 7. SAVE ───────────────────────────────────────────────────────────────
     pm.save()
+    print("\n=== Done. Narrative columns (Reflection, Theory Reference) "
+          "left as placeholders — enrich via web interface. ===\n")

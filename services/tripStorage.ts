@@ -36,10 +36,10 @@ export const loadTrips = async (): Promise<Trip[]> => {
         cost: parseFloat(trip.cost) || 0,
       }));
     }
-    return initialTrips;
+    return [];
   } catch (error) {
     console.error("Error loading trips:", error);
-    return initialTrips;
+    return [];
   }
 };
 

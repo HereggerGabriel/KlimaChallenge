@@ -8,7 +8,8 @@
       "Bash(npm install:*)",
       "Bash(python3 -c \"import openpyxl; print\\(''openpyxl available''\\)\")",
       "Bash(python -c \"import openpyxl; print\\(''openpyxl available''\\)\")",
-      "Bash(python update_pm.py)"
+      "Bash(python update_pm.py)",
+      "Bash(python pm_updater.py)"
     ],
     "additionalDirectories": [
       "f:\\projects\\TravelApp\\travelapp"

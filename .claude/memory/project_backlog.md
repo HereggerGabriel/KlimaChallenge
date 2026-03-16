@@ -51,6 +51,13 @@ type: project
 28. ~~**Quests entry point (UserLevelCard)**~~ — DONE. Bottom row tap → /quests.
 29. ~~**Achievements entry point (profile)**~~ — DONE. "View Achievements" button → /quests?tab=achievements.
 
+**Completed (session 13, 2026-03-17):**
+
+36. ~~**#36 Delete All — reset quests/achievements**~~ — DONE. `AsyncStorage.multiRemove` for all 4 quest/achievement keys in `handleDeleteAllTrips`.
+37. ~~**#37 Remove initialTrips demo fallback**~~ — DONE. `loadTrips()` returns `[]` when key absent.
+38. ~~**#38 Profile dropdown close on outside tap**~~ — DONE. Absolute `TouchableWithoutFeedback` overlay (zIndex 10).
+39. ~~**#41 Empty states — Stats & Quests**~~ — DONE. Stats: full empty state replacing zero-data sections. Quests: info banner.
+
 **Completed (session 9, 2026-03-16):**
 
 30. ~~**Stats & Insights screen**~~ — DONE. app/stats.tsx; 4 stat cards; KlimaTicket progress; WeeklyBarChart (custom View); Transport Mix; Top Routes; CO2 with long-press tooltip.
@@ -58,15 +65,29 @@ type: project
 32. ~~**Stats entry point (profile)**~~ — DONE. "Stats & Insights" button in profile → /stats.
 33. ~~**Normalise trip.date on load**~~ — CLOSED. Already resolved; `loadTrips()` does `date: new Date(trip.date)` on parse.
 
-**Remaining — Feature Backlog (priority order):**
+**Remaining — Feature Backlog (priority order, as of S13):**
 
-1. 🔴 **#36 Delete All Trips must also reset quests/achievements** — `handleDeleteAllTrips` clears trips+XP+mainQuestCelebrated but NOT `@claimedQuests`, `@claimedAchievements`, `@dailyQuestSelection`, `@weeklyQuestSelection`. User who resets sees stale claimed state. **Very high priority.**
-2. 🔴 **#37 Remove `initialTrips` demo data fallback** — `loadTrips()` in `tripStorage.ts` returns 10 hardcoded trips when key is missing. New users see fake data. Change fallback to `[]`. Pre-prod blocker.
-3. 🟡 **#38 Profile KlimaTicket dropdown — close on outside tap** — tapping outside the open dropdown does nothing; should close it.
-4. 🟠 **#39 Cloud sync for trips (Supabase)** — trips are AsyncStorage-only; logging in on a new device starts from scratch. Sync to Supabase trips table.
-5. 🔵 **#40 Trip export / CSV download** — useful for tax/Jobticket purposes; export all trips as CSV.
-6. **Pricing API research** — HAFAS proxy returns no ticket prices. Candidates: ÖBB Scotty API, VAO, scraping ÖBB.at.
-7. **More prefetched route prices** — add Graz, Salzburg, Innsbruck, Linz routes to ROUTE_PRICES in TripRouteFields.
+- 🟠 **#39** Cloud sync for trips (Supabase) — L effort
+- 🟠 **#42** Manual date/time for trips (backfill) — S effort
+- 🟠 **#43** Streak system — M effort
+- 🟠 **#44** Onboarding rework package — L effort, Pre-launch target
+- 🟡 **#45** Haptic feedback — XS effort
+- 🟡 **#46** Trip list search & filter — M effort
+- 🔵 **#40** Trip export / CSV — S effort
+- 🔵 **#47** Recurring trip / one-tap repeat — S effort
+- 🔵 **#48** Push notifications — M effort
+- 🔵 **#49** Shareable achievement cards — S effort
+- 🔵 **#50** Stale XP seeding comment cleanup — XS effort
+- 🔵 **#51** Offline / API error indicator — XS effort
+- 🟠 Pricing API investigation — M effort, Pre-release
+- 🔵 More prefetched route prices — XS effort
+
+**Pre-production checklist:**
+- PP1 🔴 Re-enable Supabase email confirmation
+- PP2 🟠 Resolve pricing API
+- PP3 🟡 Add onboarding images (`onboard1.png`, `onboard2.png`, `loginbg.png`)
+- PP4 🟡 App Store assets & metadata
+- PP5 🟡 Final regression pass + EAS build
 
 **Tech debt (session 11 — completed):**
 

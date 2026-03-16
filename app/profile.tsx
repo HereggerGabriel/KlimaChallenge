@@ -4,6 +4,7 @@ import {
 	ScrollView,
 	TextInput,
 	TouchableOpacity,
+	TouchableWithoutFeedback,
 	StyleSheet,
 	KeyboardAvoidingView,
 	Platform,
@@ -183,6 +184,12 @@ export default function ProfileScreen() {
 			saveTrips([]),
 			AsyncStorage.removeItem("userXP"),
 			AsyncStorage.removeItem("@mainQuestCelebrated"),
+			AsyncStorage.multiRemove([
+				"@claimedQuests",
+				"@claimedAchievements",
+				"@dailyQuestSelection",
+				"@weeklyQuestSelection",
+			]),
 		]);
 		setShowDeleteModal(false);
 	};
@@ -365,6 +372,13 @@ export default function ProfileScreen() {
 				</View>
 			</ScrollView>
 
+			{/* Dropdown dismiss overlay */}
+			{dropdownOpen && (
+				<TouchableWithoutFeedback onPress={() => setDropdownOpen(false)}>
+					<View style={styles.dropdownDismissOverlay} />
+				</TouchableWithoutFeedback>
+			)}
+
 			{/* Delete confirmation overlay (absolute, stays inside GestureHandlerRootView) */}
 			{showDeleteModal && (
 				<View style={styles.modalOverlay}>
@@ -514,6 +528,7 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		borderColor: "rgba(255,255,255,0.12)",
 		overflow: "hidden",
+		zIndex: 11,
 	},
 	dropdownGroupHeader: {
 		paddingHorizontal: 14,
@@ -627,6 +642,14 @@ const styles = StyleSheet.create({
 		color: Palette.red.light,
 		fontSize: 15,
 		fontWeight: "600",
+	},
+	dropdownDismissOverlay: {
+		position: "absolute",
+		top: 0,
+		left: 0,
+		right: 0,
+		bottom: 0,
+		zIndex: 10,
 	},
 	modalOverlay: {
 		position: "absolute",

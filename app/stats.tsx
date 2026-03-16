@@ -237,143 +237,155 @@ export default function StatsScreen() {
           <View style={{ width: 40 }} />
         </View>
 
-        {/* ── Overview cards ── */}
-        <View style={styles.cardGrid}>
-          <StatCard
-            icon="directions-transit"
-            label="Total Trips"
-            value={totalTrips.toString()}
-            color={Palette.green.mid}
-          />
-          <StatCard
-            icon="route"
-            label="Total Distance"
-            value={`${totalDistance} km`}
-            sub={`~${avgDistance.toFixed(1)} km/trip`}
-            color={Palette.blue.light}
-          />
-          <StatCard
-            icon="eco"
-            label="CO₂ Saved"
-            value={`${co2Saved.toFixed(1)} kg`}
-            sub="vs driving a car"
-            color={Palette.green.light}
-            onLongPress={() => setCo2TooltipVisible((v) => !v)}
-          />
-          <StatCard
-            icon="euro"
-            label="Avg Cost/Trip"
-            value={`€${avgCost.toFixed(2)}`}
-            sub={`€${totalCost.toFixed(0)} total`}
-            color={Palette.red.light}
-          />
-        </View>
-
-        {/* CO2 tooltip */}
-        {co2TooltipVisible && (
-          <View style={styles.tooltip}>
-            <MaterialIcons name="info-outline" size={14} color={Palette.green.light} style={{ marginTop: 1 }} />
-            <ThemedText style={styles.tooltipText}>
-              Estimated savings vs car: car emits ~0.21 kg CO₂/km, Austrian public transport ~0.05 kg/km. Difference: 0.16 kg/km × {totalDistance} km = {co2Saved.toFixed(1)} kg CO₂ saved.
-            </ThemedText>
-          </View>
-        )}
-
-        {/* ── KlimaTicket progress ── */}
-        <View style={styles.card}>
-          <View style={styles.klimaHeader}>
-            <View>
-              <ThemedText style={styles.klimaTitle}>KlimaTicket Progress</ThemedText>
-              <ThemedText style={styles.klimaSub}>
-                €{totalCost.toFixed(0)} covered of €{klimaTicketCost.toFixed(0)}
-              </ThemedText>
+        {totalTrips === 0 ? (
+          /* ── Empty state ── */
+          <View style={styles.emptyState}>
+            <View style={styles.emptyIconWrap}>
+              <MaterialIcons name="insights" size={40} color={Palette.green.mid} />
             </View>
-            <ThemedText style={[styles.klimaPct, { color: klimaPct >= 100 ? Palette.green.mid : '#fff' }]}>
-              {klimaPct.toFixed(0)}%
+            <ThemedText style={styles.emptyTitle}>No trips yet</ThemedText>
+            <ThemedText style={styles.emptyBody}>
+              Log your first public transport trip and your stats will appear here — distance, CO₂ savings, weekly activity and more.
             </ThemedText>
+            <TouchableOpacity style={styles.emptyButton} onPress={() => router.back()} activeOpacity={0.85}>
+              <MaterialIcons name="add" size={18} color="#fff" />
+              <ThemedText style={styles.emptyButtonText}>Log a Trip</ThemedText>
+            </TouchableOpacity>
           </View>
-          <View style={styles.progressBar}>
-            <View
-              style={[
-                styles.progressFill,
-                {
-                  width: `${klimaPct}%` as any,
-                  backgroundColor: klimaPct >= 100 ? Palette.green.mid : Palette.blue.light,
-                },
-              ]}
-            />
-          </View>
-          {klimaPct >= 100 ? (
-            <ThemedText style={styles.klimaDone}>Break-even reached!</ThemedText>
-          ) : (
-            <ThemedText style={styles.klimaRemaining}>
-              €{(klimaTicketCost - totalCost).toFixed(0)} remaining to break even
-            </ThemedText>
-          )}
-        </View>
-
-        {/* ── Weekly activity ── */}
-        <SectionTitle>Weekly Activity</SectionTitle>
-        <View style={styles.card}>
-          <WeeklyBarChart data={weeklyBarData} />
-          <ThemedText style={styles.chartLabel}>Trips per week (last 8 weeks)</ThemedText>
-        </View>
-
-        {/* ── Transport mix ── */}
-        {transportData.length > 0 && (
+        ) : (
           <>
-            <SectionTitle>Transport Mix</SectionTitle>
+            {/* ── Overview cards ── */}
+            <View style={styles.cardGrid}>
+              <StatCard
+                icon="directions-transit"
+                label="Total Trips"
+                value={totalTrips.toString()}
+                color={Palette.green.mid}
+              />
+              <StatCard
+                icon="route"
+                label="Total Distance"
+                value={`${totalDistance} km`}
+                sub={`~${avgDistance.toFixed(1)} km/trip`}
+                color={Palette.blue.light}
+              />
+              <StatCard
+                icon="eco"
+                label="CO₂ Saved"
+                value={`${co2Saved.toFixed(1)} kg`}
+                sub="vs driving a car"
+                color={Palette.green.light}
+                onLongPress={() => setCo2TooltipVisible((v) => !v)}
+              />
+              <StatCard
+                icon="euro"
+                label="Avg Cost/Trip"
+                value={`€${avgCost.toFixed(2)}`}
+                sub={`€${totalCost.toFixed(0)} total`}
+                color={Palette.red.light}
+              />
+            </View>
+
+            {/* CO2 tooltip */}
+            {co2TooltipVisible && (
+              <View style={styles.tooltip}>
+                <MaterialIcons name="info-outline" size={14} color={Palette.green.light} style={{ marginTop: 1 }} />
+                <ThemedText style={styles.tooltipText}>
+                  Estimated savings vs car: car emits ~0.21 kg CO₂/km, Austrian public transport ~0.05 kg/km. Difference: 0.16 kg/km × {totalDistance} km = {co2Saved.toFixed(1)} kg CO₂ saved.
+                </ThemedText>
+              </View>
+            )}
+
+            {/* ── KlimaTicket progress ── */}
             <View style={styles.card}>
-              {transportData.map((item) => (
-                <View key={item.type} style={styles.transportRow}>
-                  <View style={styles.transportLabelWrap}>
-                    <MaterialIcons name={transportIcon(item.type) as any} size={16} color={item.color} />
-                    <ThemedText style={styles.transportLabel}>{item.type}</ThemedText>
-                  </View>
-                  <View style={styles.transportBarWrap}>
-                    <View style={styles.transportBarTrack}>
-                      <View
-                        style={[
-                          styles.transportBarFill,
-                          { width: `${item.pct}%` as any, backgroundColor: item.color },
-                        ]}
-                      />
-                    </View>
-                  </View>
-                  <ThemedText style={styles.transportCount}>
-                    {item.count} <ThemedText style={styles.transportPct}>({item.pct.toFixed(0)}%)</ThemedText>
+              <View style={styles.klimaHeader}>
+                <View>
+                  <ThemedText style={styles.klimaTitle}>KlimaTicket Progress</ThemedText>
+                  <ThemedText style={styles.klimaSub}>
+                    €{totalCost.toFixed(0)} covered of €{klimaTicketCost.toFixed(0)}
                   </ThemedText>
                 </View>
-              ))}
+                <ThemedText style={[styles.klimaPct, { color: klimaPct >= 100 ? Palette.green.mid : '#fff' }]}>
+                  {klimaPct.toFixed(0)}%
+                </ThemedText>
+              </View>
+              <View style={styles.progressBar}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    {
+                      width: `${klimaPct}%` as any,
+                      backgroundColor: klimaPct >= 100 ? Palette.green.mid : Palette.blue.light,
+                    },
+                  ]}
+                />
+              </View>
+              {klimaPct >= 100 ? (
+                <ThemedText style={styles.klimaDone}>Break-even reached!</ThemedText>
+              ) : (
+                <ThemedText style={styles.klimaRemaining}>
+                  €{(klimaTicketCost - totalCost).toFixed(0)} remaining to break even
+                </ThemedText>
+              )}
             </View>
-          </>
-        )}
 
-        {/* ── Top routes ── */}
-        {topRoutes.length > 0 && (
-          <>
-            <SectionTitle>Top Routes</SectionTitle>
+            {/* ── Weekly activity ── */}
+            <SectionTitle>Weekly Activity</SectionTitle>
             <View style={styles.card}>
-              {topRoutes.map(([route, count], i) => (
-                <View key={route} style={[styles.routeRow, i < topRoutes.length - 1 && styles.routeRowBorder]}>
-                  <View style={styles.routeRank}>
-                    <ThemedText style={styles.routeRankText}>{i + 1}</ThemedText>
-                  </View>
-                  <ThemedText style={styles.routeLabel} numberOfLines={1}>{route}</ThemedText>
-                  <View style={styles.routeCountWrap}>
-                    <ThemedText style={styles.routeCount}>{count}×</ThemedText>
-                  </View>
-                </View>
-              ))}
+              <WeeklyBarChart data={weeklyBarData} />
+              <ThemedText style={styles.chartLabel}>Trips per week (last 8 weeks)</ThemedText>
             </View>
-          </>
-        )}
 
-        {totalTrips === 0 && (
-          <View style={styles.emptyState}>
-            <MaterialIcons name="insights" size={48} color="rgba(255,255,255,0.15)" />
-            <ThemedText style={styles.emptyText}>Log some trips to see your stats</ThemedText>
-          </View>
+            {/* ── Transport mix ── */}
+            {transportData.length > 0 && (
+              <>
+                <SectionTitle>Transport Mix</SectionTitle>
+                <View style={styles.card}>
+                  {transportData.map((item) => (
+                    <View key={item.type} style={styles.transportRow}>
+                      <View style={styles.transportLabelWrap}>
+                        <MaterialIcons name={transportIcon(item.type) as any} size={16} color={item.color} />
+                        <ThemedText style={styles.transportLabel}>{item.type}</ThemedText>
+                      </View>
+                      <View style={styles.transportBarWrap}>
+                        <View style={styles.transportBarTrack}>
+                          <View
+                            style={[
+                              styles.transportBarFill,
+                              { width: `${item.pct}%` as any, backgroundColor: item.color },
+                            ]}
+                          />
+                        </View>
+                      </View>
+                      <ThemedText style={styles.transportCount}>
+                        {item.count} <ThemedText style={styles.transportPct}>({item.pct.toFixed(0)}%)</ThemedText>
+                      </ThemedText>
+                    </View>
+                  ))}
+                </View>
+              </>
+            )}
+
+            {/* ── Top routes ── */}
+            {topRoutes.length > 0 && (
+              <>
+                <SectionTitle>Top Routes</SectionTitle>
+                <View style={styles.card}>
+                  {topRoutes.map(([route, count], i) => (
+                    <View key={route} style={[styles.routeRow, i < topRoutes.length - 1 && styles.routeRowBorder]}>
+                      <View style={styles.routeRank}>
+                        <ThemedText style={styles.routeRankText}>{i + 1}</ThemedText>
+                      </View>
+                      <ThemedText style={styles.routeLabel} numberOfLines={1}>{route}</ThemedText>
+                      <View style={styles.routeCountWrap}>
+                        <ThemedText style={styles.routeCount}>{count}×</ThemedText>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </>
+            )}
+          </>
         )}
       </ScrollView>
     </View>
@@ -632,11 +644,45 @@ const styles = StyleSheet.create({
   // Empty state
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 48,
-    gap: 12,
+    paddingVertical: 64,
+    paddingHorizontal: 32,
+    gap: 16,
   },
-  emptyText: {
+  emptyIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 24,
+    backgroundColor: Palette.green.mid + '1A',
+    borderWidth: 1,
+    borderColor: Palette.green.mid + '33',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  emptyBody: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.3)',
+    color: 'rgba(255,255,255,0.45)',
+    textAlign: 'center',
+    lineHeight: 21,
+  },
+  emptyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+    backgroundColor: Palette.green.mid,
+    paddingHorizontal: 24,
+    paddingVertical: 13,
+    borderRadius: 12,
+  },
+  emptyButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
   },
 });

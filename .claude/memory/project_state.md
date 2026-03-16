@@ -1,6 +1,6 @@
 ---
 name: TravelApp current project state
-description: Current state of the TravelApp React Native / Expo project as of 2026-03-16 session 11 (all tech debt cleared)
+description: Current state of the TravelApp React Native / Expo project as of 2026-03-17 session 13
 type: project
 ---
 
@@ -25,7 +25,7 @@ A React Native / Expo app for tracking public transport trips (bus, train, tram,
 - `app/onboarding.tsx` — 3-slide FRE pager; tappable dots; "Get Started →" only on last slide
 - `app/login.tsx` — ImageBackground + dark gradient, LoginForm
 - `app/register.tsx` — same dark design as login, RegisterForm
-- `app/profile.tsx` — name + KlimaTicket type/cost selector; avatar; entry points to Stats and Achievements; Danger Zone with Delete All Trips (slide-to-confirm). KlimaTicket uses `TICKET_GROUPS` (nationwide 6 + regional 20 presets with real 2026 prices). `SlideToDelete` uses RNGH `Gesture.Pan().runOnJS(true)` + absolute overlay (NOT RN Modal — RNGH gestures don't work in RN Modal on mobile). `handleDeleteAllTrips` calls `saveTrips([])` — never `removeItem("@trips")` (wrong key + would restore demo data).
+- `app/profile.tsx` — name + KlimaTicket type/cost selector; avatar; entry points to Stats and Achievements; Danger Zone with Delete All Trips (slide-to-confirm). KlimaTicket uses `TICKET_GROUPS` (nationwide 6 + regional 20 presets with real 2026 prices). `SlideToDelete` uses RNGH `Gesture.Pan().runOnJS(true)` + absolute overlay (NOT RN Modal — RNGH gestures don't work in RN Modal on mobile). `handleDeleteAllTrips` calls `saveTrips([])` + `AsyncStorage.multiRemove` for all 4 quest/achievement keys. KlimaTicket dropdown closes on outside tap via absolute `TouchableWithoutFeedback` overlay (zIndex 10); dropdown at zIndex 11.
 - `app/quests.tsx` — Quests & Achievements screen (segmented control); daily/weekly/milestone quests + achievements grid; main quest featured card
 - `app/stats.tsx` — Stats & Insights screen (new, session 9); overview cards, weekly bar chart, transport mix, top routes, KlimaTicket progress
 - `app/(tabs)/_layout.tsx` — Tabs with hidden tab bar, single screen `user`
@@ -44,7 +44,7 @@ A React Native / Expo app for tracking public transport trips (bus, train, tram,
 - `components/ui/RegisterForm.tsx` — Supabase signUp with name metadata, dark Palette style, success state
 - `components/ui/FinancialOverview.tsx` — collapsible savings card; donut circle (SVG) is tappable → `onStatsPress` prop → `/stats`
 - `components/ui/UserLevelCard.tsx` — XP/level display, animated progress bar; bottom row links to `/quests` via `onQuestsPress` prop
-- `components/ui/QuickAddTripModal.tsx` — add trip modal; fully dark theme; uses TripRouteFields; 400ms debounce on ÖBB search
+- `components/ui/QuickAddTripModal.tsx` — add trip modal; fully dark theme; uses TripRouteFields
 - `components/ui/TripDetailModal.tsx` — trip detail + edit + delete modal; uses TripRouteFields in edit mode
 - `components/ui/TripRouteFields.tsx` — shared route input component; price autofill, distance estimate, suggestions dropdown; dark theme only (light theme removed S11)
 - `components/ui/XPToast.tsx` — floating "+XP" badge animation (Reanimated spring+float)
@@ -61,9 +61,8 @@ A React Native / Expo app for tracking public transport trips (bus, train, tram,
 4. Favorites section (hold-to-add RNGH); star icon in title
 5. Recent Trips — clock icon; shows 5 by default; "Show all X / Show less" toggle; transport accent bars; tap opens TripDetailModal
 6. Log Out button — red-bordered, bottom of screen
-- Wrapped in `<View style={styles.root}>` with `XPToast`, `LevelUpOverlay`, `MainQuestOverlay` outside ScrollView
-- `checkMainQuest(allTrips, ticketCost)` called (with await) after every trip add; one-time flag `@mainQuestCelebrated`
-- `favorites` and `recentPlaces` both memoized with `useMemo([trips])`
+- Wrapped in `<View style={{flex:1}}>` with `XPToast`, `LevelUpOverlay`, `MainQuestOverlay` outside ScrollView
+- `checkMainQuest(allTrips, ticketCost)` called after every trip add; one-time flag `@mainQuestCelebrated`
 - `useFocusEffect` reloads both profile AND trips+XP from AsyncStorage on every screen focus (added S12 to catch external mutations like Delete All Trips)
 
 **`app/profile.tsx`:**
@@ -72,6 +71,7 @@ A React Native / Expo app for tracking public transport trips (bus, train, tram,
 
 **`app/quests.tsx`:**
 - AsyncStorage keys: `@claimedQuests` (JSON array of claim keys), `@claimedAchievements` (JSON array of IDs), `@dailyQuestSelection`, `@weeklyQuestSelection`
+- **Empty state banner**: when `trips.length === 0`, info banner shown at top of Quests tab ("Log your first trip to start making quest progress")
 - Quest rotation: `loadOrRefreshSelection` stores `{period, ids}` by date/weekStart key; regenerates on new period
 - Quests tab: `MainQuestFeaturedCard` at top (red border, progress bar, CLAIM 2000 XP); Daily (3/8); Weekly (3/8); Milestones (9/9)
 - Achievements tab: global total row + 5 category sections; 2-col grid with lock overlay, progress bars, CLAIM
@@ -80,6 +80,7 @@ A React Native / Expo app for tracking public transport trips (bus, train, tram,
 **`app/stats.tsx`:**
 - CO2 factor: 0.16 kg/km (car 0.21 − PT 0.05)
 - Sections: 4 stat cards (trips, distance, CO2 with long-press tooltip, avg cost); KlimaTicket progress bar; WeeklyBarChart (custom View-based, last 8 ISO weeks); Transport Mix (horizontal bars); Top Routes (ranked list, top 5)
+- **Empty state**: when `totalTrips === 0`, all data sections replaced by icon + title + body + "Log a Trip" CTA button (routes back). No zero-value noise for new users.
 - Entry: profile "Stats & Insights" button + tapping donut in FinancialOverview
 
 **XP / level system:**
