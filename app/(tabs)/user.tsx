@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { ScrollView, TouchableOpacity, View, ActivityIndicator, StyleSheet } from "react-native";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { ScrollView, TouchableOpacity, View, ActivityIndicator } from "react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, {
 	useSharedValue,
@@ -31,19 +31,10 @@ import { Trip } from "@/types/trip";
 import { loadTrips, saveTrips } from "@/services/tripStorage";
 import { styles } from "./user_styles";
 import { supabase } from "@/lib/supabase";
+import { TRANSPORT_COLOR } from "@/constants/transport";
 
 const TRIPS_PREVIEW = 5;
 
-const TRANSPORT_ACCENT: Record<string, string> = {
-	Bus: Palette.blue.mid,
-	Train: Palette.green.mid,
-	Tram: Palette.blue.light,
-	Subway: Palette.green.dark,
-};
-
-function transportAccent(type: string): string {
-	return TRANSPORT_ACCENT[type] ?? Palette.blue.mid;
-}
 
 type FavoriteTrip = {
 	origin: string;
@@ -195,7 +186,7 @@ export default function UserScreen() {
 		}
 	}, [trips, isLoading]);
 
-	const favorites = computeFavorites(trips);
+	const favorites = useMemo(() => computeFavorites(trips), [trips]);
 
 	const handleLogout = async () => {
 		await supabase.auth.signOut();
@@ -261,7 +252,7 @@ export default function UserScreen() {
 		setUserLevel(newLevel);
 		const updatedTrips = [newTrip, ...trips];
 		setTrips(updatedTrips);
-		checkMainQuest(updatedTrips, klimaTicketCost);
+		await checkMainQuest(updatedTrips, klimaTicketCost);
 	};
 
 	const handleQuickAddSubmit = async (tripData: {
@@ -296,7 +287,7 @@ export default function UserScreen() {
 		const updatedTrips = [newTrip, ...trips];
 		setTrips(updatedTrips);
 		setShowQuickAdd(false);
-		checkMainQuest(updatedTrips, klimaTicketCost);
+		await checkMainQuest(updatedTrips, klimaTicketCost);
 	};
 
 	const formatDate = (date: Date) => {
@@ -319,14 +310,14 @@ export default function UserScreen() {
 	const totalDistance = trips.reduce((sum, trip) => sum + trip.distance, 0);
 	const visibleTrips = showAllTrips ? trips : trips.slice(0, TRIPS_PREVIEW);
 
-	const recentPlaces = (() => {
+	const recentPlaces = useMemo(() => {
 		const counts = new Map<string, number>();
 		for (const t of trips) {
 			counts.set(t.origin, (counts.get(t.origin) ?? 0) + 1);
 			counts.set(t.destination, (counts.get(t.destination) ?? 0) + 1);
 		}
 		return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([p]) => p);
-	})();
+	}, [trips]);
 
 	if (isLoading) {
 		return (
@@ -337,7 +328,7 @@ export default function UserScreen() {
 	}
 
 	return (
-		<View style={screenStyles.root}>
+		<View style={styles.root}>
 		<ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
 			{/* Header */}
 			<View style={styles.header}>
@@ -368,6 +359,7 @@ export default function UserScreen() {
 				totalDistance={totalDistance}
 				totalCost={totalCost}
 				klimaTicketCost={klimaTicketCost}
+				onStatsPress={() => router.push('/stats')}
 			/>
 
 			{/* Favorites */}
@@ -424,7 +416,7 @@ export default function UserScreen() {
 					<TouchableOpacity key={trip.id} onPress={() => handleTripPress(trip)} activeOpacity={0.75}>
 						<View style={styles.tripCard}>
 							<View
-								style={[styles.tripAccentBar, { backgroundColor: transportAccent(trip.transportType) }]}
+								style={[styles.tripAccentBar, { backgroundColor: TRANSPORT_COLOR[trip.transportType] ?? Palette.blue.mid }]}
 							/>
 							<View style={styles.tripCardContent}>
 								<View style={styles.tripHeader}>
@@ -520,8 +512,3 @@ export default function UserScreen() {
 	);
 }
 
-const screenStyles = StyleSheet.create({
-	root: {
-		flex: 1,
-	},
-});

@@ -4,7 +4,14 @@
       "Bash(node -e \":*)",
       "Bash(python -c \":*)",
       "Bash(pip show:*)",
-      "Bash(python3 -c \":*)"
+      "Bash(python3 -c \":*)",
+      "Bash(npm install:*)",
+      "Bash(python3 -c \"import openpyxl; print\\(''openpyxl available''\\)\")",
+      "Bash(python -c \"import openpyxl; print\\(''openpyxl available''\\)\")",
+      "Bash(python update_pm.py)"
+    ],
+    "additionalDirectories": [
+      "f:\\projects\\TravelApp\\travelapp"
     ]
   }
 }

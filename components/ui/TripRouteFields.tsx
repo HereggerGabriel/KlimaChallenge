@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
-import { IconSymbol } from "@/components/ui/IconSymbol";
 import { Palette } from "@/constants/Colors";
 import { estimateDistanceKm } from "@/services/oebbApi";
 
@@ -48,8 +47,6 @@ type TripRouteFieldsProps = {
 	onDistanceChange: (v: string) => void;
 	transportType: string;
 	recentPlaces?: string[];
-	/** 'light' = QuickAdd style (gray inputs, icons). 'dark' = Edit style (dark inputs, labels). */
-	theme?: "light" | "dark";
 	/** Set false to hide the distance row (render it yourself below). Defaults to true. */
 	showDistance?: boolean;
 };
@@ -65,11 +62,8 @@ export function TripRouteFields({
 	onDistanceChange,
 	transportType,
 	recentPlaces = [],
-	theme = "light",
 	showDistance = true,
 }: TripRouteFieldsProps) {
-	const dark = theme === "dark";
-
 	const [originSelected, setOriginSelected] = useState(false);
 	const [destSelected, setDestSelected] = useState(false);
 	const [estimatingDistance, setEstimatingDistance] = useState(false);
@@ -82,8 +76,9 @@ export function TripRouteFields({
 		? recentPlaces.filter((p) => p.toLowerCase().includes(destination.toLowerCase()) && p !== destination).slice(0, 5)
 		: [];
 
-	// Price autofill when origin/destination/transport changes and cost is empty
-	// Skip on initial mount so opening the modal doesn't pre-fill the price
+	// Price autofill when origin/destination/transport changes and cost is empty.
+	// Skip on initial mount so opening the modal doesn't pre-fill the price.
+	// eslint-disable-next-line react-hooks/exhaustive-deps
 	useEffect(() => {
 		if (!mountedRef.current) {
 			mountedRef.current = true;
@@ -118,21 +113,20 @@ export function TripRouteFields({
 	return (
 		<View>
 			{/* Origin */}
-			{dark && <ThemedText style={styles.label}>Origin</ThemedText>}
+			<ThemedText style={styles.label}>Origin</ThemedText>
 			<View>
-				<View style={dark ? styles.darkInputRow : styles.lightInputContainer}>
-					{!dark && <IconSymbol name="mappin.circle.fill" size={20} color={Palette.blue.mid} />}
+				<View style={styles.inputRow}>
 					<TextInput
-						style={dark ? styles.darkInput : styles.lightInput}
+						style={styles.input}
 						value={origin}
 						onChangeText={(v) => { onOriginChange(v); setOriginSelected(false); }}
 						placeholder="Origin"
-						placeholderTextColor={dark ? "rgba(255,255,255,0.3)" : "#666"}
+						placeholderTextColor="rgba(255,255,255,0.3)"
 					/>
 				</View>
 				{originSuggestions.length > 0 && (
 					<ScrollView
-						style={dark ? styles.darkSuggestionList : styles.lightSuggestionList}
+						style={styles.suggestionList}
 						keyboardShouldPersistTaps="always"
 						scrollEnabled={false}
 					>
@@ -142,10 +136,8 @@ export function TripRouteFields({
 								style={styles.suggestionItem}
 								onPress={() => { onOriginChange(place); setOriginSelected(true); }}
 							>
-								<MaterialIcons name="history" size={14} color={dark ? "rgba(255,255,255,0.4)" : "#999"} />
-								<ThemedText style={dark ? styles.darkSuggestionText : styles.lightSuggestionText}>
-									{place}
-								</ThemedText>
+								<MaterialIcons name="history" size={14} color="rgba(255,255,255,0.4)" />
+								<ThemedText style={styles.suggestionText}>{place}</ThemedText>
 							</Pressable>
 						))}
 					</ScrollView>
@@ -158,21 +150,20 @@ export function TripRouteFields({
 			</TouchableOpacity>
 
 			{/* Destination */}
-			{dark && <ThemedText style={styles.label}>Destination</ThemedText>}
+			<ThemedText style={styles.label}>Destination</ThemedText>
 			<View>
-				<View style={dark ? styles.darkInputRow : [styles.lightInputContainer, styles.lightInputContainerNoMargin]}>
-					{!dark && <IconSymbol name="mappin.circle.fill" size={20} color={Palette.green.mid} />}
+				<View style={styles.inputRow}>
 					<TextInput
-						style={dark ? styles.darkInput : styles.lightInput}
+						style={styles.input}
 						value={destination}
 						onChangeText={(v) => { onDestinationChange(v); setDestSelected(false); }}
 						placeholder="Destination"
-						placeholderTextColor={dark ? "rgba(255,255,255,0.3)" : "#666"}
+						placeholderTextColor="rgba(255,255,255,0.3)"
 					/>
 				</View>
 				{destSuggestions.length > 0 && (
 					<ScrollView
-						style={dark ? styles.darkSuggestionList : styles.lightSuggestionList}
+						style={styles.suggestionList}
 						keyboardShouldPersistTaps="always"
 						scrollEnabled={false}
 					>
@@ -182,10 +173,8 @@ export function TripRouteFields({
 								style={styles.suggestionItem}
 								onPress={() => { onDestinationChange(place); setDestSelected(true); }}
 							>
-								<MaterialIcons name="history" size={14} color={dark ? "rgba(255,255,255,0.4)" : "#999"} />
-								<ThemedText style={dark ? styles.darkSuggestionText : styles.lightSuggestionText}>
-									{place}
-								</ThemedText>
+								<MaterialIcons name="history" size={14} color="rgba(255,255,255,0.4)" />
+								<ThemedText style={styles.suggestionText}>{place}</ThemedText>
 							</Pressable>
 						))}
 					</ScrollView>
@@ -194,16 +183,15 @@ export function TripRouteFields({
 
 			{/* Distance field with Estimate button */}
 			{showDistance && <>
-				{dark && <ThemedText style={styles.label}>Distance (km)</ThemedText>}
-				<View style={dark ? styles.darkInputRow : styles.lightInputContainer}>
-					{!dark && <IconSymbol name="ruler" size={20} color={Palette.blue.mid} />}
+				<ThemedText style={styles.label}>Distance (km)</ThemedText>
+				<View style={styles.inputRow}>
 					<TextInput
-						style={dark ? styles.darkInput : styles.lightInput}
+						style={styles.input}
 						value={distance}
 						onChangeText={onDistanceChange}
 						placeholder="Distance (km)"
 						keyboardType="numeric"
-						placeholderTextColor={dark ? "rgba(255,255,255,0.3)" : "#666"}
+						placeholderTextColor="rgba(255,255,255,0.3)"
 					/>
 					{canEstimate && (
 						<TouchableOpacity
@@ -233,38 +221,7 @@ const styles = StyleSheet.create({
 		marginBottom: 5,
 		marginTop: 6,
 	},
-	// Light theme (QuickAddTripModal)
-	lightInputContainer: {
-		flexDirection: "row",
-		alignItems: "center",
-		backgroundColor: "#f5f5f5",
-		padding: 12,
-		borderRadius: 8,
-		marginBottom: 4,
-	},
-	lightInputContainerNoMargin: {
-		marginBottom: 0,
-	},
-	lightInput: {
-		flex: 1,
-		marginLeft: 8,
-		fontSize: 16,
-		color: "#000",
-	},
-	lightSuggestionList: {
-		backgroundColor: "#f0f0f0",
-		borderRadius: 8,
-		marginBottom: 8,
-		overflow: "hidden",
-		borderWidth: 1,
-		borderColor: "#ddd",
-	},
-	lightSuggestionText: {
-		fontSize: 14,
-		color: "#222",
-	},
-	// Dark theme (TripDetailModal)
-	darkInputRow: {
+	inputRow: {
 		flexDirection: "row",
 		alignItems: "center",
 		backgroundColor: "rgba(255,255,255,0.08)",
@@ -274,12 +231,12 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 14,
 		paddingVertical: 11,
 	},
-	darkInput: {
+	input: {
 		flex: 1,
 		color: "#fff",
 		fontSize: 15,
 	},
-	darkSuggestionList: {
+	suggestionList: {
 		backgroundColor: "rgba(255,255,255,0.06)",
 		borderRadius: 8,
 		marginTop: 2,
@@ -288,11 +245,10 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		borderColor: "rgba(255,255,255,0.12)",
 	},
-	darkSuggestionText: {
+	suggestionText: {
 		fontSize: 14,
 		color: "rgba(255,255,255,0.85)",
 	},
-	// Shared
 	suggestionItem: {
 		flexDirection: "row",
 		alignItems: "center",

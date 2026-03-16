@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
 	Modal,
 	View,
@@ -62,24 +62,28 @@ export function QuickAddTripModal({ visible, onClose, onSubmit, recentPlaces = [
 	const [showConnections, setShowConnections] = useState(false);
 	const [selectedConnectionIndex, setSelectedConnectionIndex] = useState<number | null>(null);
 	const [estimatingDistance, setEstimatingDistance] = useState(false);
+	const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const canSearch = origin.trim().length > 0 && destination.trim().length > 0;
 
-	const handleSearchOebb = async () => {
-		setLoadingConnections(true);
-		setConnectionError("");
-		setShowConnections(false);
-		setSelectedConnectionIndex(null);
-		try {
-			const { journeys, fromStation, toStation } = await searchConnections(origin.trim(), destination.trim(), new Date(), 5);
-			setConnections(journeys);
-			setSearchedStations({ from: fromStation, to: toStation });
-			setShowConnections(true);
-		} catch (e: any) {
-			setConnectionError(e.message ?? "Search failed");
-		} finally {
-			setLoadingConnections(false);
-		}
+	const handleSearchOebb = () => {
+		if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+		searchDebounceRef.current = setTimeout(async () => {
+			setLoadingConnections(true);
+			setConnectionError("");
+			setShowConnections(false);
+			setSelectedConnectionIndex(null);
+			try {
+				const { journeys, fromStation, toStation } = await searchConnections(origin.trim(), destination.trim(), new Date(), 5);
+				setConnections(journeys);
+				setSearchedStations({ from: fromStation, to: toStation });
+				setShowConnections(true);
+			} catch (e: any) {
+				setConnectionError(e.message ?? "Search failed");
+			} finally {
+				setLoadingConnections(false);
+			}
+		}, 400);
 	};
 
 	const handleSelectConnection = (journey: OebbJourney, index: number) => {

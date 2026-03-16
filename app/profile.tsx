@@ -100,6 +100,17 @@ export default function ProfileScreen() {
 					</View>
 				</View>
 
+				{/* Stats shortcut */}
+				<TouchableOpacity
+					style={styles.achievementsButton}
+					onPress={() => router.push('/stats')}
+					activeOpacity={0.8}
+				>
+					<MaterialIcons name="insights" size={20} color={Palette.blue.light} />
+					<ThemedText style={styles.achievementsButtonText}>Stats & Insights</ThemedText>
+					<MaterialIcons name="chevron-right" size={20} color="rgba(255,255,255,0.4)" />
+				</TouchableOpacity>
+
 				{/* Achievements shortcut */}
 				<TouchableOpacity
 					style={styles.achievementsButton}

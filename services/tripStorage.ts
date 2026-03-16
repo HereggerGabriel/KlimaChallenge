@@ -50,8 +50,3 @@ export const saveTrips = async (trips: Trip[]): Promise<void> => {
     console.error("Error saving trips:", error);
   }
 };
-
-export const getTripById = async (id: string): Promise<Trip | null> => {
-  const trips = await loadTrips();
-  return trips.find((t) => t.id === id) ?? null;
-};

@@ -2,6 +2,9 @@ import { StyleSheet } from "react-native";
 import { Palette } from "@/constants/Colors";
 
 export const styles = StyleSheet.create({
+	root: {
+		flex: 1,
+	},
 	container: {
 		flex: 1,
 		backgroundColor: Palette.blue.dark,

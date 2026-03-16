@@ -1,0 +1,109 @@
+---
+name: TravelApp current project state
+description: Current state of the TravelApp React Native / Expo project as of 2026-03-16 session 11 (all tech debt cleared)
+type: project
+---
+
+A React Native / Expo app for tracking public transport trips (bus, train, tram, subway) in Austria. Users log trips, track costs vs. KlimaTicket savings, earn XP/levels, complete quests, unlock achievements, and view stats & insights.
+
+**Stack:** Expo SDK 54, Expo Router v6 (file-based), TypeScript, AsyncStorage, react-native-gesture-handler ~2.28.0, react-native-reanimated ~4.1.1, react-native-svg 15.12.1, Supabase (real auth — project `vbjpigfbwvetsaoxpogd`), NativeWind (CSS), expo-linear-gradient, @expo/vector-icons/MaterialIcons. No axios — uses built-in fetch. Note: `react-native-gifted-charts` was tried and removed (Metro bundler resolution bug).
+
+**Route architecture:**
+- Pre-auth flow: `/` → `/onboarding` → `/login` → `/(tabs)/user`
+- Auth gate: `supabase.auth.getSession()` in splash screen
+- Non-tab screens (stack-routed): `/quests`, `/stats`, `/profile`
+- `app/index.tsx` (splash): checks Supabase session → routes to `/(tabs)/user` or `/onboarding`
+- Logout: `supabase.auth.signOut()`, routes to `/onboarding`
+
+**Tab group:**
+- Tab bar is HIDDEN (`tabBarStyle: { display: "none" }`)
+- Only one screen: `/(tabs)/user` — the main authenticated screen
+
+**Key file structure:**
+- `app/_layout.tsx` — root layout, wraps app in `GestureHandlerRootView`; imports `react-native-url-polyfill/auto`
+- `app/index.tsx` — animated splash (Reanimated scale+fade, 2s), checks Supabase session
+- `app/onboarding.tsx` — 3-slide FRE pager; tappable dots; "Get Started →" only on last slide
+- `app/login.tsx` — ImageBackground + dark gradient, LoginForm
+- `app/register.tsx` — same dark design as login, RegisterForm
+- `app/profile.tsx` — name + KlimaTicket type/cost selector (presets + custom); avatar; entry points to Stats and Achievements
+- `app/quests.tsx` — Quests & Achievements screen (segmented control); daily/weekly/milestone quests + achievements grid; main quest featured card
+- `app/stats.tsx` — Stats & Insights screen (new, session 9); overview cards, weekly bar chart, transport mix, top routes, KlimaTicket progress
+- `app/(tabs)/_layout.tsx` — Tabs with hidden tab bar, single screen `user`
+- `app/(tabs)/user.tsx` — main screen (see below)
+- `app/(tabs)/user_styles.tsx` — styles for user.tsx; includes `root: { flex: 1 }`
+- `lib/supabase.ts` — singleton Supabase client (AsyncStorage session persistence, Constants fallback for URL/key)
+- `services/tripStorage.ts` — AsyncStorage CRUD for trips; `loadTrips()` coerces distance+cost to float
+- `services/oebbApi.ts` — OeBB REST API service; base URL `https://oebb.macistry.com/api`; searchStation, searchConnections (returns ConnectionSearchResult), mapTransportType, summariseJourney (with fallback haversine distance), estimateDistanceKm
+- `types/trip.ts` — Trip interface: id, date, origin, destination, transportType, cost, distance, description
+- `utils/levelSystem.ts` — XP/level calc; exports `getLevelTitle`, `getXPForTrip`, `calculateLevel`, etc.
+- `utils/questSystem.ts` — Quest types, DAILY_QUEST_POOL (8), WEEKLY_QUEST_POOL (8), MILESTONE_QUESTS (9), MAIN_QUEST_ID/XP/CELEBRATED_KEY, pickRandomQuests, getClaimKey, timeUntilMidnight, daysUntilMonday
+- `utils/achievementSystem.ts` — Achievement types, ACHIEVEMENTS (19), ACHIEVEMENT_CATEGORIES, computeStreak, computeSavedVsCar
+- `constants/Colors.ts` — exports `Palette` (custom 9-color system)
+- `constants/transport.ts` — exports `TRANSPORT_COLOR` (Bus=blue.mid, Train=green.mid, Tram=red.light, Subway=green.dark) and `transportIcon(type)` returning MaterialIcons name; single source of truth for transport styling
+- `components/ui/LoginForm.tsx` — Supabase signInWithPassword, dark Palette style
+- `components/ui/RegisterForm.tsx` — Supabase signUp with name metadata, dark Palette style, success state
+- `components/ui/FinancialOverview.tsx` — collapsible savings card; donut circle (SVG) is tappable → `onStatsPress` prop → `/stats`
+- `components/ui/UserLevelCard.tsx` — XP/level display, animated progress bar; bottom row links to `/quests` via `onQuestsPress` prop
+- `components/ui/QuickAddTripModal.tsx` — add trip modal; fully dark theme; uses TripRouteFields; 400ms debounce on ÖBB search
+- `components/ui/TripDetailModal.tsx` — trip detail + edit + delete modal; uses TripRouteFields in edit mode
+- `components/ui/TripRouteFields.tsx` — shared route input component; price autofill, distance estimate, suggestions dropdown; dark theme only (light theme removed S11)
+- `components/ui/XPToast.tsx` — floating "+XP" badge animation (Reanimated spring+float)
+- `components/ui/LevelUpOverlay.tsx` — full-screen level-up celebration overlay (auto-dismisses ~2.8s)
+- `components/ui/MainQuestOverlay.tsx` — full-screen Main Quest celebration (6 floating stars, card spring-in, stats, Claim CTA); triggered when totalCost >= klimaTicketCost for the first time
+- `KlimaChallenge_PM.xlsx` — project management Excel file (dashboard, backlog, milestones, architecture, feature registry)
+- `pm_updater.py` — Python helper script for updating the PM Excel; use `PMUpdater` class; call at end of each session instead of writing one-off scripts. Has `__main__` template block — fill values and run `python pm_updater.py`. Dashboard: Row 5 = headers, Row 6 = current values, Row 7 = previous values.
+- `.claude/memory/` — project memory files (version-controlled in git); always update both this folder AND `C:\Users\gabri\.claude\projects\f--projects-TravelApp-travelapp\memory\` in sync.
+
+**`/(tabs)/user.tsx` — main screen layout:**
+1. Header: "My Climate Journey" title + subtitle (paddingTop: 52)
+2. `UserLevelCard` — animated XP bar; bottom row: "Quests & Achievements" → `/quests`
+3. `FinancialOverview` — collapsible financial card; donut tappable → `/stats`
+4. Favorites section (hold-to-add RNGH); star icon in title
+5. Recent Trips — clock icon; shows 5 by default; "Show all X / Show less" toggle; transport accent bars; tap opens TripDetailModal
+6. Log Out button — red-bordered, bottom of screen
+- Wrapped in `<View style={styles.root}>` with `XPToast`, `LevelUpOverlay`, `MainQuestOverlay` outside ScrollView
+- `checkMainQuest(allTrips, ticketCost)` called (with await) after every trip add; one-time flag `@mainQuestCelebrated`
+- `favorites` and `recentPlaces` both memoized with `useMemo([trips])`
+
+**`app/profile.tsx`:**
+- Avatar (initials), name input, KlimaTicket type dropdown (presets + custom), Save button
+- Entry points: "Stats & Insights" → `/stats`; "View Achievements" → `/quests?tab=achievements`
+
+**`app/quests.tsx`:**
+- AsyncStorage keys: `@claimedQuests` (JSON array of claim keys), `@claimedAchievements` (JSON array of IDs), `@dailyQuestSelection`, `@weeklyQuestSelection`
+- Quest rotation: `loadOrRefreshSelection` stores `{period, ids}` by date/weekStart key; regenerates on new period
+- Quests tab: `MainQuestFeaturedCard` at top (red border, progress bar, CLAIM 2000 XP); Daily (3/8); Weekly (3/8); Milestones (9/9)
+- Achievements tab: global total row + 5 category sections; 2-col grid with lock overlay, progress bars, CLAIM
+- XP awarded on claim → XPToast + LevelUpOverlay
+
+**`app/stats.tsx`:**
+- CO2 factor: 0.16 kg/km (car 0.21 − PT 0.05)
+- Sections: 4 stat cards (trips, distance, CO2 with long-press tooltip, avg cost); KlimaTicket progress bar; WeeklyBarChart (custom View-based, last 8 ISO weeks); Transport Mix (horizontal bars); Top Routes (ranked list, top 5)
+- Entry: profile "Stats & Insights" button + tapping donut in FinancialOverview
+
+**XP / level system:**
+- `getXPForTrip(distance, transportType)` — base 10 + min(distance,50) XP × transport multiplier
+- `getLevelTitle(level)` — "Novice Explorer" → "Legendary Voyager"
+- XP stored in AsyncStorage key `"userXP"`; seeded from all trips on first load
+- Edit trip: XP delta (new - old) applied; never goes below 0
+- Delete trip: trip XP subtracted (min 0)
+
+**AsyncStorage keys in use:**
+- `userXP`, `userName`, `klimaTicketType`, `klimaTicketCost`
+- `@trips` (trip list)
+- `@claimedQuests`, `@claimedAchievements`
+- `@dailyQuestSelection`, `@weeklyQuestSelection`
+- `@mainQuestCelebrated`
+
+**Design system:**
+- All screens: `Palette.blue.dark` (#00334f) background
+- Cards: `rgba(255,255,255,0.07)` bg + `rgba(255,255,255,0.12)` border
+- Accents/CTAs: `Palette.green.mid` (#3fb28f)
+- No hardcoded hex except `#fff`
+- Icons in modals/overlays: MaterialIcons ONLY (not IconSymbol — SF Symbols unreliable inside Modal on iOS)
+
+**Auth (Supabase):**
+- Project: `vbjpigfbwvetsaoxpogd` (KlimaChallenge)
+- Email confirmation currently DISABLED for dev (re-enable before production)
+
+**Pending assets:** `onboard1.png`, `onboard2.png`, `loginbg.png` (user to place in `assets/images/`)

@@ -11,6 +11,7 @@ interface FinancialOverviewProps {
 	totalDistance: number;
 	totalCost: number;
 	klimaTicketCost: number;
+	onStatsPress?: () => void;
 }
 
 const CIRCLE_SIZE = 200;
@@ -23,6 +24,7 @@ export function FinancialOverview({
 	totalDistance,
 	totalCost,
 	klimaTicketCost,
+	onStatsPress,
 }: FinancialOverviewProps) {
 	const [expanded, setExpanded] = useState(false);
 
@@ -107,8 +109,13 @@ export function FinancialOverview({
 						<ThemedText style={styles.value}>€{klimaTicketCost.toFixed(2)}</ThemedText>
 					</View>
 
-					{/* Donut */}
-					<View style={styles.progressContainer}>
+					{/* Donut — tap to open Stats */}
+					<TouchableOpacity
+						style={styles.progressContainer}
+						onPress={onStatsPress}
+						activeOpacity={onStatsPress ? 0.75 : 1}
+						disabled={!onStatsPress}
+					>
 						<Svg width={CIRCLE_SIZE} height={CIRCLE_SIZE}>
 							<Circle
 								cx={CIRCLE_CENTER}
@@ -135,7 +142,7 @@ export function FinancialOverview({
 							</ThemedText>
 							<ThemedText style={styles.progressSubtext}>of KlimaTicket</ThemedText>
 						</View>
-					</View>
+					</TouchableOpacity>
 
 					{/* Stats bar */}
 					<View style={styles.statsContainer}>
