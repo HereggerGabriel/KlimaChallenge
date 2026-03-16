@@ -1,6 +1,6 @@
 ---
 name: TravelApp current project state
-description: Current state of the TravelApp React Native / Expo project as of 2026-03-16 session 15
+description: Current state of the TravelApp React Native / Expo project as of 2026-03-17 session 16
 type: project
 ---
 
@@ -40,21 +40,21 @@ A React Native / Expo app for tracking public transport trips (bus, train, tram,
 - `utils/questSystem.ts` — Quest types, DAILY_QUEST_POOL (8), WEEKLY_QUEST_POOL (8), MILESTONE_QUESTS (9), MAIN_QUEST_ID/XP/CELEBRATED_KEY, pickRandomQuests, getClaimKey, timeUntilMidnight, daysUntilMonday
 - `utils/achievementSystem.ts` — Achievement types, ACHIEVEMENTS (19), ACHIEVEMENT_CATEGORIES, computeStreak, computeSavedVsCar
 - `utils/tripGrouping.ts` — Shared helpers: `formatDateLabel(date)` → "Today"/"Yesterday"/"Mon 16 Mar 2026"; `groupTripsByDate(trips)` → `TripGroup[]` ({label, trips}[]). Used by both user.tsx and trips.tsx.
-- `utils/streakSystem.ts` — `computeStreak(trips)`: consecutive-day streak ending today or yesterday; returns 0 if neither has a trip. Also exports `STREAK_MILESTONES` (3/7/14/30/60/100 days → XP), `STREAK_MILESTONES_KEY`, and `getNewMilestoneXP(streak, claimed)` for milestone reward logic.
+- `utils/streakSystem.ts` — `computeStreak(trips)`: consecutive-day streak ending today or yesterday; returns 0 if streak broken. `STREAK_MILESTONES` (3/7/14/30/60/100 days → 50/150/300/600/1000/2000 XP), `STREAK_MILESTONES_KEY = '@claimedStreakMilestones'`, `getNewMilestoneXP(streak, claimed)` returns `{xp, milestones[]}` for newly hit milestones.
 - `constants/Colors.ts` — exports `Palette` (custom 9-color system)
 - `constants/transport.ts` — exports `TRANSPORT_COLOR` (Bus=blue.mid, Train=green.mid, Tram=red.light, Subway=green.dark) and `transportIcon(type)` returning MaterialIcons name; single source of truth for transport styling
 - `components/ui/LoginForm.tsx` — Supabase signInWithPassword, dark Palette style
 - `components/ui/RegisterForm.tsx` — Supabase signUp with name metadata, dark Palette style, success state
 - `components/ui/FinancialOverview.tsx` — collapsible savings card; donut circle (SVG) is tappable → `onStatsPress` prop → `/stats`
-- `components/ui/UserLevelCard.tsx` — XP/level display, animated progress bar; bottom row links to `/quests` via `onQuestsPress` prop
-- `components/ui/QuickAddTripModal.tsx` — add trip modal; fully dark theme; uses TripRouteFields; date/time via native `DateTimePicker` (spinner on iOS, dialog on Android; iOS has "Done" button); single `date` Date state (no separate hour/minute); connection autofill sets full date from summary.dep
-- `components/ui/TripDetailModal.tsx` — trip detail + edit + delete modal; uses TripRouteFields in edit mode; date/time via native `DateTimePicker` same pattern as QuickAdd; single `editDate` Date state
+- `components/ui/UserLevelCard.tsx` — XP/level display, animated progress bar; optional `streak` prop shows 🔥 Xd badge (red, `local-fire-department` icon) in footer row when streak > 0; bottom row links to `/quests` via `onQuestsPress` prop
+- `components/ui/QuickAddTripModal.tsx` — add trip modal; fully dark theme; uses TripRouteFields; date/time via native `DateTimePicker` (spinner on iOS, dialog on Android; iOS has "Done" button); single `date` Date state (no separate hour/minute); connection autofill sets full date from summary.dep; optional `prefill` prop (PrefillData) populates all fields when modal opens (date resets to now)
+- `components/ui/TripDetailModal.tsx` — trip detail + edit + delete modal; uses TripRouteFields in edit mode; date/time via native `DateTimePicker` same pattern as QuickAdd; single `editDate` Date state; optional `onLogAgain` prop — view mode shows Close + Log Again two-button row (green, replay icon)
 - `components/ui/TripRouteFields.tsx` — shared route input component; price autofill, distance estimate, suggestions dropdown; dark theme only (light theme removed S11); no `theme` prop
 - `components/ui/XPToast.tsx` — floating "+XP" badge animation (Reanimated spring+float)
 - `components/ui/LevelUpOverlay.tsx` — full-screen level-up celebration overlay (auto-dismisses ~2.8s)
 - `components/ui/MainQuestOverlay.tsx` — full-screen Main Quest celebration (6 floating stars, card spring-in, stats, Claim CTA); triggered when totalCost >= klimaTicketCost for the first time
-- `KlimaChallenge_PM.xlsx` — project management Excel file (dashboard, backlog, milestones, architecture, feature registry)
-- `pm_updater.py` — Python helper script for updating the PM Excel; use `PMUpdater` class; call at end of each session instead of writing one-off scripts. Has `__main__` template block — fill values and run `python pm_updater.py`. Dashboard: Row 5 = headers, Row 6 = current values, Row 7 = previous values.
+- `KlimaChallenge_PM_v5.xlsx` — project management Excel file (dashboard, backlog, milestones, architecture, feature registry). Current active PM file.
+- `pm_updater.py` — v2 structure; `PMUpdater` class; fill `__main__` block and run `python pm_updater.py` at end of each session. Points to `KlimaChallenge_PM_v5.xlsx`. Dashboard: Row 5 = headers, Row 6 = current values, Row 7 = previous values. All methods idempotent (skip if row already exists).
 - `.claude/memory/` — project memory files (version-controlled in git); always update both this folder AND `C:\Users\gabri\.claude\projects\f--projects-TravelApp-travelapp\memory\` in sync.
 
 **`/(tabs)/user.tsx` — main screen layout:**
@@ -109,6 +109,7 @@ A React Native / Expo app for tracking public transport trips (bus, train, tram,
 - `@claimedQuests`, `@claimedAchievements`
 - `@dailyQuestSelection`, `@weeklyQuestSelection`
 - `@mainQuestCelebrated`
+- `@claimedStreakMilestones` (JSON array of milestone day-counts already awarded)
 
 **Design system:**
 - All screens: `Palette.blue.dark` (#00334f) background
