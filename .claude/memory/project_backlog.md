@@ -71,12 +71,20 @@ type: project
 32. ~~**Stats entry point (profile)**~~ — DONE. "Stats & Insights" button in profile → /stats.
 33. ~~**Normalise trip.date on load**~~ — CLOSED. Already resolved; `loadTrips()` does `date: new Date(trip.date)` on parse.
 
-**Remaining — Feature Backlog (priority order, as of S14):**
+**Completed (session 15, 2026-03-16):**
+
+43. ~~**#45 Haptic feedback**~~ — DONE. `expo-haptics` (already installed). Impact (Medium) on trip add via QuickAdd; Impact (Light) on favorite add; Notification (Success) on level-up, quest claim, achievement claim, main quest claim; Impact (Medium) on swipe-delete in trips.tsx.
+44. ~~**#43 Streak system**~~ — DONE. `utils/streakSystem.ts` → `computeStreak(trips)`: consecutive-day streak ending today or yesterday. Displayed in `UserLevelCard` footer as 🔥 Xd (red, `Palette.red.light`, `MaterialIcons local-fire-department`). Computed via `useMemo([trips])` in user.tsx. Hidden when streak = 0.
+
+**Completed (session 16, 2026-03-16):**
+
+45. ~~**Streak milestone rewards**~~ — DONE. `STREAK_MILESTONES` (3/7/14/30/60/100 days → 50/150/300/600/1000/2000 XP) in `utils/streakSystem.ts`. `getNewMilestoneXP(streak, claimed)` returns bonus XP + newly-hit milestone day-counts. `claimedMilestones` state loaded on init/focus. After each trip add, `checkStreakMilestones` fires; if a milestone is hit, XP awarded 1.8s after trip toast (with haptic + level-up if needed). Claimed set persisted to `@claimedStreakMilestones`.
+46. ~~**#47 "Log Again" (replaces recurring-trip backlog item)**~~ — DONE. `onLogAgain` prop on `TripDetailModal`; view mode shows two-button row: "Close" + green "Log Again" (replay icon). Tapping closes detail modal, populates `prefillData` state, opens `QuickAddTripModal`. `QuickAddTripModal` gains optional `prefill` prop (PrefillData type); `useEffect([visible])` populates fields when modal opens with prefill. Date always resets to now.
+
+**Remaining — Feature Backlog (priority order, as of S16):**
 
 - 🟠 **#39** Cloud sync for trips (Supabase) — L effort
-- 🟠 **#43** Streak system — M effort
 - 🟠 **#44** Onboarding rework package — L effort, Pre-launch target
-- 🟡 **#45** Haptic feedback — XS effort
 - 🟡 **#46** Trip list search & filter — M effort
 - 🔵 **#40** Trip export / CSV — S effort
 - 🔵 **#47** Recurring trip / one-tap repeat — S effort

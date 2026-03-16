@@ -24,6 +24,7 @@ import { TRANSPORT_COLOR } from "@/constants/transport";
 import { TripDetailModal } from "@/components/ui/TripDetailModal";
 import { groupTripsByDate } from "@/utils/tripGrouping";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Haptics from "expo-haptics";
 
 const FILTERS = ["All", "Bus", "Train", "Tram", "Subway"] as const;
 type Filter = typeof FILTERS[number];
@@ -64,6 +65,7 @@ function SwipeableTripCard({
 		})
 		.onEnd((e) => {
 			if (e.translationX < DELETE_THRESHOLD) {
+				Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 				translateX.value = withTiming(-500, { duration: 200 });
 				setTimeout(() => onDelete(), 200);
 			} else {

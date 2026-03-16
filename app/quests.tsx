@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Haptics from 'expo-haptics';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { ThemedText } from '@/components/ThemedText';
 import { Palette } from '@/constants/Colors';
@@ -409,6 +410,7 @@ export default function QuestsScreen() {
   const handleClaimQuest = useCallback(async (quest: Quest) => {
     const key = getClaimKey(quest);
     if (claimedKeys.has(key)) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const next = new Set(claimedKeys).add(key);
     setClaimedKeys(next);
     await AsyncStorage.setItem(CLAIMED_QUESTS_KEY, JSON.stringify([...next]));
@@ -417,6 +419,7 @@ export default function QuestsScreen() {
 
   const handleClaimAchievement = useCallback(async (achievement: Achievement) => {
     if (claimedAchievements.has(achievement.id)) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const next = new Set(claimedAchievements).add(achievement.id);
     setClaimedAchievements(next);
     await AsyncStorage.setItem(CLAIMED_ACHIEVEMENTS_KEY, JSON.stringify([...next]));
@@ -425,6 +428,7 @@ export default function QuestsScreen() {
 
   const handleClaimMainQuest = useCallback(async () => {
     if (claimedKeys.has(MAIN_QUEST_ID)) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const next = new Set(claimedKeys).add(MAIN_QUEST_ID);
     setClaimedKeys(next);
     await AsyncStorage.setItem(CLAIMED_QUESTS_KEY, JSON.stringify([...next]));

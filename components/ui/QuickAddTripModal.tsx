@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
 	Modal,
 	View,
@@ -26,6 +26,15 @@ import {
 	OebbStation,
 } from "@/services/oebbApi";
 
+type PrefillData = {
+	origin: string;
+	destination: string;
+	transportType: string;
+	cost: string;
+	distance: string;
+	description: string;
+};
+
 type QuickAddTripModalProps = {
 	visible: boolean;
 	onClose: () => void;
@@ -39,11 +48,12 @@ type QuickAddTripModalProps = {
 		distance: number;
 	}) => void;
 	recentPlaces?: string[];
+	prefill?: PrefillData;
 };
 
 const TRANSPORT_TYPES = ["Bus", "Train", "Tram", "Subway"];
 
-export function QuickAddTripModal({ visible, onClose, onSubmit, recentPlaces = [] }: QuickAddTripModalProps) {
+export function QuickAddTripModal({ visible, onClose, onSubmit, recentPlaces = [], prefill }: QuickAddTripModalProps) {
 	const [date, setDate] = useState(new Date());
 	const [origin, setOrigin] = useState("");
 	const [destination, setDestination] = useState("");
@@ -63,6 +73,23 @@ export function QuickAddTripModal({ visible, onClose, onSubmit, recentPlaces = [
 	const [selectedConnectionIndex, setSelectedConnectionIndex] = useState<number | null>(null);
 	const [estimatingDistance, setEstimatingDistance] = useState(false);
 	const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	// Populate fields from prefill when the modal opens
+	useEffect(() => {
+		if (visible && prefill) {
+			setDate(new Date());
+			setOrigin(prefill.origin);
+			setDestination(prefill.destination);
+			setTransportType(prefill.transportType);
+			setCost(prefill.cost);
+			setDistance(prefill.distance);
+			setDescription(prefill.description);
+			setConnections([]);
+			setShowConnections(false);
+			setSelectedConnectionIndex(null);
+			setConnectionError("");
+		}
+	}, [visible]);
 
 	const canSearch = origin.trim().length > 0 && destination.trim().length > 0;
 

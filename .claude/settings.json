@@ -13,7 +13,8 @@
       "Bash(npx tsc:*)"
     ],
     "additionalDirectories": [
-      "f:\\projects\\TravelApp\\travelapp"
+      "f:\\projects\\TravelApp\\travelapp",
+      "f:\\projects\\TravelApp\\travelapp\\.claude\\memory"
     ]
   }
 }

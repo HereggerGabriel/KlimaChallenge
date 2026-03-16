@@ -24,6 +24,7 @@ type TripDetailModalProps = {
 	onClose: () => void;
 	onDelete: (tripId: string) => void;
 	onEdit: (tripId: string, updates: Partial<Trip>) => void;
+	onLogAgain?: (trip: Trip) => void;
 	recentPlaces?: string[];
 };
 
@@ -49,7 +50,7 @@ function DetailRow({
 	);
 }
 
-export function TripDetailModal({ visible, trip, onClose, onDelete, onEdit, recentPlaces = [] }: TripDetailModalProps) {
+export function TripDetailModal({ visible, trip, onClose, onDelete, onEdit, onLogAgain, recentPlaces = [] }: TripDetailModalProps) {
 	const [showConfirm, setShowConfirm] = useState(false);
 	const [mode, setMode] = useState<"view" | "edit">("view");
 
@@ -207,9 +208,17 @@ export function TripDetailModal({ visible, trip, onClose, onDelete, onEdit, rece
 								) : null}
 							</ScrollView>
 
-							<TouchableOpacity style={styles.closeButton} onPress={onClose}>
+							<View style={styles.bottomRow}>
+							<TouchableOpacity style={[styles.closeButton, onLogAgain && styles.closeButtonHalf]} onPress={onClose}>
 								<ThemedText style={styles.closeButtonText}>Close</ThemedText>
 							</TouchableOpacity>
+							{onLogAgain && (
+								<TouchableOpacity style={styles.logAgainButton} onPress={() => onLogAgain(trip)}>
+									<MaterialIcons name="replay" size={16} color="#fff" />
+									<ThemedText style={styles.logAgainButtonText}>Log Again</ThemedText>
+								</TouchableOpacity>
+							)}
+						</View>
 						</>
 					) : (
 						<ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -487,14 +496,37 @@ const styles = StyleSheet.create({
 		color: "#fff",
 		textAlign: "right",
 	},
-	closeButton: {
+	bottomRow: {
+		flexDirection: "row",
+		gap: 10,
 		marginTop: 18,
+	},
+	closeButton: {
+		flex: 1,
 		backgroundColor: Palette.blue.mid,
 		borderRadius: 10,
 		paddingVertical: 12,
 		alignItems: "center",
 	},
+	closeButtonHalf: {
+		flex: 1,
+	},
 	closeButtonText: {
+		color: "#fff",
+		fontSize: 15,
+		fontWeight: "600",
+	},
+	logAgainButton: {
+		flex: 1,
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		gap: 6,
+		backgroundColor: Palette.green.mid,
+		borderRadius: 10,
+		paddingVertical: 12,
+	},
+	logAgainButtonText: {
 		color: "#fff",
 		fontSize: 15,
 		fontWeight: "600",

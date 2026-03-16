@@ -1180,6 +1180,206 @@ if __name__ == "__main__":
         thesis   = "Platform limitations / DX",
     )
 
+    # ═══════════════════════════════════════════════════════════════════════════
+    # SESSION 15 — 2026-03-16
+    # Haptic feedback + Streak system
+    # ═══════════════════════════════════════════════════════════════════════════
+
+    # ── S15-1. DASHBOARD KPIs ─────────────────────────────────────────────────
+    pm.update_dashboard_kpis(
+        sessions  = 15,
+        features  = 44,   # 42 (S14) + 2 new (haptics, streak)
+        backlog   = 11,   # closed #45 + #43; 11 open remain
+        tech_debt = 0,
+        blockers  = 5,    # PP1-PP5 unchanged
+    )
+
+    # ── S15-2. VELOCITY ROW ───────────────────────────────────────────────────
+    pm.add_velocity_row(
+        session    = "S15",
+        date       = "Mar 16",
+        focus      = "Haptic feedback throughout + streak system + streak badge on level card",
+        features_n = 2,
+        category   = "Gamification / Polish",
+    )
+
+    # ── S15-3. SESSION DIARY ROW ──────────────────────────────────────────────
+    pm.add_session_row(
+        session      = "S15",
+        date         = "2026-03-16",
+        scope        = "Haptic feedback · Streak system · UserLevelCard streak badge",
+        what         = (
+            "#45 Haptic feedback: expo-haptics wired throughout the app. "
+            "ImpactFeedbackStyle.Medium on trip add (QuickAdd) and swipe-delete in trips.tsx. "
+            "ImpactFeedbackStyle.Light on favorite card long-press add. "
+            "NotificationFeedbackType.Success on level-up, quest/achievement/main-quest claim. "
+            "#43 Streak system: new utils/streakSystem.ts with computeStreak(trips) — "
+            "counts consecutive calendar days ending today or yesterday, returns 0 if streak broken. "
+            "Displayed in UserLevelCard footer as 🔥 Xd badge (Palette.red.light, MaterialIcons local-fire-department). "
+            "streak computed via useMemo([trips]) in user.tsx and passed as prop. Hidden when streak = 0. "
+            "Files: utils/streakSystem.ts (new), components/ui/UserLevelCard.tsx, "
+            "app/(tabs)/user.tsx (Write), app/trips.tsx, app/quests.tsx"
+        ),
+        why          = (
+            "Haptics are table-stakes polish for a native app — they make every interaction feel intentional. "
+            "Streak is a core retention mechanic; showing it on the level card keeps it visible "
+            "without requiring a dedicated screen."
+        ),
+        problems     = (
+            "expo-haptics was already installed (expo SDK default) — no install needed. "
+            "user.tsx required full Write (CRLF file)."
+        ),
+        alternatives = (
+            "Considered storing streak in AsyncStorage to avoid recomputing — rejected because "
+            "computing from the trips array is O(n) and always accurate; no sync risk."
+        ),
+        decisions    = (
+            "Streak starts from today if today has a trip, otherwise from yesterday — "
+            "prevents streak breaking just because the user hasn't logged today's trip yet."
+        ),
+        features_n   = 2,
+        effort       = "~2h",
+        thesis_tag   = "Gamification / Engagement",
+    )
+
+    # ── S15-4. MARK BACKLOG ITEMS DONE ────────────────────────────────────────
+    pm.mark_backlog_done("45", "S15", "expo-haptics wired to all key interactions")
+    pm.mark_backlog_done("43", "S15", "computeStreak utility + 🔥 badge on UserLevelCard")
+
+    # ── S15-5. FEATURE REGISTRY ───────────────────────────────────────────────
+    pm.add_feature(
+        num         = 43,
+        name        = "Haptic feedback",
+        category    = "Polish",
+        session     = "S15",
+        files       = "user.tsx, trips.tsx, quests.tsx",
+        description = (
+            "expo-haptics across all key interactions: trip add (Medium), favorite add (Light), "
+            "swipe-delete (Medium), level-up / quest claim / achievement claim (Success notification)."
+        ),
+        xp_impact   = "—",
+        thesis_tag  = "UX Design",
+    )
+    pm.add_feature(
+        num         = 44,
+        name        = "Streak system + badge",
+        category    = "Gamification",
+        session     = "S15",
+        files       = "utils/streakSystem.ts (new), UserLevelCard.tsx, user.tsx",
+        description = (
+            "computeStreak(trips) counts consecutive days ending today or yesterday. "
+            "Shown as 🔥 Xd badge in UserLevelCard XP footer row. Hidden at 0."
+        ),
+        xp_impact   = "—",
+        thesis_tag  = "Gamification",
+    )
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # SESSION 16 — 2026-03-16
+    # Streak milestone rewards + Log Again feature
+    # ═══════════════════════════════════════════════════════════════════════════
+
+    # ── S16-1. DASHBOARD KPIs ─────────────────────────────────────────────────
+    pm.update_dashboard_kpis(
+        sessions  = 16,
+        features  = 46,   # 44 (S15) + 2 new (streak milestones, log again)
+        backlog   = 10,   # closed #47 (log again); streak milestones was new+done; 10 open remain
+        tech_debt = 0,
+        blockers  = 5,    # PP1-PP5 unchanged
+    )
+
+    # ── S16-2. VELOCITY ROW ───────────────────────────────────────────────────
+    pm.add_velocity_row(
+        session    = "S16",
+        date       = "Mar 16",
+        focus      = "Streak milestone XP rewards + Log Again (replaces #47 recurring trip)",
+        features_n = 2,
+        category   = "Gamification / UX",
+    )
+
+    # ── S16-3. SESSION DIARY ROW ──────────────────────────────────────────────
+    pm.add_session_row(
+        session      = "S16",
+        date         = "2026-03-16",
+        scope        = "Streak milestone rewards · Log Again button · QuickAdd prefill",
+        what         = (
+            "Streak milestones: STREAK_MILESTONES array (3/7/14/30/60/100 days → 50/150/300/600/1000/2000 XP) "
+            "and getNewMilestoneXP(streak, claimed) added to utils/streakSystem.ts. "
+            "claimedMilestones state in user.tsx loaded on init/focus from @claimedStreakMilestones. "
+            "After each trip add, checkStreakMilestones fires; if a milestone is newly hit, "
+            "bonus XP awarded 1.8s after trip toast (haptic + level-up if triggered). "
+            "Log Again: onLogAgain prop added to TripDetailModal; view mode shows Close + Log Again "
+            "two-button row (green, replay icon). "
+            "QuickAddTripModal gains optional prefill prop (PrefillData type) with useEffect([visible]) "
+            "that populates all fields when modal opens; date resets to now. "
+            "handleLogAgain in user.tsx: closes detail modal → sets prefillData state → opens QuickAdd. "
+            "Files: utils/streakSystem.ts, components/ui/TripDetailModal.tsx, "
+            "components/ui/QuickAddTripModal.tsx, app/(tabs)/user.tsx (Write)"
+        ),
+        why          = (
+            "Milestone rewards give the streak system progression depth beyond a simple counter — "
+            "they reward users who maintain long streaks and make the streak feel meaningful. "
+            "Log Again replaces the vague #47 'recurring trip' item: favorites already handle the "
+            "high-frequency repeat case; Log Again fills the gap for any past trip regardless of frequency."
+        ),
+        problems     = (
+            "TripDetailModal Edit tool failed on first attempt (indentation mismatch); "
+            "resolved by re-reading exact whitespace before editing. "
+            "Milestone XP toast coordination: two toasts in quick succession (trip XP + milestone XP) "
+            "resolved by delaying milestone toast by 1.8s."
+        ),
+        alternatives = (
+            "Milestone XP could be summed with trip XP and shown in one toast — rejected because "
+            "the delay makes the milestone feel like a separate reward rather than noise. "
+            "Log Again could have re-logged without opening QuickAdd — rejected because user "
+            "should be able to adjust the date/time before confirming."
+        ),
+        decisions    = (
+            "Milestone awards are one-time (persisted to @claimedStreakMilestones) — "
+            "a streak breaking and restarting does NOT re-award. "
+            "prefill date always resets to now (not the original trip date) — "
+            "the intent is to log a new trip today, not to duplicate a past date."
+        ),
+        features_n   = 2,
+        effort       = "~3h",
+        thesis_tag   = "Gamification / Engagement",
+    )
+
+    # ── S16-4. MARK BACKLOG ITEMS DONE ────────────────────────────────────────
+    pm.mark_backlog_done(
+        "47", "S16",
+        "Replaced by Log Again button in TripDetailModal + QuickAdd prefill prop"
+    )
+
+    # ── S16-5. FEATURE REGISTRY ───────────────────────────────────────────────
+    pm.add_feature(
+        num         = 45,
+        name        = "Streak milestone XP rewards",
+        category    = "Gamification",
+        session     = "S16",
+        files       = "utils/streakSystem.ts, app/(tabs)/user.tsx",
+        description = (
+            "STREAK_MILESTONES: 3/7/14/30/60/100 days → 50/150/300/600/1000/2000 XP. "
+            "One-time auto-award on milestone hit. Delayed XP toast (1.8s) + haptic. "
+            "Claimed set persisted to @claimedStreakMilestones."
+        ),
+        xp_impact   = "Yes",
+        thesis_tag  = "Gamification",
+    )
+    pm.add_feature(
+        num         = 46,
+        name        = "Log Again + QuickAdd prefill",
+        category    = "UX",
+        session     = "S16",
+        files       = "TripDetailModal.tsx, QuickAddTripModal.tsx, app/(tabs)/user.tsx",
+        description = (
+            "TripDetailModal view mode: Close + Log Again two-button row (green, replay icon). "
+            "QuickAddTripModal prefill prop: all fields pre-populated from past trip, date resets to now."
+        ),
+        xp_impact   = "—",
+        thesis_tag  = "UX Design",
+    )
+
     # ── 7. SAVE ───────────────────────────────────────────────────────────────
     pm.save()
     print("\n=== Done. Narrative columns (Reflection, Theory Reference) "

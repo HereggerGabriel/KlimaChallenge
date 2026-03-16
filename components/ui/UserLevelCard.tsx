@@ -16,10 +16,11 @@ interface UserLevelCardProps {
   level: number;
   currentXP: number;
   xpToNextLevel: number;
+  streak?: number;
   onQuestsPress?: () => void;
 }
 
-export default function UserLevelCard({ level, currentXP, xpToNextLevel, onQuestsPress }: UserLevelCardProps) {
+export default function UserLevelCard({ level, currentXP, xpToNextLevel, streak = 0, onQuestsPress }: UserLevelCardProps) {
   const progress = Math.min((currentXP / xpToNextLevel) * 100, 100);
   const title = getLevelTitle(level);
   const barWidth = useSharedValue(0);
@@ -55,6 +56,12 @@ export default function UserLevelCard({ level, currentXP, xpToNextLevel, onQuest
         <ThemedText style={styles.xpText}>
           {currentXP} / {xpToNextLevel} XP
         </ThemedText>
+        {streak > 0 && (
+          <View style={styles.streakBadge}>
+            <MaterialIcons name="local-fire-department" size={13} color={Palette.red.light} />
+            <ThemedText style={styles.streakText}>{streak}d</ThemedText>
+          </View>
+        )}
         <ThemedText style={styles.percentageText}>
           {Math.round(progress)}%
         </ThemedText>
@@ -115,6 +122,16 @@ const styles = StyleSheet.create({
   percentageText: {
     color: 'rgba(255, 255, 255, 0.8)',
     fontSize: 14,
+  },
+  streakBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  streakText: {
+    color: Palette.red.light,
+    fontSize: 13,
+    fontWeight: '600',
   },
   questsButton: {
     flexDirection: 'row',

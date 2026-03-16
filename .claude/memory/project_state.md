@@ -1,6 +1,6 @@
 ---
 name: TravelApp current project state
-description: Current state of the TravelApp React Native / Expo project as of 2026-03-16 session 14
+description: Current state of the TravelApp React Native / Expo project as of 2026-03-16 session 15
 type: project
 ---
 
@@ -40,6 +40,7 @@ A React Native / Expo app for tracking public transport trips (bus, train, tram,
 - `utils/questSystem.ts` — Quest types, DAILY_QUEST_POOL (8), WEEKLY_QUEST_POOL (8), MILESTONE_QUESTS (9), MAIN_QUEST_ID/XP/CELEBRATED_KEY, pickRandomQuests, getClaimKey, timeUntilMidnight, daysUntilMonday
 - `utils/achievementSystem.ts` — Achievement types, ACHIEVEMENTS (19), ACHIEVEMENT_CATEGORIES, computeStreak, computeSavedVsCar
 - `utils/tripGrouping.ts` — Shared helpers: `formatDateLabel(date)` → "Today"/"Yesterday"/"Mon 16 Mar 2026"; `groupTripsByDate(trips)` → `TripGroup[]` ({label, trips}[]). Used by both user.tsx and trips.tsx.
+- `utils/streakSystem.ts` — `computeStreak(trips)`: consecutive-day streak ending today or yesterday; returns 0 if neither has a trip. Also exports `STREAK_MILESTONES` (3/7/14/30/60/100 days → XP), `STREAK_MILESTONES_KEY`, and `getNewMilestoneXP(streak, claimed)` for milestone reward logic.
 - `constants/Colors.ts` — exports `Palette` (custom 9-color system)
 - `constants/transport.ts` — exports `TRANSPORT_COLOR` (Bus=blue.mid, Train=green.mid, Tram=red.light, Subway=green.dark) and `transportIcon(type)` returning MaterialIcons name; single source of truth for transport styling
 - `components/ui/LoginForm.tsx` — Supabase signInWithPassword, dark Palette style
