@@ -7,3 +7,5 @@
 - [project_trips_data.md](project_trips_data.md) — Trip data model, persistence, XP system, delete flow (updated session 3)
 - [project_backlog.md](project_backlog.md) — Backlog: items 1-4 done; remaining: login/register, quests/achievements, user profile
 - [feedback_memory_sync.md](feedback_memory_sync.md) — Always update memory in BOTH the C: system path AND the project's .claude/memory/ folder
+- [plan_cloud_sync.md](plan_cloud_sync.md) — Full implementation plan for #39 cloud sync (Supabase, offline-first, 9-step sequence)
+- [reference_trello.md](reference_trello.md) — Trello board ID, list structure, sync script, token expiry

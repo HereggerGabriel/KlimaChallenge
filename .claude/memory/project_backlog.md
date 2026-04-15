@@ -81,19 +81,25 @@ type: project
 45. ~~**Streak milestone rewards**~~ — DONE. `STREAK_MILESTONES` (3/7/14/30/60/100 days → 50/150/300/600/1000/2000 XP) in `utils/streakSystem.ts`. `getNewMilestoneXP(streak, claimed)` returns bonus XP + newly-hit milestone day-counts. `claimedMilestones` state loaded on init/focus. After each trip add, `checkStreakMilestones` fires; if a milestone is hit, XP awarded 1.8s after trip toast (with haptic + level-up if needed). Claimed set persisted to `@claimedStreakMilestones`.
 46. ~~**#47 "Log Again" (replaces recurring-trip backlog item)**~~ — DONE. `onLogAgain` prop on `TripDetailModal`; view mode shows two-button row: "Close" + green "Log Again" (replay icon). Tapping closes detail modal, populates `prefillData` state, opens `QuickAddTripModal`. `QuickAddTripModal` gains optional `prefill` prop (PrefillData type); `useEffect([visible])` populates fields when modal opens with prefill. Date always resets to now.
 
-**Remaining — Feature Backlog (priority order, as of S16):**
+**Completed (session 17, 2026-04-15):**
 
-- 🟠 **#39** Cloud sync for trips (Supabase) — L effort
+47. ~~**Trello board export + sync script**~~ — DONE. Created full Trello board via API (5 lists, 70 cards, effort/category labels). Built `trello_sync.js` CLI tool (add/done/move/update/find/lists/cards/archive-done). Credentials in `.env` (gitignored). Added Trello sync step to CLAUDE.md end-of-session checklist. Board: https://trello.com/b/PbkrPAvm/klimachallenge
+
+**Remaining — Feature Backlog (priority order, as of S17):**
+
+- 🟠 **#39** Cloud sync for trips (Supabase) — L effort. Full plan in `.claude/memory/plan_cloud_sync.md`
 - 🟠 **#44** Onboarding rework package — L effort, Pre-launch target
 - 🟡 **#46** Trip list search & filter — M effort
-- 🔵 **#40** Trip export / CSV — S effort
-- 🔵 **#47** Recurring trip / one-tap repeat — S effort
+- 🟠 **#40** Trip export / import (CSV/JSON) — S effort. Two-way: export for backup + import from file. Shared bulk-insert engine with #52
+- 🟠 **#52** Trip generator wizard (quick-start) — M effort. Recurring-pattern wizard for users with existing KlimaTicket. Bulk-generates trips from route/frequency/date-range
 - 🔵 **#48** Push notifications — M effort
 - 🔵 **#49** Shareable achievement cards — S effort
 - 🔵 **#50** Stale XP seeding comment cleanup — XS effort
 - 🔵 **#51** Offline / API error indicator — XS effort
 - 🟠 Pricing API investigation — M effort, Pre-release
 - 🔵 More prefetched route prices — XS effort
+
+**Active (queued for S18):** #40 + #52 (trip export/import + generator wizard)
 
 **Pre-production checklist:**
 - PP1 🔴 Re-enable Supabase email confirmation

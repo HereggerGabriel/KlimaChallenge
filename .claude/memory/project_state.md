@@ -1,6 +1,6 @@
 ---
 name: TravelApp current project state
-description: Current state of the TravelApp React Native / Expo project as of 2026-03-17 session 16
+description: Current state of the TravelApp React Native / Expo project as of 2026-04-15 session 17
 type: project
 ---
 
@@ -55,6 +55,8 @@ A React Native / Expo app for tracking public transport trips (bus, train, tram,
 - `components/ui/MainQuestOverlay.tsx` — full-screen Main Quest celebration (6 floating stars, card spring-in, stats, Claim CTA); triggered when totalCost >= klimaTicketCost for the first time
 - `KlimaChallenge_PM_v5.xlsx` — project management Excel file (dashboard, backlog, milestones, architecture, feature registry). Current active PM file.
 - `pm_updater.py` — v2 structure; `PMUpdater` class; fill `__main__` block and run `python pm_updater.py` at end of each session. Points to `KlimaChallenge_PM_v5.xlsx`. Dashboard: Row 5 = headers, Row 6 = current values, Row 7 = previous values. All methods idempotent (skip if row already exists).
+- `trello_sync.js` — CLI tool for syncing project state to Trello board. Commands: add/done/move/update/find/lists/cards/archive-done. Credentials in `.env` (gitignored).
+- `.env` — Trello API key + token + board ID (gitignored, token expires ~2026-05-14)
 - `.claude/memory/` — project memory files (version-controlled in git); always update both this folder AND `C:\Users\gabri\.claude\projects\f--projects-TravelApp-travelapp\memory\` in sync.
 
 **`/(tabs)/user.tsx` — main screen layout:**
