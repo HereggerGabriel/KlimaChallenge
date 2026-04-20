@@ -16,16 +16,13 @@ type: project
 
 ## Phase 0 — Prerequisites (no sync code yet)
 
-### 0a. Delete `initialTrips` from `tripStorage.ts`
-- Still exported but unused since S13 (loadTrips returns `[]` on missing key)
-- Risk: if ever passed to a sync function, it uploads fake data to Supabase
-- **Action:** Delete the `initialTrips` export and the `generateDate` helper entirely
+### 0a. Delete `initialTrips` from `tripStorage.ts` — DONE (S18)
+- Deleted `initialTrips` export and `generateDate` helper from `services/tripStorage.ts`
 
-### 0b. Switch trip ID generation to `crypto.randomUUID()`
-- Current new-trip IDs are `Date.now().toString()` — not UUID format
-- Supabase upsert works fine with varchar, but UUIDs are safer for a real primary key
-- Old existing trip IDs (including "1"–"10" from dummy data) keep their string IDs — no migration needed
-- **Action:** Wherever a new trip `id` is generated (QuickAddTripModal), replace with `crypto.randomUUID()`
+### 0b. Switch trip ID generation to `crypto.randomUUID()` — DONE (S18)
+- Added `generateTripId()` to `services/tripStorage.ts` using `crypto.randomUUID()`
+- Both trip creation paths in `user.tsx` updated (handleFavoritePress + handleQuickAddSubmit)
+- `crypto.randomUUID()` confirmed available on Hermes (RN 0.81.5 / Expo SDK 54)
 
 ### 0c. Create Supabase `trips` table + RLS
 

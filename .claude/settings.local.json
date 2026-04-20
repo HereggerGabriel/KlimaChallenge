@@ -17,7 +17,9 @@
       "Bash(py -3 --version)",
       "Bash(py -3 -c ':*)",
       "Bash(curl -s -X POST 'https://api.trello.com/1/boards/69df5cc90cd28a274ecf9993/labels?key=43b79738d48aed6b4bd2360ab35c5502&token=ATTA1deb531591a77d36daad033edace59bc2e6761de705acafaa5ff9f5070d4608eD1951D5F' -H 'Content-Type: application/json' -d '{\"name\":\"XS effort\",\"color\":\"lime\"}')",
-      "Bash(node trello_sync.js update 69df669a38369b25a9ccf360 --name \"#40 Trip export / import \\(CSV/JSON\\)\" --desc \"Two-way trip data portability. EXPORT: download trips as CSV or JSON file for backup or analysis. IMPORT: upload a structured CSV/JSON file, parse and validate entries, preview before bulk insert. Could also support OeBB export format if available. Shared engine handles both generated \\(from #52\\) and external data.\")"
+      "Bash(node trello_sync.js update 69df669a38369b25a9ccf360 --name \"#40 Trip export / import \\(CSV/JSON\\)\" --desc \"Two-way trip data portability. EXPORT: download trips as CSV or JSON file for backup or analysis. IMPORT: upload a structured CSV/JSON file, parse and validate entries, preview before bulk insert. Could also support OeBB export format if available. Shared engine handles both generated \\(from #52\\) and external data.\")",
+      "Bash(npx expo:*)",
+      "Bash(npx -p typescript tsc --noEmit)"
     ]
   }
 }

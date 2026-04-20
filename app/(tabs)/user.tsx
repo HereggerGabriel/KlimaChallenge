@@ -34,7 +34,7 @@ import {
 } from "@/utils/streakSystem";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Trip } from "@/types/trip";
-import { loadTrips, saveTrips } from "@/services/tripStorage";
+import { loadTrips, saveTrips, generateTripId } from "@/services/tripStorage";
 import { styles } from "./_user_styles";
 import { supabase } from "@/lib/supabase";
 import { TRANSPORT_COLOR } from "@/constants/transport";
@@ -339,7 +339,7 @@ export default function UserScreen() {
 
 	const handleFavoritePress = async (fav: FavoriteTrip) => {
 		const newTrip: Trip = {
-			id: Date.now().toString(),
+			id: generateTripId(),
 			date: new Date(),
 			origin: fav.origin,
 			destination: fav.destination,
@@ -366,7 +366,7 @@ export default function UserScreen() {
 		distance: number;
 	}) => {
 		const newTrip: Trip = {
-			id: Date.now().toString(),
+			id: generateTripId(),
 			date: tripData.date,
 			origin: tripData.origin,
 			destination: tripData.destination,

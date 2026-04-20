@@ -1,12 +1,12 @@
 ---
 name: TravelApp current project state
-description: Current state of the TravelApp React Native / Expo project as of 2026-04-15 session 17
+description: Current state of the TravelApp React Native / Expo project as of 2026-04-20 session 18
 type: project
 ---
 
 A React Native / Expo app for tracking public transport trips (bus, train, tram, subway) in Austria. Users log trips, track costs vs. KlimaTicket savings, earn XP/levels, complete quests, unlock achievements, and view stats & insights.
 
-**Stack:** Expo SDK 54, Expo Router v6 (file-based), TypeScript, AsyncStorage, react-native-gesture-handler ~2.28.0, react-native-reanimated ~4.1.1, react-native-svg 15.12.1, Supabase (real auth — project `vbjpigfbwvetsaoxpogd`), NativeWind (CSS), expo-linear-gradient, @expo/vector-icons/MaterialIcons, @react-native-community/datetimepicker (native date/time picker, plugin added to app.config.ts). No axios — uses built-in fetch. Note: `react-native-gifted-charts` was tried and removed (Metro bundler resolution bug).
+**Stack:** Expo SDK 54, Expo Router v6 (file-based), TypeScript, AsyncStorage, react-native-gesture-handler ~2.28.0, react-native-reanimated ~4.1.1, react-native-svg 15.12.1, Supabase (real auth — project `vbjpigfbwvetsaoxpogd`), NativeWind (CSS), expo-linear-gradient, @expo/vector-icons/MaterialIcons, @react-native-community/datetimepicker (native date/time picker, plugin added to app.config.ts), expo-file-system ~19.0.21, expo-sharing ~14.0.8, expo-document-picker ~14.0.8. No axios — uses built-in fetch. Note: `react-native-gifted-charts` was tried and removed (Metro bundler resolution bug).
 
 **Route architecture:**
 - Pre-auth flow: `/` → `/onboarding` → `/login` → `/(tabs)/user`
@@ -25,7 +25,7 @@ A React Native / Expo app for tracking public transport trips (bus, train, tram,
 - `app/onboarding.tsx` — 3-slide FRE pager; tappable dots; "Get Started →" only on last slide
 - `app/login.tsx` — ImageBackground + dark gradient, LoginForm
 - `app/register.tsx` — same dark design as login, RegisterForm
-- `app/profile.tsx` — Layout order: avatar → Display Name + KlimaTicket selector + Save → nav shortcuts group (Stats & Insights / View Achievements / My Trips) → Danger Zone. KlimaTicket uses `TICKET_GROUPS` (nationwide 6 + regional 20 presets with real 2026 prices). `SlideToDelete` uses RNGH `Gesture.Pan().runOnJS(true)` + absolute overlay. KlimaTicket dropdown closes on outside tap via absolute `TouchableWithoutFeedback` overlay (zIndex 10); dropdown at zIndex 11.
+- `app/profile.tsx` — Layout order: avatar → Display Name + KlimaTicket selector + Save → nav shortcuts group (Stats & Insights / View Achievements / My Trips) → Data section (Export Trips / Import Trips + feedback banner) → Danger Zone. KlimaTicket uses `TICKET_GROUPS` (nationwide 6 + regional 20 presets with real 2026 prices). `SlideToDelete` uses RNGH `Gesture.Pan().runOnJS(true)` + absolute overlay. KlimaTicket dropdown closes on outside tap via absolute `TouchableWithoutFeedback` overlay (zIndex 10); dropdown at zIndex 11.
 - `app/quests.tsx` — Quests & Achievements screen (segmented control); daily/weekly/milestone quests + achievements grid; main quest featured card
 - `app/stats.tsx` — Stats & Insights screen; overview cards, weekly bar chart, transport mix, top routes, KlimaTicket progress
 - `app/trips.tsx` — Full trips list screen. Header (back + "All Trips" + count), filter chips (All/Bus/Train/Tram/Subway), date-grouped list, swipe-left-to-delete (RNGH Pan, -80px threshold, red zone revealed, 200ms fly-off + setTimeout), tap → TripDetailModal. Handles own XP updates + persists to AsyncStorage. useFocusEffect reloads on focus.
@@ -33,7 +33,8 @@ A React Native / Expo app for tracking public transport trips (bus, train, tram,
 - `app/(tabs)/user.tsx` — main screen (see below)
 - `app/(tabs)/_user_styles.tsx` — styles for user.tsx; includes `root: { flex: 1 }`, `dateGroupHeader` style; prefixed with `_` so Expo Router ignores it
 - `lib/supabase.ts` — singleton Supabase client (AsyncStorage session persistence, Constants fallback for URL/key)
-- `services/tripStorage.ts` — AsyncStorage CRUD for trips; `loadTrips()` coerces distance+cost to float; storage key is `STORAGE_KEY = "@travelapp_trips"` (NOT `@trips`); **when key is missing, returns `[]` (NOT initialTrips demo data)**
+- `services/tripStorage.ts` — AsyncStorage CRUD for trips; `loadTrips()` coerces distance+cost to float; storage key is `STORAGE_KEY = "@travelapp_trips"` (NOT `@trips`); **when key is missing, returns `[]`**; exports `generateTripId()` using `crypto.randomUUID()` — single source of truth for ID generation. `initialTrips` dead code removed in S18.
+- `services/tripExport.ts` — Trip export (JSON → share sheet) and import (document picker → merge by ID). Versioned export format (`version: 1`). Import validates all fields, skips trips whose ID already exists locally. Single `saveTrips()` call for bulk insert.
 - `services/oebbApi.ts` — OeBB REST API service; base URL `https://oebb.macistry.com/api`; searchStation, searchConnections (returns ConnectionSearchResult), mapTransportType, summariseJourney (with fallback haversine distance), estimateDistanceKm
 - `types/trip.ts` — Trip interface: id, date, origin, destination, transportType, cost, distance, description
 - `utils/levelSystem.ts` — XP/level calc; exports `getLevelTitle`, `getXPForTrip`, `calculateLevel`, etc.

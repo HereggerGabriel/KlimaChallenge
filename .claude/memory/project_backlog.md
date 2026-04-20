@@ -85,13 +85,18 @@ type: project
 
 47. ~~**Trello board export + sync script**~~ — DONE. Created full Trello board via API (5 lists, 70 cards, effort/category labels). Built `trello_sync.js` CLI tool (add/done/move/update/find/lists/cards/archive-done). Credentials in `.env` (gitignored). Added Trello sync step to CLAUDE.md end-of-session checklist. Board: https://trello.com/b/PbkrPAvm/klimachallenge
 
-**Remaining — Feature Backlog (priority order, as of S17):**
+**Completed (session 18, 2026-04-20):**
 
-- 🟠 **#39** Cloud sync for trips (Supabase) — L effort. Full plan in `.claude/memory/plan_cloud_sync.md`
+48. ~~**Cloud sync Phase 0a — delete initialTrips dead code**~~ — DONE. Removed `initialTrips` + `generateDate` from `services/tripStorage.ts`.
+49. ~~**Cloud sync Phase 0b — UUID trip IDs**~~ — DONE. Added `generateTripId()` using `crypto.randomUUID()` to `services/tripStorage.ts`. Both trip creation paths in `user.tsx` updated.
+50. ~~**#40 Trip export / import (JSON)**~~ — DONE. New `services/tripExport.ts`: `exportTrips()` writes versioned JSON to cache + opens native share sheet; `importTrips()` opens document picker, validates fields, merges with existing trips (preserves original IDs, skips duplicates by ID), single `saveTrips()` call. Profile screen: new "Data" section with Export/Import buttons + feedback banner. Added `expo-file-system`, `expo-sharing`, `expo-document-picker` to package.json.
+
+**Remaining — Feature Backlog (priority order, as of S18):**
+
+- 🟠 **#52** Trip generator wizard (quick-start) — M effort. Recurring-pattern wizard for users with existing KlimaTicket. Bulk-generates trips from route/frequency/date-range. Should use `generateTripId()` and single `saveTrips()` call.
+- 🟠 **#39** Cloud sync for trips (Supabase) — L effort. Full plan in `.claude/memory/plan_cloud_sync.md`. Phase 0a+0b done in S18.
 - 🟠 **#44** Onboarding rework package — L effort, Pre-launch target
 - 🟡 **#46** Trip list search & filter — M effort
-- 🟠 **#40** Trip export / import (CSV/JSON) — S effort. Two-way: export for backup + import from file. Shared bulk-insert engine with #52
-- 🟠 **#52** Trip generator wizard (quick-start) — M effort. Recurring-pattern wizard for users with existing KlimaTicket. Bulk-generates trips from route/frequency/date-range
 - 🔵 **#48** Push notifications — M effort
 - 🔵 **#49** Shareable achievement cards — S effort
 - 🔵 **#50** Stale XP seeding comment cleanup — XS effort
@@ -99,7 +104,7 @@ type: project
 - 🟠 Pricing API investigation — M effort, Pre-release
 - 🔵 More prefetched route prices — XS effort
 
-**Active (queued for S18):** #40 + #52 (trip export/import + generator wizard)
+**Active (queued for next session):** #52 (trip generator wizard) — untested, needs review on device
 
 **Pre-production checklist:**
 - PP1 🔴 Re-enable Supabase email confirmation

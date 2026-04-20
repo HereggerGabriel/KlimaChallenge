@@ -17,7 +17,8 @@ import Animated, {
 } from "react-native-reanimated";
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { saveTrips } from "@/services/tripStorage";
+import { loadTrips, saveTrips } from "@/services/tripStorage";
+import { exportTrips, importTrips, ImportResult } from "@/services/tripExport";
 import { ThemedText } from "@/components/ThemedText";
 import { Palette } from "@/constants/Colors";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -127,6 +128,7 @@ export default function ProfileScreen() {
 	const [dropdownOpen, setDropdownOpen] = useState(false);
 	const [saved, setSaved] = useState(false);
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
+	const [importResult, setImportResult] = useState<ImportResult | null>(null);
 
 	useEffect(() => {
 		const load = async () => {
@@ -192,6 +194,24 @@ export default function ProfileScreen() {
 			]),
 		]);
 		setShowDeleteModal(false);
+	};
+
+	const handleExport = async () => {
+		const trips = await loadTrips();
+		await exportTrips(trips);
+	};
+
+	const handleImport = async () => {
+		try {
+			const result = await importTrips();
+			if (result.total > 0) {
+				setImportResult(result);
+				setTimeout(() => setImportResult(null), 4000);
+			}
+		} catch (e) {
+			setImportResult({ added: 0, skipped: 0, total: -1 });
+			setTimeout(() => setImportResult(null), 4000);
+		}
 	};
 
 	const initials = name.trim() ? name.trim()[0].toUpperCase() : "?";
@@ -369,6 +389,45 @@ export default function ProfileScreen() {
 					</TouchableOpacity>
 				</View>
 
+				{/* Data Management */}
+				<View style={styles.navSection}>
+					<ThemedText style={styles.dataLabel}>Data</ThemedText>
+					<TouchableOpacity
+						style={styles.navButton}
+						onPress={handleExport}
+						activeOpacity={0.8}
+					>
+						<MaterialIcons name="file-upload" size={20} color={Palette.blue.light} />
+						<ThemedText style={styles.navButtonText}>Export Trips</ThemedText>
+						<MaterialIcons name="chevron-right" size={20} color="rgba(255,255,255,0.4)" />
+					</TouchableOpacity>
+
+					<TouchableOpacity
+						style={styles.navButton}
+						onPress={handleImport}
+						activeOpacity={0.8}
+					>
+						<MaterialIcons name="file-download" size={20} color={Palette.green.mid} />
+						<ThemedText style={styles.navButtonText}>Import Trips</ThemedText>
+						<MaterialIcons name="chevron-right" size={20} color="rgba(255,255,255,0.4)" />
+					</TouchableOpacity>
+
+					{importResult && (
+						<View style={styles.importFeedback}>
+							<MaterialIcons
+								name={importResult.total === -1 ? "error-outline" : "check-circle"}
+								size={16}
+								color={importResult.total === -1 ? Palette.red.light : Palette.green.mid}
+							/>
+							<ThemedText style={styles.importFeedbackText}>
+								{importResult.total === -1
+									? "Invalid file format"
+									: `${importResult.added} added, ${importResult.skipped} skipped`}
+							</ThemedText>
+						</View>
+					)}
+				</View>
+
 				{/* Danger Zone */}
 				<View style={styles.dangerZone}>
 					<ThemedText style={styles.dangerZoneLabel}>Danger Zone</ThemedText>
@@ -444,6 +503,27 @@ const sliderStyles = StyleSheet.create({
 		backgroundColor: Palette.red.light,
 		alignItems: "center",
 		justifyContent: "center",
+	},
+	dataLabel: {
+		fontSize: 12,
+		color: "rgba(255,255,255,0.55)",
+		fontWeight: "600",
+		marginBottom: 8,
+		letterSpacing: 0.8,
+		textTransform: "uppercase" as const,
+	},
+	importFeedback: {
+		flexDirection: "row" as const,
+		alignItems: "center" as const,
+		gap: 6,
+		paddingHorizontal: 16,
+		paddingVertical: 10,
+		backgroundColor: "rgba(255,255,255,0.04)",
+		borderRadius: 10,
+	},
+	importFeedbackText: {
+		color: "rgba(255,255,255,0.6)",
+		fontSize: 13,
 	},
 });
 
@@ -715,5 +795,26 @@ const styles = StyleSheet.create({
 		color: "rgba(255,255,255,0.6)",
 		fontSize: 15,
 		fontWeight: "600",
+	},
+	dataLabel: {
+		fontSize: 12,
+		color: "rgba(255,255,255,0.55)",
+		fontWeight: "600",
+		marginBottom: 8,
+		letterSpacing: 0.8,
+		textTransform: "uppercase" as const,
+	},
+	importFeedback: {
+		flexDirection: "row" as const,
+		alignItems: "center" as const,
+		gap: 6,
+		paddingHorizontal: 16,
+		paddingVertical: 10,
+		backgroundColor: "rgba(255,255,255,0.04)",
+		borderRadius: 10,
+	},
+	importFeedbackText: {
+		color: "rgba(255,255,255,0.6)",
+		fontSize: 13,
 	},
 });

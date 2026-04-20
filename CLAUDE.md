@@ -1,7 +1,7 @@
 # KlimaChallenge — Claude Code Project Instructions
 
 ## Current session
-**Last completed: S17** — next session is S18.
+**Last completed: S18** — next session is S19.
 Update this line at the end of every session.
 
 ---
