@@ -47,7 +47,7 @@ export interface ImportResult {
 /** Let the user pick a JSON file, parse trips, merge with existing (skip duplicates by ID). */
 export async function importTrips(): Promise<ImportResult> {
   const result = await DocumentPicker.getDocumentAsync({
-    type: "application/json",
+    type: ["application/json", "text/plain", "text/json", "*/*"],
     copyToCacheDirectory: true,
   });
 
