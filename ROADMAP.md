@@ -8,7 +8,7 @@ Work happens on the `dev/prototype` branch.
 | Milestone | Dates | Status |
 |---|---|---|
 | M1 Foundation | Oct 20 | done |
-| M2 Trip entry + fixes | Oct 21 – Nov 1 | in progress |
+| M2 Trip entry + fixes | Oct 21 – Nov 1 | nearly done |
 | M3 Data core | Nov 2 – Nov 15 | |
 | M4 Cloud backup | Nov 16 – Nov 22 | |
 | Pilot test (5–8 people, 2 weeks) | Nov 30 – Dec 13 | runs in parallel with M5 |
@@ -34,10 +34,13 @@ Waiting on the user (changes to Claude's own config can't be committed by Claude
 ## M2 — Trip entry + fixes
 Done: icons on Android, quest dates in local time (+ first unit tests), trips sorted by date, styles moved out of `app/`, scrollable ticket picker, trip creation crash (`crypto` on Hermes), donut and "trips needed" fixes, anonymous sign-in, optional account (upgrade in place), logout in the profile with a warning.
 
-- [ ] Bundled Austrian station list (open GTFS data) with autocomplete in origin/destination
-- [ ] Distance estimate from station coordinates (offline)
-- [ ] Price estimate from distance (approximate ÖBB/Verbund standard fares), editable, remembered per route
-- [ ] Quick Add flow: route → transport type → price/distance auto-filled → date defaults to now; remove the dead "Connection" section
+- [x] Bundled Austrian station list (ÖBB GTFS, 1,117 stations) with autocomplete in origin/destination
+- [x] Rail distance from the GTFS track network (offline, Dijkstra); straight-line fallback
+- [x] Price estimate from distance (model fitted to ÖBB Relationspreise, median deviation 4.9%), editable, remembered per route
+- [x] Data pipeline documented in `scripts/data/README.md`; ÖBB attribution in the profile
+- [x] Quick Add flow: route → transport type → price/distance auto-filled → date defaults to now; dead "Connection" section removed
+- [x] Trip edit: ticket value and distance editable (weren't before)
+- [ ] Test the new trip entry on the device
 - [ ] Export/import: clear error messages
 
 ## M3 — Data core
