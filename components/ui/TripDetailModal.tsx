@@ -15,6 +15,8 @@ import { Palette } from "@/constants/Colors";
 import { Trip } from "@/types/trip";
 import { getXPForTrip } from "@/utils/levelSystem";
 import { TripRouteFields } from "@/components/ui/TripRouteFields";
+import { useTripAutofill } from "@/hooks/useTripAutofill";
+import { transportIcon } from "@/constants/transport";
 
 const TRANSPORT_TYPES = ["Bus", "Train", "Tram", "Subway"];
 
@@ -74,6 +76,16 @@ export function TripDetailModal({
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showTransportPicker, setShowTransportPicker] = useState(false);
 
+  const autofill = useTripAutofill({
+    origin: editOrigin,
+    destination: editDestination,
+    transportType: editTransportType,
+    cost: editCost,
+    setCost: setEditCost,
+    distance: editDistance,
+    setDistance: setEditDistance,
+  });
+
   // Populate form when entering edit mode
   useEffect(() => {
     if (trip && mode === "edit") {
@@ -88,7 +100,15 @@ export function TripDetailModal({
       setShowDatePicker(false);
       setShowTimePicker(false);
       setShowTransportPicker(false);
+      // Keep the trip's own values until the user changes the route.
+      autofill.initialize({
+        origin: trip.origin,
+        destination: trip.destination,
+        transportType: trip.transportType,
+      });
     }
+    // autofill.initialize is stable (useCallback).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, trip]);
 
   // Reset to view mode when modal closes
@@ -115,10 +135,11 @@ export function TripDetailModal({
   });
   const xpEarned = getXPForTrip(trip.distance, trip.transportType);
 
-  const handleSaveEdit = () => {
-    const cost = parseFloat(editCost);
-    const distance = parseFloat(editDistance);
+  const handleSaveEdit = async () => {
+    const cost = parseFloat(editCost.replace(",", "."));
+    const distance = parseFloat(editDistance.replace(",", "."));
     if (!editOrigin || !editDestination || isNaN(cost) || isNaN(distance)) return;
+    await autofill.rememberIfTyped();
     onEdit(trip.id, {
       origin: editOrigin.trim(),
       destination: editDestination.trim(),
@@ -211,7 +232,11 @@ export function TripDetailModal({
               <ScrollView showsVerticalScrollIndicator={false}>
                 <DetailRow icon="calendar-today" label="Date" value={dateStr} />
                 <DetailRow icon="access-time" label="Time" value={timeStr} />
-                <DetailRow icon="directions-bus" label="Transport" value={trip.transportType} />
+                <DetailRow
+                  icon={transportIcon(trip.transportType)}
+                  label="Transport"
+                  value={trip.transportType}
+                />
                 <DetailRow
                   icon="euro"
                   label="Cost"
@@ -243,19 +268,50 @@ export function TripDetailModal({
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               <View style={styles.divider} />
 
-              {/* Origin / Destination / Cost / Distance */}
+              {/* Origin / Destination */}
               <TripRouteFields
                 origin={editOrigin}
                 onOriginChange={setEditOrigin}
                 destination={editDestination}
                 onDestinationChange={setEditDestination}
-                cost={editCost}
-                onCostChange={setEditCost}
-                distance={editDistance}
-                onDistanceChange={setEditDistance}
-                transportType={editTransportType}
                 recentPlaces={recentPlaces}
               />
+
+              {/* Ticket value + distance */}
+              <View style={styles.editValueRow}>
+                <View style={styles.editValueColumn}>
+                  <ThemedText style={styles.fieldLabel}>Ticket value (€)</ThemedText>
+                  <TextInput
+                    style={styles.editInput}
+                    value={editCost}
+                    onChangeText={autofill.onCostTyped}
+                    keyboardType="decimal-pad"
+                    placeholder="0.00"
+                    placeholderTextColor="rgba(255,255,255,0.3)"
+                  />
+                </View>
+                <View style={styles.editValueColumn}>
+                  <ThemedText style={styles.fieldLabel}>Distance (km)</ThemedText>
+                  <TextInput
+                    style={styles.editInput}
+                    value={editDistance}
+                    onChangeText={autofill.onDistanceTyped}
+                    keyboardType="decimal-pad"
+                    placeholder="0.0"
+                    placeholderTextColor="rgba(255,255,255,0.3)"
+                  />
+                </View>
+              </View>
+              {autofill.costSource === "oebb" && (
+                <ThemedText style={styles.editHint}>
+                  Estimated ÖBB standard fare (2nd class) · edit if needed
+                </ThemedText>
+              )}
+              {autofill.distanceFromNetwork && (
+                <ThemedText style={styles.editHint}>
+                  Rail distance from the ÖBB timetable
+                </ThemedText>
+              )}
 
               {/* Transport type */}
               <ThemedText style={styles.fieldLabel}>Transport</ThemedText>
@@ -582,6 +638,18 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     color: "#fff",
     fontSize: 15,
+  },
+  editValueRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  editValueColumn: {
+    flex: 1,
+  },
+  editHint: {
+    fontSize: 12,
+    color: Palette.blue.light,
+    marginTop: 6,
   },
   editInputText: {
     color: "#fff",

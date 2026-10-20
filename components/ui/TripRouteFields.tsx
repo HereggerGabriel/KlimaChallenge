@@ -1,241 +1,137 @@
-import React, { useState, useEffect, useRef } from "react";
-import {
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  Pressable,
-  TextInput,
-  ScrollView,
-  ActivityIndicator,
-} from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
+import React, { useMemo, useState } from "react";
+import { View, StyleSheet, TouchableOpacity, Pressable, TextInput } from "react-native";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { ThemedText } from "@/components/ThemedText";
 import { Palette } from "@/constants/Colors";
-import { estimateDistanceKm } from "@/services/oebbApi";
+import { searchStations } from "@/services/stations";
 
-const ROUTE_PRICES: {
-  origins: string[];
-  destinations: string[];
-  transportType: string;
-  price: number;
-}[] = [
-  { origins: ["villach"], destinations: ["klagenfurt"], transportType: "Train", price: 10.2 },
-  { origins: ["villach"], destinations: ["wien"], transportType: "Train", price: 59.9 },
-];
-
-const TRANSPORT_FLAT_PRICES: Record<string, number> = {
-  Bus: 2.5,
-  Tram: 4.2,
-  Subway: 4.2,
-};
-
-function lookupPrice(origin: string, dest: string, transportType: string): number | null {
-  const o = origin.toLowerCase();
-  const d = dest.toLowerCase();
-  for (const preset of ROUTE_PRICES) {
-    const fwd =
-      preset.origins.some((x) => o.includes(x)) && preset.destinations.some((x) => d.includes(x));
-    const rev =
-      preset.destinations.some((x) => o.includes(x)) && preset.origins.some((x) => d.includes(x));
-    if ((fwd || rev) && preset.transportType === transportType) return preset.price;
-  }
-  if (transportType in TRANSPORT_FLAT_PRICES) return TRANSPORT_FLAT_PRICES[transportType];
-  return null;
-}
+const MAX_SUGGESTIONS = 6;
+const MAX_RECENT = 3;
 
 type TripRouteFieldsProps = {
   origin: string;
   onOriginChange: (v: string) => void;
   destination: string;
   onDestinationChange: (v: string) => void;
-  cost: string;
-  onCostChange: (v: string) => void;
-  distance: string;
-  onDistanceChange: (v: string) => void;
-  transportType: string;
+  /** Places from the user's own trips, most used first. */
   recentPlaces?: string[];
-  /** Set false to hide the distance row (render it yourself below). Defaults to true. */
-  showDistance?: boolean;
 };
+
+type Suggestion = { name: string; kind: "recent" | "station" };
+
+/** Recent places matching the text first, then stations from the bundled ÖBB list. */
+function buildSuggestions(text: string, recentPlaces: string[]): Suggestion[] {
+  const query = text.trim().toLowerCase();
+  if (query.length < 2) return [];
+  const recent = recentPlaces
+    .filter((p) => p.toLowerCase().includes(query) && p !== text)
+    .slice(0, MAX_RECENT)
+    .map((name) => ({ name, kind: "recent" as const }));
+  const taken = new Set(recent.map((s) => s.name.toLowerCase()));
+  const stations = searchStations(text, MAX_SUGGESTIONS)
+    .filter((s) => s.name !== text && !taken.has(s.name.toLowerCase()))
+    .map((s) => ({ name: s.name, kind: "station" as const }));
+  return [...recent, ...stations].slice(0, MAX_SUGGESTIONS);
+}
+
+function PlaceInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+  recentPlaces,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  recentPlaces: string[];
+}) {
+  // Hide suggestions after picking one, until the user types again.
+  const [picked, setPicked] = useState(false);
+  const suggestions = useMemo(
+    () => (picked ? [] : buildSuggestions(value, recentPlaces)),
+    [picked, value, recentPlaces],
+  );
+
+  return (
+    <>
+      <ThemedText style={styles.label}>{label}</ThemedText>
+      <View style={styles.inputRow}>
+        <TextInput
+          style={styles.input}
+          value={value}
+          onChangeText={(v) => {
+            onChange(v);
+            setPicked(false);
+          }}
+          placeholder={placeholder}
+          placeholderTextColor="rgba(255,255,255,0.3)"
+          autoCorrect={false}
+        />
+      </View>
+      {suggestions.length > 0 && (
+        <View style={styles.suggestionList}>
+          {suggestions.map((s) => (
+            <Pressable
+              key={`${s.kind}:${s.name}`}
+              style={styles.suggestionItem}
+              onPress={() => {
+                onChange(s.name);
+                setPicked(true);
+              }}
+            >
+              <MaterialIcons
+                name={s.kind === "recent" ? "history" : "train"}
+                size={14}
+                color="rgba(255,255,255,0.4)"
+              />
+              <ThemedText style={styles.suggestionText}>{s.name}</ThemedText>
+            </Pressable>
+          ))}
+        </View>
+      )}
+    </>
+  );
+}
 
 export function TripRouteFields({
   origin,
   onOriginChange,
   destination,
   onDestinationChange,
-  cost,
-  onCostChange,
-  distance,
-  onDistanceChange,
-  transportType,
   recentPlaces = [],
-  showDistance = true,
 }: TripRouteFieldsProps) {
-  const [originSelected, setOriginSelected] = useState(false);
-  const [destSelected, setDestSelected] = useState(false);
-  const [estimatingDistance, setEstimatingDistance] = useState(false);
-  const mountedRef = useRef(false);
-
-  const originSuggestions =
-    !originSelected && origin.length > 0
-      ? recentPlaces
-          .filter((p) => p.toLowerCase().includes(origin.toLowerCase()) && p !== origin)
-          .slice(0, 5)
-      : [];
-  const destSuggestions =
-    !destSelected && destination.length > 0
-      ? recentPlaces
-          .filter((p) => p.toLowerCase().includes(destination.toLowerCase()) && p !== destination)
-          .slice(0, 5)
-      : [];
-
-  // Price autofill when origin/destination/transport changes and cost is empty.
-  // Skip on initial mount so opening the modal doesn't pre-fill the price.
-  useEffect(() => {
-    if (!mountedRef.current) {
-      mountedRef.current = true;
-      return;
-    }
-    if (!cost) {
-      const suggested = lookupPrice(origin, destination, transportType);
-      if (suggested !== null) onCostChange(String(suggested));
-    }
-    // Intentionally only re-run on route/transport changes, not on cost edits.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [origin, destination, transportType]);
-
   const handleSwap = () => {
     onOriginChange(destination);
     onDestinationChange(origin);
   };
 
-  const handleEstimate = async () => {
-    if (!origin.trim() || !destination.trim()) return;
-    setEstimatingDistance(true);
-    try {
-      const km = await estimateDistanceKm(origin.trim(), destination.trim());
-      onDistanceChange(String(km));
-    } catch {
-      // silently fail
-    } finally {
-      setEstimatingDistance(false);
-    }
-  };
-
-  const canEstimate = origin.trim().length > 0 && destination.trim().length > 0;
-
   return (
     <View>
-      {/* Origin */}
-      <ThemedText style={styles.label}>Origin</ThemedText>
-      <View>
-        <View style={styles.inputRow}>
-          <TextInput
-            style={styles.input}
-            value={origin}
-            onChangeText={(v) => {
-              onOriginChange(v);
-              setOriginSelected(false);
-            }}
-            placeholder="Origin"
-            placeholderTextColor="rgba(255,255,255,0.3)"
-          />
-        </View>
-        {originSuggestions.length > 0 && (
-          <ScrollView
-            style={styles.suggestionList}
-            keyboardShouldPersistTaps="always"
-            scrollEnabled={false}
-          >
-            {originSuggestions.map((place) => (
-              <Pressable
-                key={place}
-                style={styles.suggestionItem}
-                onPress={() => {
-                  onOriginChange(place);
-                  setOriginSelected(true);
-                }}
-              >
-                <MaterialIcons name="history" size={14} color="rgba(255,255,255,0.4)" />
-                <ThemedText style={styles.suggestionText}>{place}</ThemedText>
-              </Pressable>
-            ))}
-          </ScrollView>
-        )}
-      </View>
+      <PlaceInput
+        label="Origin"
+        value={origin}
+        onChange={onOriginChange}
+        placeholder="Station or place"
+        recentPlaces={recentPlaces}
+      />
 
-      {/* Swap button */}
-      <TouchableOpacity style={styles.swapButton} onPress={handleSwap}>
+      <TouchableOpacity
+        style={styles.swapButton}
+        onPress={handleSwap}
+        accessibilityLabel="Swap origin and destination"
+      >
         <MaterialIcons name="swap-vert" size={20} color="#fff" />
       </TouchableOpacity>
 
-      {/* Destination */}
-      <ThemedText style={styles.label}>Destination</ThemedText>
-      <View>
-        <View style={styles.inputRow}>
-          <TextInput
-            style={styles.input}
-            value={destination}
-            onChangeText={(v) => {
-              onDestinationChange(v);
-              setDestSelected(false);
-            }}
-            placeholder="Destination"
-            placeholderTextColor="rgba(255,255,255,0.3)"
-          />
-        </View>
-        {destSuggestions.length > 0 && (
-          <ScrollView
-            style={styles.suggestionList}
-            keyboardShouldPersistTaps="always"
-            scrollEnabled={false}
-          >
-            {destSuggestions.map((place) => (
-              <Pressable
-                key={place}
-                style={styles.suggestionItem}
-                onPress={() => {
-                  onDestinationChange(place);
-                  setDestSelected(true);
-                }}
-              >
-                <MaterialIcons name="history" size={14} color="rgba(255,255,255,0.4)" />
-                <ThemedText style={styles.suggestionText}>{place}</ThemedText>
-              </Pressable>
-            ))}
-          </ScrollView>
-        )}
-      </View>
-
-      {/* Distance field with Estimate button */}
-      {showDistance && (
-        <>
-          <ThemedText style={styles.label}>Distance (km)</ThemedText>
-          <View style={styles.inputRow}>
-            <TextInput
-              style={styles.input}
-              value={distance}
-              onChangeText={onDistanceChange}
-              placeholder="Distance (km)"
-              keyboardType="numeric"
-              placeholderTextColor="rgba(255,255,255,0.3)"
-            />
-            {canEstimate && (
-              <TouchableOpacity
-                style={styles.estimateButton}
-                onPress={handleEstimate}
-                disabled={estimatingDistance}
-              >
-                {estimatingDistance ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <ThemedText style={styles.estimateButtonText}>Estimate</ThemedText>
-                )}
-              </TouchableOpacity>
-            )}
-          </View>
-        </>
-      )}
+      <PlaceInput
+        label="Destination"
+        value={destination}
+        onChange={onDestinationChange}
+        placeholder="Station or place"
+        recentPlaces={recentPlaces}
+      />
     </View>
   );
 }
@@ -290,21 +186,10 @@ const styles = StyleSheet.create({
   swapButton: {
     alignSelf: "center",
     padding: 6,
-    marginVertical: -8,
+    marginTop: 8,
+    marginBottom: -4,
     borderRadius: 20,
     backgroundColor: Palette.green.mid,
     zIndex: 1,
-  },
-  estimateButton: {
-    backgroundColor: Palette.blue.mid,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    marginLeft: 6,
-  },
-  estimateButtonText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
   },
 });
