@@ -1,0 +1,16 @@
+# Normalize all text files to LF in the repo and in the working tree,
+# regardless of the machine's core.autocrlf setting.
+* text=auto eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ttf binary
+*.otf binary
+*.zip binary
+*.xlsx binary
+*.docx binary
+*.odt binary
+*.pdf binary
