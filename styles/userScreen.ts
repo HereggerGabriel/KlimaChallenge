@@ -180,12 +180,15 @@ export const styles = StyleSheet.create({
     alignItems: "flex-start",
     marginBottom: 8,
   },
-  favoriteRoute: {
+  favoriteRouteBlock: {
     flex: 1,
+    marginRight: 6,
+  },
+  favoriteRoute: {
     fontSize: 13,
+    lineHeight: 18,
     fontWeight: "600",
     color: "#fff",
-    marginRight: 6,
   },
   favoriteBadge: {
     backgroundColor: Palette.green.mid,

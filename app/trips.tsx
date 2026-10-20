@@ -19,6 +19,7 @@ import { TripDetailModal } from "@/components/ui/TripDetailModal";
 import { groupTripsByDate } from "@/utils/tripGrouping";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
+import { shortRoute } from "@/services/stations";
 
 const FILTERS = ["All", "Bus", "Train", "Tram", "Subway"] as const;
 type Filter = (typeof FILTERS)[number];
@@ -87,7 +88,7 @@ function SwipeableTripCard({
                 <View style={styles.tripRow}>
                   <View style={{ flex: 1, marginRight: 8 }}>
                     <ThemedText style={styles.tripTitle} numberOfLines={1}>
-                      {trip.origin} → {trip.destination}
+                      {shortRoute(trip.origin, trip.destination)}
                     </ThemedText>
                     <ThemedText style={styles.tripMeta}>
                       {trip.transportType} · {trip.distance} km · {timeStr}

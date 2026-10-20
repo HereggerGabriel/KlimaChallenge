@@ -4,6 +4,7 @@ import {
   normalizeStationName,
   railDistanceKm,
   searchStations,
+  shortRoute,
 } from "@/services/stations";
 
 describe("normalizeStationName", () => {
@@ -71,5 +72,14 @@ describe("estimateDistanceKm", () => {
   it("works with typed names and returns null for unknown places", () => {
     expect(estimateDistanceKm("Villach Hbf", "Klagenfurt Hbf")).toBeCloseTo(37.9, 0);
     expect(estimateDistanceKm("Villach Hbf", "Mein Büro")).toBeNull();
+  });
+});
+
+describe("shortRoute", () => {
+  it("abbreviates long station suffixes for cards", () => {
+    expect(shortRoute("Klagenfurt Hauptbahnhof", "Villach Westbahnhof")).toBe(
+      "Klagenfurt Hbf → Villach Westbf",
+    );
+    expect(shortRoute("Velden/Wörthersee", "Mein Büro")).toBe("Velden/Wörthersee → Mein Büro");
   });
 });

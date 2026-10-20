@@ -34,6 +34,7 @@ import { loadTrips, saveTrips, generateTripId, sortTripsNewestFirst } from "@/se
 import { styles } from "@/styles/userScreen";
 import { TRANSPORT_COLOR, transportIcon } from "@/constants/transport";
 import { groupTripsByDate } from "@/utils/tripGrouping";
+import { shortRoute, shortStationName } from "@/services/stations";
 
 const TRIPS_PREVIEW = 5;
 
@@ -123,9 +124,15 @@ function FavoriteCard({ fav, onAdd }: { fav: FavoriteTrip; onAdd: () => void }) 
         <Animated.View style={[styles.flashOverlay, flashStyle]} />
 
         <View style={styles.favoriteCardTop}>
-          <ThemedText style={styles.favoriteRoute} numberOfLines={1}>
-            {fav.origin} → {fav.destination}
-          </ThemedText>
+          {/* Origin and destination on separate lines so half-width cards don't truncate. */}
+          <View style={styles.favoriteRouteBlock}>
+            <ThemedText style={styles.favoriteRoute} numberOfLines={1}>
+              {shortStationName(fav.origin)}
+            </ThemedText>
+            <ThemedText style={styles.favoriteRoute} numberOfLines={1}>
+              → {shortStationName(fav.destination)}
+            </ThemedText>
+          </View>
           <View style={styles.favoriteBadge}>
             <ThemedText style={styles.favoriteBadgeText}>{fav.count}×</ThemedText>
           </View>
@@ -535,7 +542,7 @@ export default function UserScreen() {
                       <View style={styles.tripHeader}>
                         <View style={{ flex: 1, marginRight: 8 }}>
                           <ThemedText style={styles.tripTitle} numberOfLines={1}>
-                            {trip.origin} → {trip.destination}
+                            {shortRoute(trip.origin, trip.destination)}
                           </ThemedText>
                           <ThemedText style={styles.tripDate}>
                             {trip.transportType} · {formatTime(trip.date)}

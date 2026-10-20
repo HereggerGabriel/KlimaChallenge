@@ -9,6 +9,7 @@ import { startOfWeek, weekStartKey } from "@/utils/dateKeys";
 import { loadTrips } from "@/services/tripStorage";
 import { Trip } from "@/types/trip";
 import { TRANSPORT_COLOR, transportIcon } from "@/constants/transport";
+import { shortRoute } from "@/services/stations";
 
 // ── CO2 constant ─────────────────────────────────────────────────────────────
 // Car: ~0.21 kg CO2/km | Austrian PT avg: ~0.05 kg CO2/km → savings: 0.16 kg/km
@@ -198,7 +199,7 @@ export default function StatsScreen() {
   // Top routes
   const routeCounts = trips.reduce<Record<string, number>>((acc, t) => {
     if (t.origin && t.destination) {
-      const key = `${t.origin} → ${t.destination}`;
+      const key = shortRoute(t.origin, t.destination);
       acc[key] = (acc[key] || 0) + 1;
     }
     return acc;
@@ -331,7 +332,9 @@ export default function StatsScreen() {
             <SectionTitle>Weekly Activity</SectionTitle>
             <View style={styles.card}>
               <WeeklyBarChart data={weeklyBarData} />
-              <ThemedText style={styles.chartLabel}>Trips per week (labelled by Monday, last 8 weeks)</ThemedText>
+              <ThemedText style={styles.chartLabel}>
+                Trips per week (labelled by Monday, last 8 weeks)
+              </ThemedText>
             </View>
 
             {/* ── Transport mix ── */}

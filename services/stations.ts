@@ -213,3 +213,18 @@ export function estimateDistanceKm(origin: string, destination: string): number 
   const b = findStation(destination);
   return a && b ? railDistanceKm(a, b) : null;
 }
+
+// ── Display ────────────────────────────────────────────────────────────────
+
+/** Compact station name for cards and titles: "Villach Hauptbahnhof" -> "Villach Hbf". */
+export function shortStationName(name: string): string {
+  return name
+    .replace(/\bHauptbahnhof\b/g, "Hbf")
+    .replace(/\bWestbahnhof\b/g, "Westbf")
+    .replace(/\bOstbahnhof\b/g, "Ostbf");
+}
+
+/** Compact "origin → destination" label for cards and titles. */
+export function shortRoute(origin: string, destination: string): string {
+  return `${shortStationName(origin)} → ${shortStationName(destination)}`;
+}

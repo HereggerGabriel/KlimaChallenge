@@ -18,6 +18,7 @@ import { TripRouteFields } from "@/components/ui/TripRouteFields";
 import { useTripAutofill } from "@/hooks/useTripAutofill";
 import { transportIcon } from "@/constants/transport";
 import { FareHints } from "@/components/ui/FareHints";
+import { shortRoute } from "@/services/stations";
 
 const TRANSPORT_TYPES = ["Bus", "Train", "Tram", "Subway"];
 
@@ -176,7 +177,7 @@ export function TripDetailModal({
           <View style={styles.header}>
             <View style={styles.headerText}>
               <ThemedText style={styles.route} numberOfLines={1}>
-                {mode === "edit" ? "Edit Trip" : `${trip.origin} → ${trip.destination}`}
+                {mode === "edit" ? "Edit Trip" : shortRoute(trip.origin, trip.destination)}
               </ThemedText>
             </View>
             <View style={styles.headerActions}>
