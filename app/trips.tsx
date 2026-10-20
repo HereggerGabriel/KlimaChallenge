@@ -18,6 +18,7 @@ import { groupTripsByDate, recentPlaces } from "@/utils/tripGrouping";
 import { useAppData } from "@/store/AppData";
 import * as Haptics from "expo-haptics";
 import { shortRoute } from "@/services/stations";
+import { formatKm } from "@/utils/format";
 
 const FILTERS = ["All", "Bus", "Train", "Tram", "Subway"] as const;
 type Filter = (typeof FILTERS)[number];
@@ -89,7 +90,7 @@ function SwipeableTripCard({
                       {shortRoute(trip.origin, trip.destination)}
                     </ThemedText>
                     <ThemedText style={styles.tripMeta}>
-                      {trip.transportType} · {trip.distance} km · {timeStr}
+                      {trip.transportType} · {formatKm(trip.distance)} km · {timeStr}
                     </ThemedText>
                   </View>
                   <ThemedText style={styles.tripCost}>€{trip.cost.toFixed(2)}</ThemedText>

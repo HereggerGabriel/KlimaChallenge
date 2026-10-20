@@ -22,6 +22,7 @@ import { TRANSPORT_COLOR, transportIcon } from "@/constants/transport";
 import { groupTripsByDate, recentPlaces } from "@/utils/tripGrouping";
 import { useAppData } from "@/store/AppData";
 import { shortRoute, shortStationName } from "@/services/stations";
+import { formatKm } from "@/utils/format";
 
 const TRIPS_PREVIEW = 5;
 
@@ -131,7 +132,7 @@ function FavoriteCard({ fav, onAdd }: { fav: FavoriteTrip; onAdd: () => void }) 
             color={Palette.blue.light}
           />
           <ThemedText style={styles.favoriteTransport}>{fav.transportType}</ThemedText>
-          <ThemedText style={styles.favoriteDistance}>{fav.distance} km</ThemedText>
+          <ThemedText style={styles.favoriteDistance}>{formatKm(fav.distance)} km</ThemedText>
         </View>
       </View>
     </GestureDetector>

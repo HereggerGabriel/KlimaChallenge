@@ -19,6 +19,7 @@ import { useTripAutofill } from "@/hooks/useTripAutofill";
 import { transportIcon } from "@/constants/transport";
 import { FareHints } from "@/components/ui/FareHints";
 import { shortRoute } from "@/services/stations";
+import { formatKm } from "@/utils/format";
 
 const TRANSPORT_TYPES = ["Bus", "Train", "Tram", "Subway"];
 
@@ -245,7 +246,11 @@ export function TripDetailModal({
                   value={`€${trip.cost.toFixed(2)}`}
                   valueColor={Palette.green.mid}
                 />
-                <DetailRow icon="straighten" label="Distance" value={`${trip.distance} km`} />
+                <DetailRow
+                  icon="straighten"
+                  label="Distance"
+                  value={`${formatKm(trip.distance)} km`}
+                />
                 {trip.description ? (
                   <DetailRow icon="chat-bubble-outline" label="Note" value={trip.description} />
                 ) : null}

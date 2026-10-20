@@ -5,6 +5,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import Svg, { Circle } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
 import { Palette } from "@/constants/Colors";
+import { formatKm } from "@/utils/format";
 
 interface FinancialOverviewProps {
   totalTrips: number;
@@ -108,7 +109,7 @@ export function FinancialOverview({
 
           <View style={styles.row}>
             <ThemedText style={styles.label}>Total Distance</ThemedText>
-            <ThemedText style={styles.value}>{totalDistance} km</ThemedText>
+            <ThemedText style={styles.value}>{formatKm(totalDistance)} km</ThemedText>
           </View>
 
           <View style={styles.row}>
@@ -187,7 +188,7 @@ export function FinancialOverview({
                   : `About ${tripsNeeded} more trips like yours to break even`}
             </ThemedText>
             <ThemedText style={styles.timeFrameText}>
-              Based on {totalTrips} trips covering {totalDistance} km
+              Based on {totalTrips} trips covering {formatKm(totalDistance)} km
             </ThemedText>
           </View>
         </>
