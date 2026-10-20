@@ -1,4 +1,5 @@
 import { Trip } from "@/types/trip";
+import { localDateKey } from "@/utils/dateKeys";
 
 export const STREAK_MILESTONES_KEY = "@claimedStreakMilestones";
 
@@ -40,17 +41,10 @@ export function getNewMilestoneXP(
 export function computeStreak(trips: Trip[]): number {
   if (trips.length === 0) return 0;
 
-  const toDateStr = (d: Date) => {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${y}-${m}-${day}`;
-  };
-
   const dateSet = new Set(
     trips.map((t) => {
       const d = t.date instanceof Date ? t.date : new Date(t.date);
-      return toDateStr(d);
+      return localDateKey(d);
     }),
   );
 
@@ -60,8 +54,8 @@ export function computeStreak(trips: Trip[]): number {
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
 
-  const todayStr = toDateStr(today);
-  const yesterdayStr = toDateStr(yesterday);
+  const todayStr = localDateKey(today);
+  const yesterdayStr = localDateKey(yesterday);
 
   // Streak must include today or yesterday to be active
   if (!dateSet.has(todayStr) && !dateSet.has(yesterdayStr)) return 0;
@@ -71,7 +65,7 @@ export function computeStreak(trips: Trip[]): number {
   let streak = 0;
   const cursor = new Date(start);
 
-  while (dateSet.has(toDateStr(cursor))) {
+  while (dateSet.has(localDateKey(cursor))) {
     streak++;
     cursor.setDate(cursor.getDate() - 1);
   }

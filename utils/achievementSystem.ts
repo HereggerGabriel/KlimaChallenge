@@ -26,32 +26,8 @@ export const ACHIEVEMENT_CATEGORIES: { key: AchievementCategory; label: string }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-function toDate(d: Date | string): Date {
-  return d instanceof Date ? d : new Date(d);
-}
-
-/** Current active streak: consecutive days (ending today or yesterday) with ≥1 trip */
-export function computeStreak(trips: Trip[]): number {
-  if (trips.length === 0) return 0;
-
-  const dates = new Set(trips.map((t) => toDate(t.date).toDateString()));
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
-
-  if (!dates.has(today.toDateString()) && !dates.has(yesterday.toDateString())) return 0;
-
-  const start = dates.has(today.toDateString()) ? new Date(today) : new Date(yesterday);
-  let streak = 0;
-  const cur = new Date(start);
-
-  while (dates.has(cur.toDateString())) {
-    streak++;
-    cur.setDate(cur.getDate() - 1);
-  }
-
-  return streak;
-}
+// Single implementation lives in streakSystem; re-exported for existing imports.
+export { computeStreak } from "@/utils/streakSystem";
 
 /** Estimated savings vs driving a car (€0.30/km assumption) */
 export function computeSavedVsCar(trips: Trip[]): number {

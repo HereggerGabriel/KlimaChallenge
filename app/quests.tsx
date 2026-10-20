@@ -8,6 +8,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { Palette } from "@/constants/Colors";
 import { loadTrips } from "@/services/tripStorage";
 import { Trip } from "@/types/trip";
+import { localDateKey, weekStartKey } from "@/utils/dateKeys";
 import {
   calculateLevel,
   calculateCurrentLevelXP,
@@ -41,18 +42,6 @@ const CLAIMED_QUESTS_KEY = "@claimedQuests";
 const CLAIMED_ACHIEVEMENTS_KEY = "@claimedAchievements";
 const DAILY_SELECTION_KEY = "@dailyQuestSelection";
 const WEEKLY_SELECTION_KEY = "@weeklyQuestSelection";
-
-function getTodayKey(): string {
-  return new Date().toISOString().split("T")[0];
-}
-
-function getWeekStartKey(): string {
-  const now = new Date();
-  const day = now.getDay();
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
-  return monday.toISOString().split("T")[0];
-}
 
 async function loadOrRefreshSelection(
   storageKey: string,
@@ -382,8 +371,8 @@ export default function QuestsScreen() {
           AsyncStorage.getItem("userXP"),
           AsyncStorage.getItem(CLAIMED_QUESTS_KEY),
           AsyncStorage.getItem(CLAIMED_ACHIEVEMENTS_KEY),
-          loadOrRefreshSelection(DAILY_SELECTION_KEY, getTodayKey(), DAILY_QUEST_POOL),
-          loadOrRefreshSelection(WEEKLY_SELECTION_KEY, getWeekStartKey(), WEEKLY_QUEST_POOL),
+          loadOrRefreshSelection(DAILY_SELECTION_KEY, localDateKey(), DAILY_QUEST_POOL),
+          loadOrRefreshSelection(WEEKLY_SELECTION_KEY, weekStartKey(), WEEKLY_QUEST_POOL),
           AsyncStorage.getItem("klimaTicketCost"),
         ]);
 

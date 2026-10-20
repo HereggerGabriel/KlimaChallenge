@@ -1,4 +1,5 @@
 import { Trip } from "@/types/trip";
+import { isInCurrentWeek, isSameLocalDay, localDateKey, weekStartKey } from "@/utils/dateKeys";
 
 export type QuestType = "daily" | "weekly" | "milestone";
 
@@ -32,36 +33,18 @@ function toDate(d: Date | string): Date {
 }
 
 function isToday(d: Date | string): boolean {
-  return toDate(d).toDateString() === new Date().toDateString();
+  return isSameLocalDay(toDate(d), new Date());
 }
 
 function isThisWeek(d: Date | string): boolean {
-  const date = toDate(d);
-  const now = new Date();
-  const day = now.getDay();
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
-  monday.setHours(0, 0, 0, 0);
-  return date >= monday;
+  return isInCurrentWeek(toDate(d));
 }
 
 // ── Claim key helpers ──────────────────────────────────────────────────────
 
-function getDateKey(): string {
-  return new Date().toISOString().split("T")[0];
-}
-
-function getWeekStartKey(): string {
-  const now = new Date();
-  const day = now.getDay();
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
-  return monday.toISOString().split("T")[0];
-}
-
 export function getClaimKey(quest: Quest): string {
-  if (quest.type === "daily") return `${quest.id}:${getDateKey()}`;
-  if (quest.type === "weekly") return `${quest.id}:${getWeekStartKey()}`;
+  if (quest.type === "daily") return `${quest.id}:${localDateKey()}`;
+  if (quest.type === "weekly") return `${quest.id}:${weekStartKey()}`;
   return quest.id;
 }
 
