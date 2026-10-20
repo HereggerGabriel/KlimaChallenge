@@ -32,7 +32,9 @@ export function FinancialOverview({
   const savingsPercentage = ((savings / klimaTicketCost) * 100).toFixed(1);
   const remainingToBreakEven = Math.max(0, klimaTicketCost - savings);
   const percentage = Math.min((savings / klimaTicketCost) * 100, 100);
-  const tripsNeeded = Math.ceil(remainingToBreakEven / 2.5);
+  // Based on the user's own average trip value; unknown until the first trip is logged.
+  const avgTripValue = totalTrips > 0 ? totalCost / totalTrips : 0;
+  const tripsNeeded = avgTripValue > 0 ? Math.ceil(remainingToBreakEven / avgTripValue) : null;
 
   const circumference = 2 * Math.PI * CIRCLE_RADIUS;
   const progressOffset = circumference - (percentage / 100) * circumference;
@@ -131,6 +133,7 @@ export function FinancialOverview({
                 cx={CIRCLE_CENTER}
                 cy={CIRCLE_CENTER}
                 r={CIRCLE_RADIUS}
+                fill="none"
                 stroke="rgba(255,255,255,0.15)"
                 strokeWidth={CIRCLE_STROKE_WIDTH}
               />
@@ -138,6 +141,7 @@ export function FinancialOverview({
                 cx={CIRCLE_CENTER}
                 cy={CIRCLE_CENTER}
                 r={CIRCLE_RADIUS}
+                fill="none"
                 stroke={Palette.green.mid}
                 strokeWidth={CIRCLE_STROKE_WIDTH}
                 strokeDasharray={circumference}
@@ -176,9 +180,11 @@ export function FinancialOverview({
           {/* Info footer */}
           <View style={styles.infoContainer}>
             <ThemedText style={styles.infoText}>
-              {tripsNeeded > 0
-                ? `${tripsNeeded} more trips needed to break even`
-                : "KlimaTicket has paid off!"}
+              {remainingToBreakEven <= 0
+                ? "KlimaTicket has paid off!"
+                : tripsNeeded === null
+                  ? "Log your first trip to see how many you need to break even"
+                  : `About ${tripsNeeded} more trips like yours to break even`}
             </ThemedText>
             <ThemedText style={styles.timeFrameText}>
               Based on {totalTrips} trips covering {totalDistance} km
