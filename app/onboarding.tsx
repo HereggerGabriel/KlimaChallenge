@@ -11,6 +11,8 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ONBOARDING_SEEN_KEY } from "@/lib/auth";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Palette } from "@/constants/Colors";
@@ -63,7 +65,13 @@ export default function OnboardingScreen() {
 
   const isLast = activeIndex === SLIDES.length - 1;
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
+    await AsyncStorage.setItem(ONBOARDING_SEEN_KEY, "true").catch(() => {});
+    router.replace("/(tabs)/user");
+  };
+
+  const handleExistingAccount = async () => {
+    await AsyncStorage.setItem(ONBOARDING_SEEN_KEY, "true").catch(() => {});
     router.replace("/login");
   };
 
@@ -147,9 +155,18 @@ export default function OnboardingScreen() {
         </View>
 
         {isLast && (
-          <TouchableOpacity style={styles.ctaButton} onPress={handleFinish} activeOpacity={0.85}>
-            <Text style={styles.ctaText}>Get Started →</Text>
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity style={styles.ctaButton} onPress={handleFinish} activeOpacity={0.85}>
+              <Text style={styles.ctaText}>Get Started →</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.secondaryLink}
+              onPress={handleExistingAccount}
+              hitSlop={{ top: 8, bottom: 8, left: 12, right: 12 }}
+            >
+              <Text style={styles.secondaryLinkText}>I already have an account</Text>
+            </TouchableOpacity>
+          </>
         )}
       </View>
     </View>
@@ -238,6 +255,15 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: "center",
+  },
+  secondaryLink: {
+    alignSelf: "center",
+    marginTop: 16,
+  },
+  secondaryLinkText: {
+    color: "rgba(255,255,255,0.6)",
+    fontSize: 14,
+    fontWeight: "500",
   },
   ctaText: {
     color: "#ffffff",

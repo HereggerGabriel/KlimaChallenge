@@ -8,16 +8,19 @@ import Animated, {
 } from "react-native-reanimated";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Palette } from "@/constants/Colors";
-import { supabase } from "@/lib/supabase";
+import { ensureSession, ONBOARDING_SEEN_KEY } from "@/lib/auth";
 
+// Every user gets a session (anonymous unless they linked an email), so the
+// only question is whether they have seen onboarding yet. A failed sign-in
+// (offline) doesn't block the app; ensureSession retries on the next launch.
 async function getInitialRoute(): Promise<"/onboarding" | "/(tabs)/user"> {
-  try {
-    const { data } = await supabase.auth.getSession();
-    return data.session ? "/(tabs)/user" : "/onboarding";
-  } catch {
-    return "/onboarding";
-  }
+  const [, seen] = await Promise.all([
+    ensureSession(),
+    AsyncStorage.getItem(ONBOARDING_SEEN_KEY).catch(() => null),
+  ]);
+  return seen ? "/(tabs)/user" : "/onboarding";
 }
 
 export default function SplashScreen() {
