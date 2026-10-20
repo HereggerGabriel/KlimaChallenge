@@ -1,4 +1,7 @@
+import type MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Palette } from "@/constants/Colors";
+
+export type MaterialIconName = React.ComponentProps<typeof MaterialIcons>["name"];
 
 export const TRANSPORT_COLOR: Record<string, string> = {
   Bus: Palette.blue.mid,
@@ -7,7 +10,7 @@ export const TRANSPORT_COLOR: Record<string, string> = {
   Subway: Palette.green.dark,
 };
 
-export function transportIcon(type: string): string {
+export function transportIcon(type: string): MaterialIconName {
   switch (type) {
     case "Train":
       return "train";

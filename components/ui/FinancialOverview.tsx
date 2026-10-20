@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
-import { IconSymbol } from "@/components/ui/IconSymbol";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import Svg, { Circle } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
 import { Palette } from "@/constants/Colors";
@@ -51,8 +51,8 @@ export function FinancialOverview({
         activeOpacity={0.75}
       >
         <ThemedText style={styles.title}>Financial Overview</ThemedText>
-        <IconSymbol
-          name={expanded ? "chevron.up" : "chevron.down"}
+        <MaterialIcons
+          name={expanded ? "keyboard-arrow-up" : "keyboard-arrow-down"}
           size={16}
           color="rgba(255,255,255,0.5)"
         />
@@ -86,8 +86,8 @@ export function FinancialOverview({
         <ThemedText style={styles.expandHintText}>
           {expanded ? "Hide details" : "Show details"}
         </ThemedText>
-        <IconSymbol
-          name={expanded ? "chevron.up" : "chevron.down"}
+        <MaterialIcons
+          name={expanded ? "keyboard-arrow-up" : "keyboard-arrow-down"}
           size={12}
           color={Palette.blue.light}
         />
@@ -157,17 +157,17 @@ export function FinancialOverview({
           {/* Stats bar */}
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
-              <IconSymbol name="eurosign.circle.fill" size={24} color="#fff" />
+              <MaterialIcons name="euro" size={24} color="#fff" />
               <ThemedText style={styles.statValue}>€{totalCost.toFixed(2)}</ThemedText>
               <ThemedText style={styles.statLabel}>Ticket Value</ThemedText>
             </View>
             <View style={styles.statItem}>
-              <IconSymbol name="bus" size={24} color="#fff" />
+              <MaterialIcons name="directions-bus" size={24} color="#fff" />
               <ThemedText style={styles.statValue}>{totalTrips}</ThemedText>
               <ThemedText style={styles.statLabel}>Total Trips</ThemedText>
             </View>
             <View style={styles.statItem}>
-              <IconSymbol name="arrow.up.circle.fill" size={24} color="#fff" />
+              <MaterialIcons name="arrow-circle-up" size={24} color="#fff" />
               <ThemedText style={styles.statValue}>€{remainingToBreakEven.toFixed(2)}</ThemedText>
               <ThemedText style={styles.statLabel}>To Break Even</ThemedText>
             </View>

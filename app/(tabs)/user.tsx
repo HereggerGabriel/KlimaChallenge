@@ -8,8 +8,8 @@ import Animated, {
   useAnimatedStyle,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { ThemedText } from "@/components/ThemedText";
-import { IconSymbol } from "@/components/ui/IconSymbol";
 import { Palette } from "@/constants/Colors";
 import { router, useFocusEffect } from "expo-router";
 import { FinancialOverview } from "@/components/ui/FinancialOverview";
@@ -33,7 +33,7 @@ import { Trip } from "@/types/trip";
 import { loadTrips, saveTrips, generateTripId } from "@/services/tripStorage";
 import { styles } from "./_user_styles";
 import { supabase } from "@/lib/supabase";
-import { TRANSPORT_COLOR } from "@/constants/transport";
+import { TRANSPORT_COLOR, transportIcon } from "@/constants/transport";
 import { groupTripsByDate } from "@/utils/tripGrouping";
 
 const TRIPS_PREVIEW = 5;
@@ -126,7 +126,11 @@ function FavoriteCard({ fav, onAdd }: { fav: FavoriteTrip; onAdd: () => void }) 
           </View>
         </View>
         <View style={styles.favoriteCardBottom}>
-          <IconSymbol name="bus" size={14} color={Palette.blue.light} />
+          <MaterialIcons
+            name={transportIcon(fav.transportType)}
+            size={14}
+            color={Palette.blue.light}
+          />
           <ThemedText style={styles.favoriteTransport}>{fav.transportType}</ThemedText>
           <ThemedText style={styles.favoriteDistance}>{fav.distance} km</ThemedText>
         </View>
@@ -460,7 +464,7 @@ export default function UserScreen() {
         {favorites.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionTitleRow}>
-              <IconSymbol name="star.fill" size={16} color={Palette.green.mid} />
+              <MaterialIcons name="star" size={16} color={Palette.green.mid} />
               <ThemedText type="subtitle" style={styles.sectionTitle}>
                 Favorites
               </ThemedText>
@@ -481,26 +485,26 @@ export default function UserScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
-              <IconSymbol name="clock" size={16} color={Palette.blue.light} />
+              <MaterialIcons name="schedule" size={16} color={Palette.blue.light} />
               <ThemedText type="subtitle" style={styles.sectionTitle}>
                 Recent Trips
               </ThemedText>
             </View>
             <TouchableOpacity style={styles.addButton} onPress={() => setShowQuickAdd(true)}>
-              <IconSymbol name="plus.circle.fill" size={20} color="#fff" />
+              <MaterialIcons name="add-circle" size={20} color="#fff" />
               <ThemedText style={styles.addButtonText}>Add Trip</ThemedText>
             </TouchableOpacity>
           </View>
 
           {trips.length === 0 && (
             <View style={styles.emptyState}>
-              <IconSymbol name="bus" size={36} color="rgba(255,255,255,0.18)" />
+              <MaterialIcons name="directions-bus" size={36} color="rgba(255,255,255,0.18)" />
               <ThemedText style={styles.emptyStateTitle}>No trips yet</ThemedText>
               <ThemedText style={styles.emptyStateSubtitle}>
                 Add your first trip to start tracking your climate impact
               </ThemedText>
               <TouchableOpacity style={styles.emptyStateCTA} onPress={() => setShowQuickAdd(true)}>
-                <IconSymbol name="plus.circle.fill" size={18} color="#fff" />
+                <MaterialIcons name="add-circle" size={18} color="#fff" />
                 <ThemedText style={styles.emptyStateCTAText}>Add Trip</ThemedText>
               </TouchableOpacity>
             </View>
@@ -546,7 +550,7 @@ export default function UserScreen() {
           {trips.length > TRIPS_PREVIEW && (
             <TouchableOpacity style={styles.showAllButton} onPress={() => router.push("/trips")}>
               <ThemedText style={styles.showAllText}>See all {trips.length} trips</ThemedText>
-              <IconSymbol name="chevron.right" size={14} color={Palette.blue.light} />
+              <MaterialIcons name="chevron-right" size={14} color={Palette.blue.light} />
             </TouchableOpacity>
           )}
         </View>
@@ -554,11 +558,7 @@ export default function UserScreen() {
         {/* Logout */}
         <View style={styles.logoutSection}>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <IconSymbol
-              name="rectangle.portrait.and.arrow.right"
-              size={18}
-              color={Palette.red.light}
-            />
+            <MaterialIcons name="logout" size={18} color={Palette.red.light} />
             <ThemedText style={styles.logoutButtonText}>Log Out</ThemedText>
           </TouchableOpacity>
         </View>

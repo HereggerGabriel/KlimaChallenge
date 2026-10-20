@@ -14,7 +14,6 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-import { IconSymbol } from "@/components/ui/IconSymbol";
 import { Palette } from "@/constants/Colors";
 import { TripRouteFields } from "@/components/ui/TripRouteFields";
 import {
@@ -242,7 +241,7 @@ export function QuickAddTripModal({
             <View style={styles.header}>
               <ThemedText type="subtitle">Quick Add Trip</ThemedText>
               <TouchableOpacity onPress={onClose}>
-                <IconSymbol name="xmark.circle.fill" size={24} color="rgba(255,255,255,0.5)" />
+                <MaterialIcons name="cancel" size={24} color="rgba(255,255,255,0.5)" />
               </TouchableOpacity>
             </View>
 
@@ -280,7 +279,7 @@ export function QuickAddTripModal({
                 {loadingConnections ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <IconSymbol name="magnifyingglass" size={16} color="#fff" />
+                  <MaterialIcons name="search" size={16} color="#fff" />
                 )}
                 <ThemedText style={styles.searchButtonText}>
                   {loadingConnections ? "Searching…" : "Find Connections"}
@@ -385,7 +384,7 @@ export function QuickAddTripModal({
               style={styles.pickerButton}
               onPress={() => setShowTransportPicker(true)}
             >
-              <IconSymbol name="bus" size={20} color="rgba(255,255,255,0.5)" />
+              <MaterialIcons name="directions-bus" size={20} color="rgba(255,255,255,0.5)" />
               <ThemedText
                 style={[styles.pickerButtonText, !transportType && styles.pickerButtonPlaceholder]}
               >
@@ -462,7 +461,7 @@ export function QuickAddTripModal({
 
             {/* Description */}
             <View style={styles.inputContainer}>
-              <IconSymbol name="text.bubble" size={20} color="rgba(255,255,255,0.5)" />
+              <MaterialIcons name="chat-bubble-outline" size={20} color="rgba(255,255,255,0.5)" />
               <TextInput
                 style={styles.input}
                 value={description}

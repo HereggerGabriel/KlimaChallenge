@@ -351,7 +351,7 @@ export default function StatsScreen() {
                     <View key={item.type} style={styles.transportRow}>
                       <View style={styles.transportLabelWrap}>
                         <MaterialIcons
-                          name={transportIcon(item.type) as any}
+                          name={transportIcon(item.type)}
                           size={16}
                           color={item.color}
                         />
