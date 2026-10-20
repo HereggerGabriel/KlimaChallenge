@@ -8,7 +8,7 @@ Work happens on the `dev/prototype` branch.
 | Milestone | Dates | Status |
 |---|---|---|
 | M1 Foundation | Oct 20 | done |
-| M2 Trip entry + fixes | Oct 21 – Nov 1 | nearly done |
+| M2 Trip entry + fixes | Oct 20 | done |
 | M3 Data core | Nov 2 – Nov 15 | |
 | M4 Cloud backup | Nov 16 – Nov 22 | |
 | Pilot test (5–8 people, 2 weeks) | Nov 30 – Dec 13 | runs in parallel with M5 |
@@ -28,8 +28,8 @@ Work happens on the `dev/prototype` branch.
 Done: LF line endings, repo cleanup, dependencies aligned with SDK 54, dead code and NativeWind removed, single app config, Prettier + ESLint, `tsc` at 0, dev build on Android (USB + `adb reverse`, `npm run dev`).
 
 Waiting on the user (changes to Claude's own config can't be committed by Claude):
-- [ ] Untrack `.claude/settings.local.json` (contained a Trello token)
-- [ ] Commit the updated CLAUDE.md + `.claude/memory/` files
+- [x] Untrack `.claude/settings.local.json` (contained a Trello token, expired since May 2026)
+- [x] Commit the updated CLAUDE.md + `.claude/memory/` files
 
 ## M2 — Trip entry + fixes
 Done: icons on Android, quest dates in local time (+ first unit tests), trips sorted by date, styles moved out of `app/`, scrollable ticket picker, trip creation crash (`crypto` on Hermes), donut and "trips needed" fixes, anonymous sign-in, optional account (upgrade in place), logout in the profile with a warning.
@@ -43,7 +43,7 @@ Done: icons on Android, quest dates in local time (+ first unit tests), trips so
 - [x] Hint under estimated prices (regional Verbund tickets often cost more) + "Check price at ÖBB" link to the ticket shop
 - [x] Test the new trip entry on the device
 - [x] "Check price at ÖBB" opens the route pre-filled in the ÖBB timetable (one tap on "Ticket und Preise" per connection); remembered price shows the ÖBB estimate alongside
-- [ ] Export/import: clear error messages
+- [x] Export/import: clear messages (not JSON, no trips, nothing to export, sharing unavailable, X imported / Y already there)
 
 ## M3 — Data core
 - [ ] Shared trips store (one set of add/edit/delete functions for all screens)

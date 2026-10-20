@@ -16,7 +16,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-na
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { loadTrips, saveTrips } from "@/services/tripStorage";
-import { exportTrips, importTrips, ImportResult } from "@/services/tripExport";
+import { exportTrips, importTrips } from "@/services/tripExport";
 import { ThemedText } from "@/components/ThemedText";
 import { Palette } from "@/constants/Colors";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -146,7 +146,7 @@ export default function ProfileScreen() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [saved, setSaved] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [dataFeedback, setDataFeedback] = useState<{ ok: boolean; message: string } | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -233,21 +233,38 @@ export default function ProfileScreen() {
     );
   };
 
+  const showDataFeedback = (ok: boolean, message: string) => {
+    setDataFeedback({ ok, message });
+    setTimeout(() => setDataFeedback(null), 5000);
+  };
+
   const handleExport = async () => {
-    const trips = await loadTrips();
-    await exportTrips(trips);
+    try {
+      const trips = await loadTrips();
+      if (trips.length === 0) {
+        showDataFeedback(false, "No trips to export yet.");
+        return;
+      }
+      await exportTrips(trips);
+    } catch (e) {
+      showDataFeedback(false, e instanceof Error ? e.message : "Export failed.");
+    }
   };
 
   const handleImport = async () => {
     try {
       const result = await importTrips();
-      if (result.total > 0) {
-        setImportResult(result);
-        setTimeout(() => setImportResult(null), 4000);
-      }
-    } catch {
-      setImportResult({ added: 0, skipped: 0, total: -1 });
-      setTimeout(() => setImportResult(null), 4000);
+      if (result.canceled) return;
+      const plural = (n: number) => `${n} trip${n === 1 ? "" : "s"}`;
+      showDataFeedback(
+        true,
+        result.added === 0
+          ? `All ${plural(result.total)} were already in the app.`
+          : `${plural(result.added)} imported` +
+              (result.skipped > 0 ? `, ${result.skipped} already in the app.` : "."),
+      );
+    } catch (e) {
+      showDataFeedback(false, e instanceof Error ? e.message : "Import failed.");
     }
   };
 
@@ -516,18 +533,14 @@ export default function ProfileScreen() {
             <MaterialIcons name="chevron-right" size={20} color="rgba(255,255,255,0.4)" />
           </TouchableOpacity>
 
-          {importResult && (
+          {dataFeedback && (
             <View style={styles.importFeedback}>
               <MaterialIcons
-                name={importResult.total === -1 ? "error-outline" : "check-circle"}
+                name={dataFeedback.ok ? "check-circle" : "error-outline"}
                 size={16}
-                color={importResult.total === -1 ? Palette.red.light : Palette.green.mid}
+                color={dataFeedback.ok ? Palette.green.mid : Palette.red.light}
               />
-              <ThemedText style={styles.importFeedbackText}>
-                {importResult.total === -1
-                  ? "Invalid file format"
-                  : `${importResult.added} added, ${importResult.skipped} skipped`}
-              </ThemedText>
+              <ThemedText style={styles.importFeedbackText}>{dataFeedback.message}</ThemedText>
             </View>
           )}
         </View>
@@ -607,19 +620,6 @@ const sliderStyles = StyleSheet.create({
     backgroundColor: Palette.red.light,
     alignItems: "center",
     justifyContent: "center",
-  },
-  importFeedback: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    borderRadius: 10,
-  },
-  importFeedbackText: {
-    color: "rgba(255,255,255,0.6)",
-    fontSize: 13,
   },
 });
 

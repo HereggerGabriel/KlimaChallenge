@@ -3,6 +3,7 @@ import * as Sharing from "expo-sharing";
 import * as DocumentPicker from "expo-document-picker";
 import { Trip } from "@/types/trip";
 import { loadTrips, saveTrips, sortTripsNewestFirst } from "./tripStorage";
+import { localDateKey } from "@/utils/dateKeys";
 
 // ── Export format ──────────────────────────────────────────────────────────────
 
@@ -20,8 +21,12 @@ export async function exportTrips(trips: Trip[]): Promise<void> {
     trips,
   };
 
+  if (!(await Sharing.isAvailableAsync())) {
+    throw new Error("Sharing isn't available on this device.");
+  }
+
   const json = JSON.stringify(payload, null, 2);
-  const date = new Date().toISOString().slice(0, 10);
+  const date = localDateKey();
   const fileName = `klimachallenge_trips_${date}.json`;
   const filePath = `${FileSystem.cacheDirectory}${fileName}`;
 
@@ -39,6 +44,8 @@ export async function exportTrips(trips: Trip[]): Promise<void> {
 // ── Import ─────────────────────────────────────────────────────────────────────
 
 export interface ImportResult {
+  /** The user closed the file picker without choosing a file. */
+  canceled: boolean;
   added: number;
   skipped: number;
   total: number;
@@ -52,7 +59,7 @@ export async function importTrips(): Promise<ImportResult> {
   });
 
   if (result.canceled || !result.assets?.length) {
-    return { added: 0, skipped: 0, total: 0 };
+    return { canceled: true, added: 0, skipped: 0, total: 0 };
   }
 
   const fileUri = result.assets[0].uri;
@@ -60,11 +67,16 @@ export async function importTrips(): Promise<ImportResult> {
     encoding: FileSystem.EncodingType.UTF8,
   });
 
-  const parsed = JSON.parse(raw);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error("This file isn't a KlimaChallenge export (not valid JSON).");
+  }
   const incomingTrips = parseTripsFromPayload(parsed);
 
   if (incomingTrips.length === 0) {
-    return { added: 0, skipped: 0, total: 0 };
+    throw new Error("No valid trips found in this file.");
   }
 
   // Merge: skip trips whose ID already exists locally
@@ -88,6 +100,7 @@ export async function importTrips(): Promise<ImportResult> {
   }
 
   return {
+    canceled: false,
     added: newTrips.length,
     skipped,
     total: incomingTrips.length,
@@ -111,7 +124,7 @@ function parseTripsFromPayload(parsed: unknown): Trip[] {
   ) {
     rawTrips = (parsed as any).trips;
   } else {
-    throw new Error("Invalid file format: expected a trips array");
+    throw new Error("This file isn't a KlimaChallenge export (no trips list).");
   }
 
   return rawTrips.map((raw: any) => validateTrip(raw)).filter((t): t is Trip => t !== null);
