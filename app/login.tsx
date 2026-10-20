@@ -31,7 +31,7 @@ export default function LoginScreen() {
           <ThemedText style={styles.logoEmoji}>🚊</ThemedText>
         </View>
         <ThemedText style={styles.appName}>KlimaChallenge</ThemedText>
-        <ThemedText style={styles.tagline}>KLIMACHALLENGE</ThemedText>
+        <ThemedText style={styles.tagline}>TRACK. SAVE. BEAT BREAK-EVEN.</ThemedText>
       </View>
 
       {/* Form — lower two-thirds */}
