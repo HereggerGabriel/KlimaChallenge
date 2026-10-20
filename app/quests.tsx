@@ -1,20 +1,11 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { View, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Haptics from "expo-haptics";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { ThemedText } from "@/components/ThemedText";
 import { Palette } from "@/constants/Colors";
-import { loadTrips } from "@/services/tripStorage";
-import { Trip } from "@/types/trip";
 import { localDateKey, weekStartKey } from "@/utils/dateKeys";
-import {
-  calculateLevel,
-  calculateCurrentLevelXP,
-  calculateXPForNextLevel,
-  addXP,
-} from "@/utils/levelSystem";
 import {
   DAILY_QUEST_POOL,
   WEEKLY_QUEST_POOL,
@@ -25,7 +16,6 @@ import {
   timeUntilMidnight,
   daysUntilMonday,
   QUESTS_PER_ROTATION,
-  MAIN_QUEST_ID,
   MAIN_QUEST_XP,
 } from "@/utils/questSystem";
 import {
@@ -35,11 +25,10 @@ import {
   computeStreak,
   computeSavedVsCar,
 } from "@/utils/achievementSystem";
-import { XPToast } from "@/components/ui/XPToast";
-import { LevelUpOverlay } from "@/components/ui/LevelUpOverlay";
+import { useAppData } from "@/store/AppData";
+import { Trip } from "@/types/trip";
+import { rewardKey } from "@/utils/rewards";
 
-const CLAIMED_QUESTS_KEY = "@claimedQuests";
-const CLAIMED_ACHIEVEMENTS_KEY = "@claimedAchievements";
 const DAILY_SELECTION_KEY = "@dailyQuestSelection";
 const WEEKLY_SELECTION_KEY = "@weeklyQuestSelection";
 
@@ -351,117 +340,74 @@ export default function QuestsScreen() {
   const [activeTab, setActiveTab] = useState<Tab>(
     tab === "achievements" ? "achievements" : "quests",
   );
-  const [trips, setTrips] = useState<Trip[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [userXP, setUserXP] = useState(0);
-  const [userLevel, setUserLevel] = useState(1);
-  const [claimedKeys, setClaimedKeys] = useState<Set<string>>(new Set());
-  const [claimedAchievements, setClaimedAchievements] = useState<Set<string>>(new Set());
-  const [xpGained, setXpGained] = useState<number | null>(null);
-  const [levelUpData, setLevelUpData] = useState<{ level: number } | null>(null);
-  const [klimaTicketCost, setKlimaTicketCost] = useState(1400);
+  const {
+    isLoaded,
+    trips,
+    claims,
+    isClaimed,
+    claimReward,
+    level,
+    levelXP,
+    levelXPNeeded,
+    ticketProgress,
+    periodKey,
+  } = useAppData();
   const [dailyQuests, setDailyQuests] = useState<Quest[]>([]);
   const [weeklyQuests, setWeeklyQuests] = useState<Quest[]>([]);
 
+  // Today's and this week's quest selection (rotates per day / week).
   useEffect(() => {
-    const init = async () => {
-      const [loaded, storedXP, rawClaimed, rawAch, daily, weekly, storedTicketCost] =
-        await Promise.all([
-          loadTrips(),
-          AsyncStorage.getItem("userXP"),
-          AsyncStorage.getItem(CLAIMED_QUESTS_KEY),
-          AsyncStorage.getItem(CLAIMED_ACHIEVEMENTS_KEY),
-          loadOrRefreshSelection(DAILY_SELECTION_KEY, localDateKey(), DAILY_QUEST_POOL),
-          loadOrRefreshSelection(WEEKLY_SELECTION_KEY, weekStartKey(), WEEKLY_QUEST_POOL),
-          AsyncStorage.getItem("klimaTicketCost"),
-        ]);
-
-      setTrips(loaded);
-      const xp = storedXP ? parseInt(storedXP) : 0;
-      setUserXP(isNaN(xp) ? 0 : xp);
-      setUserLevel(calculateLevel(isNaN(xp) ? 0 : xp));
+    Promise.all([
+      loadOrRefreshSelection(DAILY_SELECTION_KEY, localDateKey(), DAILY_QUEST_POOL),
+      loadOrRefreshSelection(WEEKLY_SELECTION_KEY, weekStartKey(), WEEKLY_QUEST_POOL),
+    ]).then(([daily, weekly]) => {
       setDailyQuests(daily);
       setWeeklyQuests(weekly);
-      if (storedTicketCost) {
-        const parsed = parseFloat(storedTicketCost);
-        if (!isNaN(parsed) && parsed > 0) setKlimaTicketCost(parsed);
-      }
-
-      if (rawClaimed) {
-        try {
-          setClaimedKeys(new Set(JSON.parse(rawClaimed)));
-        } catch {
-          /* ignore */
-        }
-      }
-      if (rawAch) {
-        try {
-          setClaimedAchievements(new Set(JSON.parse(rawAch)));
-        } catch {
-          /* ignore */
-        }
-      }
-
-      setIsLoading(false);
-    };
-    init();
+    });
   }, []);
 
-  const awardXP = useCallback(
-    async (amount: number) => {
-      const newXP = addXP(userXP, amount);
-      const newLevel = calculateLevel(newXP);
-      await AsyncStorage.setItem("userXP", newXP.toString());
-      setUserXP(newXP);
-      setXpGained(amount);
-      if (newLevel > userLevel) setLevelUpData({ level: newLevel });
-      setUserLevel(newLevel);
-    },
-    [userXP, userLevel],
+  // Claimed quest keys / achievement IDs, derived from the store's reward log.
+  const claimedKeys = useMemo(
+    () =>
+      new Set(claims.filter((c) => c.kind === "quest").map((c) => c.key.slice("quest:".length))),
+    [claims],
+  );
+  const claimedAchievements = useMemo(
+    () =>
+      new Set(
+        claims
+          .filter((c) => c.kind === "achievement")
+          .map((c) => c.key.slice("achievement:".length)),
+      ),
+    [claims],
   );
 
   const handleClaimQuest = useCallback(
-    async (quest: Quest) => {
-      const key = getClaimKey(quest);
-      if (claimedKeys.has(key)) return;
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      const next = new Set(claimedKeys).add(key);
-      setClaimedKeys(next);
-      await AsyncStorage.setItem(CLAIMED_QUESTS_KEY, JSON.stringify([...next]));
-      await awardXP(quest.xpReward);
-    },
-    [claimedKeys, awardXP],
+    (quest: Quest) => claimReward(rewardKey.quest(getClaimKey(quest)), "quest", quest.xpReward),
+    [claimReward],
   );
 
   const handleClaimAchievement = useCallback(
-    async (achievement: Achievement) => {
-      if (claimedAchievements.has(achievement.id)) return;
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      const next = new Set(claimedAchievements).add(achievement.id);
-      setClaimedAchievements(next);
-      await AsyncStorage.setItem(CLAIMED_ACHIEVEMENTS_KEY, JSON.stringify([...next]));
-      await awardXP(achievement.xpReward);
-    },
-    [claimedAchievements, awardXP],
+    (achievement: Achievement) =>
+      claimReward(rewardKey.achievement(achievement.id), "achievement", achievement.xpReward),
+    [claimReward],
   );
 
-  const handleClaimMainQuest = useCallback(async () => {
-    if (claimedKeys.has(MAIN_QUEST_ID)) return;
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    const next = new Set(claimedKeys).add(MAIN_QUEST_ID);
-    setClaimedKeys(next);
-    await AsyncStorage.setItem(CLAIMED_QUESTS_KEY, JSON.stringify([...next]));
-    await awardXP(MAIN_QUEST_XP);
-  }, [claimedKeys, awardXP]);
+  // The main quest can be claimed once per ticket period.
+  const mainQuestKey = rewardKey.mainQuest(periodKey);
+  const handleClaimMainQuest = useCallback(
+    () => claimReward(mainQuestKey, "mainQuest", MAIN_QUEST_XP),
+    [claimReward, mainQuestKey],
+  );
 
-  const totalCost = trips.reduce((sum, t) => sum + t.cost, 0);
-  const mainQuestComplete = totalCost >= klimaTicketCost;
-  const mainQuestClaimed = claimedKeys.has(MAIN_QUEST_ID);
+  const totalCost = ticketProgress.valueUsed;
+  const klimaTicketCost = ticketProgress.cost;
+  const mainQuestClaimed = isClaimed(mainQuestKey);
 
   const streak = computeStreak(trips);
   const savedVsCar = computeSavedVsCar(trips);
 
-  if (isLoading) {
+  if (!isLoaded) {
     return (
       <View style={styles.root}>
         <ActivityIndicator size="large" color={Palette.green.mid} style={{ flex: 1 }} />
@@ -469,8 +415,9 @@ export default function QuestsScreen() {
     );
   }
 
-  const currentLevelXP = calculateCurrentLevelXP(userXP, userLevel);
-  const xpToNext = calculateXPForNextLevel(userLevel);
+  const userLevel = level;
+  const currentLevelXP = levelXP;
+  const xpToNext = levelXPNeeded;
 
   return (
     <View style={styles.root}>
@@ -650,13 +597,6 @@ export default function QuestsScreen() {
           </View>
         )}
       </ScrollView>
-
-      <XPToast xp={xpGained} onDone={() => setXpGained(null)} />
-      <LevelUpOverlay
-        visible={levelUpData !== null}
-        newLevel={levelUpData?.level ?? 1}
-        onDone={() => setLevelUpData(null)}
-      />
     </View>
   );
 }

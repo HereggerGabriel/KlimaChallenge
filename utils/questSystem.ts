@@ -18,7 +18,6 @@ export const QUESTS_PER_ROTATION = 3;
 // ── Main Quest ─────────────────────────────────────────────────────────────
 export const MAIN_QUEST_ID = "main_quest_klimaticket";
 export const MAIN_QUEST_XP = 2000;
-export const MAIN_QUEST_CELEBRATED_KEY = "@mainQuestCelebrated";
 
 /** Randomly pick n quests from a pool — call this once per day/week and persist the result */
 export function pickRandomQuests(pool: Quest[], n: number): Quest[] {

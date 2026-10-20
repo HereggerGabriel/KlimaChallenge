@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { View, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, {
@@ -10,14 +10,12 @@ import Animated, {
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { ThemedText } from "@/components/ThemedText";
 import { Palette } from "@/constants/Colors";
-import { router, useFocusEffect } from "expo-router";
+import { router } from "expo-router";
 import { Trip } from "@/types/trip";
-import { loadTrips, saveTrips, sortTripsNewestFirst } from "@/services/tripStorage";
-import { getXPForTrip, calculateLevel } from "@/utils/levelSystem";
 import { TRANSPORT_COLOR } from "@/constants/transport";
 import { TripDetailModal } from "@/components/ui/TripDetailModal";
-import { groupTripsByDate } from "@/utils/tripGrouping";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { groupTripsByDate, recentPlaces } from "@/utils/tripGrouping";
+import { useAppData } from "@/store/AppData";
 import * as Haptics from "expo-haptics";
 import { shortRoute } from "@/services/stations";
 
@@ -111,71 +109,19 @@ function SwipeableTripCard({
 }
 
 export default function TripsScreen() {
-  const [trips, setTrips] = useState<Trip[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { isLoaded, trips, updateTrip, deleteTrip } = useAppData();
   const [filter, setFilter] = useState<Filter>("All");
-  const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
-  const [userXP, setUserXP] = useState(0);
-  const [userLevel, setUserLevel] = useState(1);
+  const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
+  const selectedTrip = trips.find((t) => t.id === selectedTripId) ?? null;
 
-  useFocusEffect(
-    useCallback(() => {
-      const load = async () => {
-        const [loaded, storedXP] = await Promise.all([loadTrips(), AsyncStorage.getItem("userXP")]);
-        setTrips(loaded);
-        const parsed = storedXP ? parseInt(storedXP) : 0;
-        const xp = isNaN(parsed) ? 0 : parsed;
-        setUserXP(xp);
-        setUserLevel(calculateLevel(xp));
-        setIsLoading(false);
-      };
-      load();
-    }, []),
-  );
-
-  const recentPlaces = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const t of trips) {
-      counts.set(t.origin, (counts.get(t.origin) ?? 0) + 1);
-      counts.set(t.destination, (counts.get(t.destination) ?? 0) + 1);
-    }
-    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([p]) => p);
-  }, [trips]);
+  const places = useMemo(() => recentPlaces(trips), [trips]);
 
   const filteredGroups = useMemo(() => {
     const filtered = filter === "All" ? trips : trips.filter((t) => t.transportType === filter);
     return groupTripsByDate(filtered);
   }, [trips, filter]);
 
-  const handleDeleteTrip = async (tripId: string) => {
-    const trip = trips.find((t) => t.id === tripId);
-    if (!trip) return;
-    const removedXP = getXPForTrip(trip.distance, trip.transportType);
-    const newXP = Math.max(0, userXP - removedXP);
-    const newTrips = trips.filter((t) => t.id !== tripId);
-    await Promise.all([AsyncStorage.setItem("userXP", newXP.toString()), saveTrips(newTrips)]);
-    setUserXP(newXP);
-    setUserLevel(calculateLevel(newXP));
-    setTrips(newTrips);
-    if (selectedTrip?.id === tripId) setSelectedTrip(null);
-  };
-
-  const handleEditTrip = async (tripId: string, updates: Partial<Trip>) => {
-    const trip = trips.find((t) => t.id === tripId);
-    if (!trip) return;
-    const oldXP = getXPForTrip(trip.distance, trip.transportType);
-    const updatedTrip = { ...trip, ...updates };
-    const newTripXP = getXPForTrip(updatedTrip.distance, updatedTrip.transportType);
-    const newXP = Math.max(0, userXP + (newTripXP - oldXP));
-    const newTrips = sortTripsNewestFirst(trips.map((t) => (t.id === tripId ? updatedTrip : t)));
-    await Promise.all([AsyncStorage.setItem("userXP", newXP.toString()), saveTrips(newTrips)]);
-    setUserXP(newXP);
-    setUserLevel(calculateLevel(newXP));
-    setTrips(newTrips);
-    setSelectedTrip(updatedTrip);
-  };
-
-  if (isLoading) {
+  if (!isLoaded) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={Palette.green.mid} />
@@ -238,8 +184,8 @@ export default function TripsScreen() {
                 <SwipeableTripCard
                   key={trip.id}
                   trip={trip}
-                  onPress={() => setSelectedTrip(trip)}
-                  onDelete={() => handleDeleteTrip(trip.id)}
+                  onPress={() => setSelectedTripId(trip.id)}
+                  onDelete={() => deleteTrip(trip.id)}
                 />
               ))}
             </View>
@@ -250,10 +196,10 @@ export default function TripsScreen() {
       <TripDetailModal
         visible={selectedTrip !== null}
         trip={selectedTrip}
-        onClose={() => setSelectedTrip(null)}
-        onDelete={handleDeleteTrip}
-        onEdit={handleEditTrip}
-        recentPlaces={recentPlaces}
+        onClose={() => setSelectedTripId(null)}
+        onDelete={deleteTrip}
+        onEdit={updateTrip}
+        recentPlaces={places}
       />
     </View>
   );

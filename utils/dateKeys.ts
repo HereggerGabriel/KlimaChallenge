@@ -38,3 +38,9 @@ export function isInCurrentWeek(d: Date, now: Date = new Date()): boolean {
 export function isSameLocalDay(a: Date, b: Date): boolean {
   return localDateKey(a) === localDateKey(b);
 }
+
+/** Inverse of localDateKey: "2026-10-20" -> local midnight of that day. */
+export function parseLocalDateKey(key: string): Date {
+  const [y, m, d] = key.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}

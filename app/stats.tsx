@@ -1,13 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { View, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { ThemedText } from "@/components/ThemedText";
 import { Palette } from "@/constants/Colors";
 import { startOfWeek, weekStartKey } from "@/utils/dateKeys";
-import { loadTrips } from "@/services/tripStorage";
-import { Trip } from "@/types/trip";
+import { useAppData } from "@/store/AppData";
 import { TRANSPORT_COLOR, transportIcon } from "@/constants/transport";
 import { shortRoute } from "@/services/stations";
 
@@ -131,28 +129,10 @@ function SectionTitle({ children }: { children: string }) {
 // ── Main screen ──────────────────────────────────────────────────────────────
 
 export default function StatsScreen() {
-  const [trips, setTrips] = useState<Trip[]>([]);
-  const [klimaTicketCost, setKlimaTicketCost] = useState(1400);
-  const [isLoading, setIsLoading] = useState(true);
+  const { isLoaded, trips, ticketProgress } = useAppData();
   const [co2TooltipVisible, setCo2TooltipVisible] = useState(false);
 
-  useEffect(() => {
-    const load = async () => {
-      const [loaded, storedCost] = await Promise.all([
-        loadTrips(),
-        AsyncStorage.getItem("klimaTicketCost"),
-      ]);
-      setTrips(loaded);
-      if (storedCost) {
-        const parsed = parseFloat(storedCost);
-        if (!isNaN(parsed) && parsed > 0) setKlimaTicketCost(parsed);
-      }
-      setIsLoading(false);
-    };
-    load();
-  }, []);
-
-  if (isLoading) {
+  if (!isLoaded) {
     return (
       <View style={styles.root}>
         <ActivityIndicator size="large" color={Palette.green.mid} style={{ flex: 1 }} />
@@ -168,7 +148,10 @@ export default function StatsScreen() {
   const avgCost = totalTrips > 0 ? totalCost / totalTrips : 0;
   const avgDistance = totalTrips > 0 ? totalDistance / totalTrips : 0;
   const co2Saved = totalDistance * CO2_FACTOR;
-  const klimaPct = Math.min((totalCost / klimaTicketCost) * 100, 100);
+  // KlimaTicket progress counts only the current ticket period.
+  const klimaTicketCost = ticketProgress.cost;
+  const periodValue = ticketProgress.valueUsed;
+  const klimaPct = ticketProgress.percent;
 
   // Weekly bar chart — last 8 weeks
   const weekStarts = getLastNWeekStarts(8);
@@ -299,7 +282,7 @@ export default function StatsScreen() {
                 <View>
                   <ThemedText style={styles.klimaTitle}>KlimaTicket Progress</ThemedText>
                   <ThemedText style={styles.klimaSub}>
-                    €{totalCost.toFixed(0)} covered of €{klimaTicketCost.toFixed(0)}
+                    €{periodValue.toFixed(0)} covered of €{klimaTicketCost.toFixed(0)}
                   </ThemedText>
                 </View>
                 <ThemedText
@@ -323,7 +306,7 @@ export default function StatsScreen() {
                 <ThemedText style={styles.klimaDone}>Break-even reached!</ThemedText>
               ) : (
                 <ThemedText style={styles.klimaRemaining}>
-                  €{(klimaTicketCost - totalCost).toFixed(0)} remaining to break even
+                  €{ticketProgress.remaining.toFixed(0)} remaining to break even
                 </ThemedText>
               )}
             </View>

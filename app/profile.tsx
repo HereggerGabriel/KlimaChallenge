@@ -14,9 +14,11 @@ import {
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import { router } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { loadTrips, saveTrips } from "@/services/tripStorage";
-import { exportTrips, importTrips } from "@/services/tripExport";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { exportTrips, pickTripsFile } from "@/services/tripExport";
+import { useAppData } from "@/store/AppData";
+import { localDateKey, parseLocalDateKey } from "@/utils/dateKeys";
+import { formatDateLabel } from "@/utils/tripGrouping";
 import { ThemedText } from "@/components/ThemedText";
 import { Palette } from "@/constants/Colors";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -147,28 +149,27 @@ export default function ProfileScreen() {
   const [saved, setSaved] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [dataFeedback, setDataFeedback] = useState<{ ok: boolean; message: string } | null>(null);
+  const { isLoaded, profile, updateProfile, deleteAllTrips, mergeTrips, trips, reload } =
+    useAppData();
+  const [startDate, setStartDate] = useState<string | null>(null);
+  const [showStartPicker, setShowStartPicker] = useState(false);
 
+  // Fill the form from the stored profile once it's loaded.
   useEffect(() => {
-    const load = async () => {
-      const [storedName, storedType, storedCost] = await Promise.all([
-        AsyncStorage.getItem("userName"),
-        AsyncStorage.getItem("klimaTicketType"),
-        AsyncStorage.getItem("klimaTicketCost"),
-      ]);
-      if (storedName) setName(storedName);
-      if (storedType) {
-        const preset = ALL_PRESETS.find((p) => p.label === storedType);
-        if (preset) {
-          setSelectedTicket(preset.label);
-        } else {
-          setSelectedTicket(CUSTOM_LABEL);
-          setCustomTicketName(storedType);
-          if (storedCost) setCustomTicketCost(storedCost);
-        }
-      }
-    };
-    load();
-  }, []);
+    if (!isLoaded) return;
+    setName(profile.name);
+    setStartDate(profile.ticket.startDate);
+    const preset = ALL_PRESETS.find((p) => p.label === profile.ticket.label);
+    if (preset) {
+      setSelectedTicket(preset.label);
+    } else {
+      setSelectedTicket(CUSTOM_LABEL);
+      setCustomTicketName(profile.ticket.label);
+      setCustomTicketCost(String(profile.ticket.cost));
+    }
+    // Only on load; later edits stay local until "Save".
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoaded]);
 
   const isCustom = selectedTicket === CUSTOM_LABEL;
 
@@ -188,29 +189,21 @@ export default function ProfileScreen() {
   };
 
   const handleSave = async () => {
-    const cost = getEffectiveCost();
-    const label = getEffectiveLabel();
-    await Promise.all([
-      AsyncStorage.setItem("userName", name.trim()),
-      AsyncStorage.setItem("klimaTicketType", label),
-      AsyncStorage.setItem("klimaTicketCost", cost.toString()),
-    ]);
+    await updateProfile({
+      name: name.trim(),
+      ticket: {
+        label: getEffectiveLabel(),
+        cost: getEffectiveCost(),
+        period: getEffectivePeriod() === "month" ? "month" : "year",
+        startDate,
+      },
+    });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
   const handleDeleteAllTrips = async () => {
-    await Promise.all([
-      saveTrips([]),
-      AsyncStorage.removeItem("userXP"),
-      AsyncStorage.removeItem("@mainQuestCelebrated"),
-      AsyncStorage.multiRemove([
-        "@claimedQuests",
-        "@claimedAchievements",
-        "@dailyQuestSelection",
-        "@weeklyQuestSelection",
-      ]),
-    ]);
+    await deleteAllTrips();
     setShowDeleteModal(false);
   };
 
@@ -225,6 +218,7 @@ export default function ProfileScreen() {
           style: "destructive",
           onPress: async () => {
             await signOutAndClearLocalData();
+            await reload(); // the store still held the old data in memory
             // The splash screen starts a fresh anonymous session and shows onboarding.
             router.replace("/");
           },
@@ -240,7 +234,6 @@ export default function ProfileScreen() {
 
   const handleExport = async () => {
     try {
-      const trips = await loadTrips();
       if (trips.length === 0) {
         showDataFeedback(false, "No trips to export yet.");
         return;
@@ -253,15 +246,15 @@ export default function ProfileScreen() {
 
   const handleImport = async () => {
     try {
-      const result = await importTrips();
-      if (result.canceled) return;
+      const incoming = await pickTripsFile();
+      if (!incoming) return; // picker closed
+      const { added, skipped } = await mergeTrips(incoming);
       const plural = (n: number) => `${n} trip${n === 1 ? "" : "s"}`;
       showDataFeedback(
         true,
-        result.added === 0
-          ? `All ${plural(result.total)} were already in the app.`
-          : `${plural(result.added)} imported` +
-              (result.skipped > 0 ? `, ${result.skipped} already in the app.` : "."),
+        added === 0
+          ? `All ${plural(incoming.length)} were already in the app.`
+          : `${plural(added)} imported` + (skipped > 0 ? `, ${skipped} already in the app.` : "."),
       );
     } catch (e) {
       showDataFeedback(false, e instanceof Error ? e.message : "Import failed.");
@@ -433,6 +426,46 @@ export default function ProfileScreen() {
               keyboardType="decimal-pad"
             />
           </View>
+        )}
+
+        {/* Ticket start date: break-even is counted per validity period */}
+        <ThemedText style={[styles.label, { marginTop: 24 }]}>Ticket valid from</ThemedText>
+        <TouchableOpacity
+          style={styles.dropdownTrigger}
+          onPress={() => setShowStartPicker((v) => !v)}
+          activeOpacity={0.8}
+        >
+          <View style={{ flex: 1 }}>
+            <ThemedText style={styles.dropdownTriggerText}>
+              {startDate ? formatDateLabel(parseLocalDateKey(startDate)) : "Not set"}
+            </ThemedText>
+            <ThemedText style={styles.dropdownTriggerCost}>
+              {startDate
+                ? `Break-even counts trips per ${getEffectivePeriod() === "month" ? "month" : "ticket year"}`
+                : "Set it to count break-even per ticket year"}
+            </ThemedText>
+          </View>
+          <MaterialIcons name="event" size={20} color="rgba(255,255,255,0.5)" />
+        </TouchableOpacity>
+        {showStartPicker && (
+          <>
+            <DateTimePicker
+              value={startDate ? parseLocalDateKey(startDate) : new Date()}
+              mode="date"
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+              onChange={(_, selected) => {
+                if (Platform.OS === "android") setShowStartPicker(false);
+                if (selected) setStartDate(localDateKey(selected));
+              }}
+              textColor="#fff"
+              themeVariant="dark"
+            />
+            {Platform.OS === "ios" && (
+              <TouchableOpacity onPress={() => setShowStartPicker(false)} style={styles.pickerDone}>
+                <ThemedText style={styles.pickerDoneText}>Done</ThemedText>
+              </TouchableOpacity>
+            )}
+          </>
         )}
 
         {/* Save */}
@@ -702,6 +735,15 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 15,
     fontWeight: "500",
+  },
+  pickerDone: {
+    alignItems: "flex-end",
+    paddingVertical: 6,
+  },
+  pickerDoneText: {
+    color: Palette.green.mid,
+    fontSize: 15,
+    fontWeight: "600",
   },
   dropdownTriggerCost: {
     color: "rgba(255,255,255,0.4)",

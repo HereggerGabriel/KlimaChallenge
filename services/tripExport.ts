@@ -2,7 +2,6 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import * as DocumentPicker from "expo-document-picker";
 import { Trip } from "@/types/trip";
-import { loadTrips, saveTrips, sortTripsNewestFirst } from "./tripStorage";
 import { localDateKey } from "@/utils/dateKeys";
 
 // ── Export format ──────────────────────────────────────────────────────────────
@@ -43,27 +42,20 @@ export async function exportTrips(trips: Trip[]): Promise<void> {
 
 // ── Import ─────────────────────────────────────────────────────────────────────
 
-export interface ImportResult {
-  /** The user closed the file picker without choosing a file. */
-  canceled: boolean;
-  added: number;
-  skipped: number;
-  total: number;
-}
-
-/** Let the user pick a JSON file, parse trips, merge with existing (skip duplicates by ID). */
-export async function importTrips(): Promise<ImportResult> {
+/**
+ * Let the user pick an exported JSON file and return its valid trips, or null
+ * if the picker was closed. Merging into the app's data is the store's job
+ * (mergeTrips), so imported trips count for XP and stats right away.
+ * Throws with a user-facing message for unreadable files.
+ */
+export async function pickTripsFile(): Promise<Trip[] | null> {
   const result = await DocumentPicker.getDocumentAsync({
     type: ["application/json", "text/plain", "text/json", "*/*"],
     copyToCacheDirectory: true,
   });
+  if (result.canceled || !result.assets?.length) return null;
 
-  if (result.canceled || !result.assets?.length) {
-    return { canceled: true, added: 0, skipped: 0, total: 0 };
-  }
-
-  const fileUri = result.assets[0].uri;
-  const raw = await FileSystem.readAsStringAsync(fileUri, {
+  const raw = await FileSystem.readAsStringAsync(result.assets[0].uri, {
     encoding: FileSystem.EncodingType.UTF8,
   });
 
@@ -73,38 +65,9 @@ export async function importTrips(): Promise<ImportResult> {
   } catch {
     throw new Error("This file isn't a KlimaChallenge export (not valid JSON).");
   }
-  const incomingTrips = parseTripsFromPayload(parsed);
-
-  if (incomingTrips.length === 0) {
-    throw new Error("No valid trips found in this file.");
-  }
-
-  // Merge: skip trips whose ID already exists locally
-  const existingTrips = await loadTrips();
-  const existingIds = new Set(existingTrips.map((t) => t.id));
-
-  const newTrips: Trip[] = [];
-  let skipped = 0;
-
-  for (const trip of incomingTrips) {
-    if (existingIds.has(trip.id)) {
-      skipped++;
-    } else {
-      newTrips.push(trip);
-    }
-  }
-
-  if (newTrips.length > 0) {
-    const merged = sortTripsNewestFirst([...newTrips, ...existingTrips]);
-    await saveTrips(merged);
-  }
-
-  return {
-    canceled: false,
-    added: newTrips.length,
-    skipped,
-    total: incomingTrips.length,
-  };
+  const trips = parseTripsFromPayload(parsed);
+  if (trips.length === 0) throw new Error("No valid trips found in this file.");
+  return trips;
 }
 
 // ── Parsing helpers ────────────────────────────────────────────────────────────

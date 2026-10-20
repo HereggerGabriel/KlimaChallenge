@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import { router } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAppData } from "@/store/AppData";
 import { upgradeAnonymousAccount, UpgradeResult } from "@/lib/auth";
 import { Palette } from "@/constants/Colors";
 
@@ -28,6 +28,7 @@ export default function RegisterForm() {
   } = useForm<FormData>();
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<UpgradeResult | null>(null);
+  const { profile, updateProfile } = useAppData();
 
   // Upgrades the current anonymous user (same user ID) instead of creating a new one.
   const onSubmit = async (data: FormData) => {
@@ -36,9 +37,7 @@ export default function RegisterForm() {
       const name = data.name.trim();
       const outcome = await upgradeAnonymousAccount(data.email.trim(), data.password, name);
       // Use the name as display name unless the user already set one in the profile.
-      if (name && !(await AsyncStorage.getItem("userName"))) {
-        await AsyncStorage.setItem("userName", name);
-      }
+      if (name && !profile.name) await updateProfile({ name });
       setResult(outcome);
       reset();
     } catch (e) {

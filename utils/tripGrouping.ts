@@ -32,3 +32,13 @@ export function groupTripsByDate(trips: Trip[]): TripGroup[] {
   }
   return groups;
 }
+
+/** Origins and destinations from the user's trips, most used first (for suggestions). */
+export function recentPlaces(trips: Trip[]): string[] {
+  const counts = new Map<string, number>();
+  for (const t of trips) {
+    counts.set(t.origin, (counts.get(t.origin) ?? 0) + 1);
+    counts.set(t.destination, (counts.get(t.destination) ?? 0) + 1);
+  }
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([p]) => p);
+}

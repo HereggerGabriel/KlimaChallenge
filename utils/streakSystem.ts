@@ -1,8 +1,6 @@
 import { Trip } from "@/types/trip";
 import { localDateKey } from "@/utils/dateKeys";
 
-export const STREAK_MILESTONES_KEY = "@claimedStreakMilestones";
-
 export const STREAK_MILESTONES = [
   { days: 3, xp: 50 },
   { days: 7, xp: 150 },

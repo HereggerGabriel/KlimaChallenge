@@ -3,7 +3,7 @@
 // so progress is measured within the period that contains "now".
 
 import { Trip } from "@/types/trip";
-import { localDateKey } from "@/utils/dateKeys";
+import { localDateKey, parseLocalDateKey } from "@/utils/dateKeys";
 
 export interface TicketProfile {
   label: string;
@@ -20,11 +20,6 @@ export const DEFAULT_TICKET: TicketProfile = {
   startDate: null,
 };
 
-function parseLocalDate(key: string): Date {
-  const [y, m, d] = key.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
-
 function addPeriods(start: Date, period: TicketProfile["period"], n: number): Date {
   const d = new Date(start);
   if (period === "year") d.setFullYear(d.getFullYear() + n);
@@ -38,7 +33,7 @@ export function currentTicketPeriod(
   now: Date = new Date(),
 ): { start: Date; end: Date } | null {
   if (!profile.startDate) return null;
-  const first = parseLocalDate(profile.startDate);
+  const first = parseLocalDateKey(profile.startDate);
   if (now < first) return { start: first, end: addPeriods(first, profile.period, 1) };
   let n = 0;
   while (addPeriods(first, profile.period, n + 1) <= now) n++;

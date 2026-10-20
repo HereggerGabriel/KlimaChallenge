@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { ScrollView, TouchableOpacity, View, ActivityIndicator } from "react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, {
@@ -7,33 +7,20 @@ import Animated, {
   withSequence,
   useAnimatedStyle,
 } from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { ThemedText } from "@/components/ThemedText";
 import { Palette } from "@/constants/Colors";
-import { router, useFocusEffect } from "expo-router";
+import { router } from "expo-router";
 import { FinancialOverview } from "@/components/ui/FinancialOverview";
 import { QuickAddTripModal } from "@/components/ui/QuickAddTripModal";
 import { TripDetailModal } from "@/components/ui/TripDetailModal";
 import UserLevelCard from "@/components/ui/UserLevelCard";
-import { XPToast } from "@/components/ui/XPToast";
-import { LevelUpOverlay } from "@/components/ui/LevelUpOverlay";
 import { MainQuestOverlay } from "@/components/ui/MainQuestOverlay";
-import { MAIN_QUEST_CELEBRATED_KEY } from "@/utils/questSystem";
-import {
-  calculateLevel,
-  calculateXPForNextLevel,
-  calculateCurrentLevelXP,
-  getXPForTrip,
-  addXP,
-} from "@/utils/levelSystem";
-import { computeStreak, getNewMilestoneXP, STREAK_MILESTONES_KEY } from "@/utils/streakSystem";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Trip } from "@/types/trip";
-import { loadTrips, saveTrips, generateTripId, sortTripsNewestFirst } from "@/services/tripStorage";
 import { styles } from "@/styles/userScreen";
 import { TRANSPORT_COLOR, transportIcon } from "@/constants/transport";
-import { groupTripsByDate } from "@/utils/tripGrouping";
+import { groupTripsByDate, recentPlaces } from "@/utils/tripGrouping";
+import { useAppData } from "@/store/AppData";
 import { shortRoute, shortStationName } from "@/services/stations";
 
 const TRIPS_PREVIEW = 5;
@@ -152,189 +139,33 @@ function FavoriteCard({ fav, onAdd }: { fav: FavoriteTrip; onAdd: () => void }) 
 }
 
 export default function UserScreen() {
+  const {
+    isLoaded,
+    trips,
+    profile,
+    level,
+    levelXP,
+    levelXPNeeded,
+    streak,
+    ticketProgress,
+    mainQuestEvent,
+    dismissMainQuestEvent,
+    addTrip,
+    updateTrip,
+    deleteTrip,
+  } = useAppData();
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [prefillData, setPrefillData] = useState<PrefillData | undefined>(undefined);
-  const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
-  const [trips, setTrips] = useState<Trip[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [userXP, setUserXP] = useState(0);
-  const [userLevel, setUserLevel] = useState(1);
-  const [xpGained, setXpGained] = useState<number | null>(null);
-  const [levelUpData, setLevelUpData] = useState<{ level: number } | null>(null);
-  const [userName, setUserName] = useState("");
-  const [klimaTicketCost, setKlimaTicketCost] = useState(1400);
-  const [mainQuestOverlay, setMainQuestOverlay] = useState<{
-    totalCost: number;
-    klimaTicketCost: number;
-  } | null>(null);
-  const [claimedMilestones, setClaimedMilestones] = useState<Set<number>>(new Set());
-
-  const loadProfile = useCallback(async () => {
-    const [storedName, storedCost] = await Promise.all([
-      AsyncStorage.getItem("userName"),
-      AsyncStorage.getItem("klimaTicketCost"),
-    ]);
-    if (storedName) setUserName(storedName);
-    if (storedCost) {
-      const parsed = parseFloat(storedCost);
-      if (!isNaN(parsed) && parsed > 0) setKlimaTicketCost(parsed);
-    }
-  }, []);
-
-  const loadClaimedMilestones = useCallback(async () => {
-    const stored = await AsyncStorage.getItem(STREAK_MILESTONES_KEY);
-    setClaimedMilestones(new Set(stored ? JSON.parse(stored) : []));
-  }, []);
-
-  useEffect(() => {
-    const init = async () => {
-      const loaded = await loadTrips();
-      setTrips(loaded);
-      setIsLoading(false);
-
-      const storedXP = await AsyncStorage.getItem("userXP");
-      const parsedXP = storedXP ? parseInt(storedXP) : NaN;
-      if (!isNaN(parsedXP)) {
-        setUserXP(parsedXP);
-        setUserLevel(calculateLevel(parsedXP));
-      } else {
-        const seeded = loaded.reduce(
-          (total, trip) => total + getXPForTrip(trip.distance, trip.transportType),
-          0,
-        );
-        await AsyncStorage.setItem("userXP", seeded.toString());
-        setUserXP(seeded);
-        setUserLevel(calculateLevel(seeded));
-      }
-
-      await Promise.all([loadProfile(), loadClaimedMilestones()]);
-    };
-    init();
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      loadProfile();
-      loadClaimedMilestones();
-      loadTrips().then((loaded) => {
-        setTrips(loaded);
-        AsyncStorage.getItem("userXP").then((storedXP) => {
-          const parsedXP = storedXP ? parseInt(storedXP) : NaN;
-          if (!isNaN(parsedXP)) {
-            setUserXP(parsedXP);
-            setUserLevel(calculateLevel(parsedXP));
-          } else {
-            const seeded = loaded.reduce(
-              (total, trip) => total + getXPForTrip(trip.distance, trip.transportType),
-              0,
-            );
-            AsyncStorage.setItem("userXP", seeded.toString());
-            setUserXP(seeded);
-            setUserLevel(calculateLevel(seeded));
-          }
-        });
-      });
-    }, [loadProfile, loadClaimedMilestones]),
-  );
-
-  useEffect(() => {
-    if (!isLoading) {
-      saveTrips(trips);
-    }
-  }, [trips, isLoading]);
+  // Store the ID so the detail view always shows the latest version of the trip.
+  const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
+  const selectedTrip = trips.find((t) => t.id === selectedTripId) ?? null;
 
   const favorites = useMemo(() => computeFavorites(trips), [trips]);
-  const streak = useMemo(() => computeStreak(trips), [trips]);
-
-  // Award XP, fire toast + level-up. Returns updated XP and level.
-  const awardXP = useCallback(
-    async (
-      amount: number,
-      currentXP: number,
-      currentLevel: number,
-    ): Promise<{ newXP: number; newLevel: number }> => {
-      const newXP = addXP(currentXP, amount);
-      const newLevel = calculateLevel(newXP);
-      await AsyncStorage.setItem("userXP", newXP.toString());
-      setUserXP(newXP);
-      setXpGained(amount);
-      if (newLevel > currentLevel) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setLevelUpData({ level: newLevel });
-      } else {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      }
-      setUserLevel(newLevel);
-      return { newXP, newLevel };
-    },
-    [],
-  );
-
-  // Check streak milestones after a new trip is added. Awards bonus XP if a
-  // new milestone is reached.
-  const checkStreakMilestones = useCallback(
-    async (
-      newTrips: Trip[],
-      currentXP: number,
-      currentLevel: number,
-      currentClaimed: Set<number>,
-    ) => {
-      const newStreak = computeStreak(newTrips);
-      const { xp, milestones } = getNewMilestoneXP(newStreak, currentClaimed);
-      if (xp === 0 || milestones.length === 0) return;
-
-      const updatedClaimed = new Set([...currentClaimed, ...milestones]);
-      await AsyncStorage.setItem(STREAK_MILESTONES_KEY, JSON.stringify([...updatedClaimed]));
-      setClaimedMilestones(updatedClaimed);
-
-      // Show milestone reward as a second XP toast after a short delay
-      setTimeout(async () => {
-        const newXP = addXP(currentXP, xp);
-        const newLevel = calculateLevel(newXP);
-        await AsyncStorage.setItem("userXP", newXP.toString());
-        setUserXP(newXP);
-        setXpGained(xp);
-        if (newLevel > currentLevel) {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          setLevelUpData({ level: newLevel });
-        }
-        setUserLevel(newLevel);
-      }, 1800);
-    },
-    [],
-  );
-
-  const handleTripPress = (trip: Trip) => {
-    setSelectedTrip(trip);
-  };
-
-  const handleDeleteTrip = async (tripId: string) => {
-    const trip = trips.find((t) => t.id === tripId);
-    if (!trip) return;
-    const removedXP = getXPForTrip(trip.distance, trip.transportType);
-    const newXP = Math.max(0, userXP - removedXP);
-    await AsyncStorage.setItem("userXP", newXP.toString());
-    setUserXP(newXP);
-    setUserLevel(calculateLevel(newXP));
-    setTrips((prev) => prev.filter((t) => t.id !== tripId));
-  };
-
-  const handleEditTrip = async (tripId: string, updates: Partial<Trip>) => {
-    const trip = trips.find((t) => t.id === tripId);
-    if (!trip) return;
-    const oldXP = getXPForTrip(trip.distance, trip.transportType);
-    const updatedTrip = { ...trip, ...updates };
-    const newTripXP = getXPForTrip(updatedTrip.distance, updatedTrip.transportType);
-    const newXP = Math.max(0, userXP + (newTripXP - oldXP));
-    await AsyncStorage.setItem("userXP", newXP.toString());
-    setUserXP(newXP);
-    setUserLevel(calculateLevel(newXP));
-    setTrips((prev) => sortTripsNewestFirst(prev.map((t) => (t.id === tripId ? updatedTrip : t))));
-    setSelectedTrip(updatedTrip);
-  };
+  const previewGroups = useMemo(() => groupTripsByDate(trips.slice(0, TRIPS_PREVIEW)), [trips]);
+  const places = useMemo(() => recentPlaces(trips), [trips]);
 
   const handleLogAgain = (trip: Trip) => {
-    setSelectedTrip(null);
+    setSelectedTripId(null);
     setPrefillData({
       origin: trip.origin,
       destination: trip.destination,
@@ -346,18 +177,8 @@ export default function UserScreen() {
     setShowQuickAdd(true);
   };
 
-  const checkMainQuest = async (allTrips: Trip[], ticketCost: number) => {
-    const totalCost = allTrips.reduce((sum, t) => sum + t.cost, 0);
-    if (totalCost < ticketCost) return;
-    const celebrated = await AsyncStorage.getItem(MAIN_QUEST_CELEBRATED_KEY);
-    if (celebrated) return;
-    await AsyncStorage.setItem(MAIN_QUEST_CELEBRATED_KEY, "true");
-    setMainQuestOverlay({ totalCost, klimaTicketCost: ticketCost });
-  };
-
-  const handleFavoritePress = async (fav: FavoriteTrip) => {
-    const newTrip: Trip = {
-      id: generateTripId(),
+  const handleFavoritePress = (fav: FavoriteTrip) =>
+    addTrip({
       date: new Date(),
       origin: fav.origin,
       destination: fav.destination,
@@ -365,14 +186,7 @@ export default function UserScreen() {
       cost: fav.cost,
       distance: fav.distance,
       description: "",
-    };
-    const tripXP = getXPForTrip(fav.distance, fav.transportType);
-    const { newXP, newLevel } = await awardXP(tripXP, userXP, userLevel);
-    const updatedTrips = sortTripsNewestFirst([newTrip, ...trips]);
-    setTrips(updatedTrips);
-    await checkMainQuest(updatedTrips, klimaTicketCost);
-    await checkStreakMilestones(updatedTrips, newXP, newLevel, claimedMilestones);
-  };
+    });
 
   const handleQuickAddSubmit = async (tripData: {
     date: Date;
@@ -383,26 +197,9 @@ export default function UserScreen() {
     description?: string;
     distance: number;
   }) => {
-    const newTrip: Trip = {
-      id: generateTripId(),
-      date: tripData.date,
-      origin: tripData.origin,
-      destination: tripData.destination,
-      transportType: tripData.transportType,
-      cost: tripData.cost,
-      distance: tripData.distance,
-      description: tripData.description || "",
-    };
-
-    const tripXP = getXPForTrip(tripData.distance, tripData.transportType);
-    const { newXP, newLevel } = await awardXP(tripXP, userXP, userLevel);
-
-    const updatedTrips = sortTripsNewestFirst([newTrip, ...trips]);
-    setTrips(updatedTrips);
     setShowQuickAdd(false);
     setPrefillData(undefined);
-    await checkMainQuest(updatedTrips, klimaTicketCost);
-    await checkStreakMilestones(updatedTrips, newXP, newLevel, claimedMilestones);
+    await addTrip({ ...tripData, description: tripData.description || "" });
   };
 
   const formatTime = (date: Date) => {
@@ -410,20 +207,7 @@ export default function UserScreen() {
     return d.toLocaleTimeString("en-AT", { hour: "2-digit", minute: "2-digit", hour12: false });
   };
 
-  const totalCost = trips.reduce((sum, trip) => sum + trip.cost, 0);
-  const totalDistance = trips.reduce((sum, trip) => sum + trip.distance, 0);
-  const previewGroups = useMemo(() => groupTripsByDate(trips.slice(0, TRIPS_PREVIEW)), [trips]);
-
-  const recentPlaces = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const t of trips) {
-      counts.set(t.origin, (counts.get(t.origin) ?? 0) + 1);
-      counts.set(t.destination, (counts.get(t.destination) ?? 0) + 1);
-    }
-    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([p]) => p);
-  }, [trips]);
-
-  if (isLoading) {
+  if (!isLoaded) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={Palette.green.mid} />
@@ -445,25 +229,25 @@ export default function UserScreen() {
           <TouchableOpacity onPress={() => router.push("/profile")} activeOpacity={0.8}>
             <View style={styles.avatarCircle}>
               <ThemedText style={styles.avatarInitial}>
-                {userName.trim() ? userName.trim()[0].toUpperCase() : "?"}
+                {profile.name.trim() ? profile.name.trim()[0].toUpperCase() : "?"}
               </ThemedText>
             </View>
           </TouchableOpacity>
         </View>
 
         <UserLevelCard
-          level={userLevel}
-          currentXP={calculateCurrentLevelXP(userXP, userLevel)}
-          xpToNextLevel={calculateXPForNextLevel(userLevel)}
+          level={level}
+          currentXP={levelXP}
+          xpToNextLevel={levelXPNeeded}
           streak={streak}
           onQuestsPress={() => router.push("/quests")}
         />
 
         <FinancialOverview
-          totalTrips={trips.length}
-          totalDistance={totalDistance}
-          totalCost={totalCost}
-          klimaTicketCost={klimaTicketCost}
+          totalTrips={ticketProgress.trips.length}
+          totalDistance={ticketProgress.trips.reduce((sum, t) => sum + t.distance, 0)}
+          totalCost={ticketProgress.valueUsed}
+          klimaTicketCost={ticketProgress.cost}
           onStatsPress={() => router.push("/stats")}
         />
 
@@ -526,7 +310,7 @@ export default function UserScreen() {
               {group.trips.map((trip) => (
                 <TouchableOpacity
                   key={trip.id}
-                  onPress={() => handleTripPress(trip)}
+                  onPress={() => setSelectedTripId(trip.id)}
                   activeOpacity={0.75}
                 >
                   <View style={styles.tripCard}>
@@ -572,31 +356,25 @@ export default function UserScreen() {
             setPrefillData(undefined);
           }}
           onSubmit={handleQuickAddSubmit}
-          recentPlaces={recentPlaces}
+          recentPlaces={places}
           prefill={prefillData}
         />
         <TripDetailModal
           visible={selectedTrip !== null}
           trip={selectedTrip}
-          onClose={() => setSelectedTrip(null)}
-          onDelete={handleDeleteTrip}
-          onEdit={handleEditTrip}
+          onClose={() => setSelectedTripId(null)}
+          onDelete={deleteTrip}
+          onEdit={updateTrip}
           onLogAgain={handleLogAgain}
-          recentPlaces={recentPlaces}
+          recentPlaces={places}
         />
       </ScrollView>
-      <XPToast xp={xpGained} onDone={() => setXpGained(null)} />
-      <LevelUpOverlay
-        visible={levelUpData !== null}
-        newLevel={levelUpData?.level ?? 1}
-        onDone={() => setLevelUpData(null)}
-      />
       <MainQuestOverlay
-        visible={mainQuestOverlay !== null}
-        totalCost={mainQuestOverlay?.totalCost ?? 0}
-        klimaTicketCost={mainQuestOverlay?.klimaTicketCost ?? 1400}
+        visible={mainQuestEvent !== null}
+        totalCost={mainQuestEvent?.valueUsed ?? 0}
+        klimaTicketCost={mainQuestEvent?.cost ?? 0}
         onGoToClaim={() => {
-          setMainQuestOverlay(null);
+          dismissMainQuestEvent();
           router.push("/quests");
         }}
       />
