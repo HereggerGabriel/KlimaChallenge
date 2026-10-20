@@ -30,6 +30,13 @@ Larger deviations come mostly from routes whose priced path differs from the sho
 rail path. Users can always correct the price; corrections are remembered per route.
 
 ## Limitations
+- **Verbund fares are not included.** Trips entirely inside a transport association
+  (e.g. Villach–Klagenfurt inside the Carinthian Verbund) are sold at the association's
+  zone fare, which is often higher than the ÖBB standard fare (example: EUR 10.50 Verbund
+  ticket in the ÖBB app vs. EUR 8.60 ÖBB online standard fare, Oct 2026). The ÖBB tables
+  state that Verbund tariffs are excluded. The estimate is therefore a lower bound for
+  regional trips; the app says so in its hint, links to the ÖBB shop, and remembers the
+  price the user enters per route.
 - Bus, tram and subway fares are not modelled (regional zone tariffs); the app suggests a
   typical city fare instead.
 - Prices rise by about 3.5% on 13 Dec 2026; regenerate with the new Relationspreise then.

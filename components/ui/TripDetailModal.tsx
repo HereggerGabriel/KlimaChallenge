@@ -17,6 +17,8 @@ import { getXPForTrip } from "@/utils/levelSystem";
 import { TripRouteFields } from "@/components/ui/TripRouteFields";
 import { useTripAutofill } from "@/hooks/useTripAutofill";
 import { transportIcon } from "@/constants/transport";
+import { FARE_HINT } from "@/services/fareEstimate";
+import { CheckPriceLink } from "@/components/ui/CheckPriceLink";
 
 const TRANSPORT_TYPES = ["Bus", "Train", "Tram", "Subway"];
 
@@ -302,16 +304,15 @@ export function TripDetailModal({
                   />
                 </View>
               </View>
-              {autofill.costSource === "oebb" && (
-                <ThemedText style={styles.editHint}>
-                  Estimated ÖBB standard fare (2nd class) · edit if needed
-                </ThemedText>
+              {autofill.costSource && (
+                <ThemedText style={styles.editHint}>{FARE_HINT[autofill.costSource]}</ThemedText>
               )}
               {autofill.distanceFromNetwork && (
                 <ThemedText style={styles.editHint}>
                   Rail distance from the ÖBB timetable
                 </ThemedText>
               )}
+              <CheckPriceLink origin={editOrigin} destination={editDestination} />
 
               {/* Transport type */}
               <ThemedText style={styles.fieldLabel}>Transport</ThemedText>

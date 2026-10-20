@@ -40,6 +40,7 @@ Done: icons on Android, quest dates in local time (+ first unit tests), trips so
 - [x] Data pipeline documented in `scripts/data/README.md`; ÖBB attribution in the profile
 - [x] Quick Add flow: route → transport type → price/distance auto-filled → date defaults to now; dead "Connection" section removed
 - [x] Trip edit: ticket value and distance editable (weren't before)
+- [x] Hint under estimated prices (regional Verbund tickets often cost more) + "Check price at ÖBB" link to the ticket shop
 - [ ] Test the new trip entry on the device
 - [ ] Export/import: clear error messages
 
@@ -65,6 +66,8 @@ General
 - [ ] Split oversized screens (quests, profile, stats, TripDetailModal)
 - [ ] App icon, splash screen, compressed images
 - [ ] Onboarding rework (#44) including ticket setup and start date
+- [ ] Onboarding asks for the most common trip and its real price (seeds the remembered route price; real prices for the study)
+- [ ] Optional: request ÖBB's partner deep-link parameters so "Check price" opens the shop with the route pre-filled
 - [ ] Undo for deletes; offline/error states (#51)
 - [ ] Accessibility basics
 - [ ] Password reset for accounts (needs an email link back into the app)

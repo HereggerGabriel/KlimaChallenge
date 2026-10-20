@@ -18,6 +18,8 @@ import { TRANSPORT_COLOR, transportIcon } from "@/constants/transport";
 import { TripRouteFields } from "@/components/ui/TripRouteFields";
 import { useTripAutofill } from "@/hooks/useTripAutofill";
 import { formatDateLabel } from "@/utils/tripGrouping";
+import { FARE_HINT } from "@/services/fareEstimate";
+import { CheckPriceLink } from "@/components/ui/CheckPriceLink";
 
 type PrefillData = {
   origin: string;
@@ -45,12 +47,6 @@ type QuickAddTripModalProps = {
 };
 
 const TRANSPORT_TYPES = ["Train", "Bus", "Tram", "Subway"];
-
-const COST_HINT = {
-  oebb: "Estimated ÖBB standard fare (2nd class) · edit if needed",
-  remembered: "Your price from last time",
-  local: "Typical city fare · edit if needed",
-} as const;
 
 export function QuickAddTripModal({
   visible,
@@ -229,7 +225,7 @@ export function QuickAddTripModal({
               <View style={styles.hintBox}>
                 {autofill.costSource && (
                   <ThemedText style={styles.hintText}>
-                    € · {COST_HINT[autofill.costSource]}
+                    € · {FARE_HINT[autofill.costSource]}
                   </ThemedText>
                 )}
                 {autofill.distanceFromNetwork && (
@@ -239,6 +235,7 @@ export function QuickAddTripModal({
                 )}
               </View>
             )}
+            <CheckPriceLink origin={origin} destination={destination} />
 
             {/* When: defaults to now */}
             <ThemedText style={styles.fieldLabel}>When</ThemedText>
