@@ -77,15 +77,18 @@ Insights (second research goal: motivation through insight)
 - [ ] "Saved vs. driving" as a headline number
 - [ ] Weekly recap: this week vs. last week
 - [ ] Break-even forecast ("pays off around [date]")
-- [ ] Week labels as dates ("13 Oct") instead of "W43"; daily totals in trip list headers
+- [x] Week labels as dates ("13.10.") instead of "W43"
+- [ ] Daily totals in trip list headers
 
 Walkthrough findings (Oct 20, 2026)
-- [ ] Main screen: one "Add Trip" button in the empty state; smaller gap above Recent Trips; new-user hint on the level card
+- [x] Main screen: one "Add Trip" button in the empty state
+- [ ] Main screen: smaller gap above Recent Trips; new-user hint on the level card
 - [ ] Main screen: Financial Overview shows each number once (details on the stats screen)
-- [ ] Favorites only for routes with 2+ trips; layout for 1–2 cards
+- [x] Favorites only for routes with 2+ trips; cards stretch to full width when alone
 - [ ] Badge on the level card when rewards are ready ("1 ready")
 - [ ] Trip detail: route title on two lines; transport row uses the trip's icon
-- [ ] Trip list: labelled count, add button, undo after swipe-delete
+- [x] Trip list: labelled count ("3 trips")
+- [ ] Trip list: add button, undo after swipe-delete
 - [ ] Top routes: tap to log again
 - [ ] Quest cards: fixed layout (XP top right, CLAIM below), full-width progress bars
 - [ ] Remove extra bottom padding in cards

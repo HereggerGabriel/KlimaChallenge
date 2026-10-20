@@ -5,6 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { ThemedText } from "@/components/ThemedText";
 import { Palette } from "@/constants/Colors";
+import { startOfWeek, weekStartKey } from "@/utils/dateKeys";
 import { loadTrips } from "@/services/tripStorage";
 import { Trip } from "@/types/trip";
 import { TRANSPORT_COLOR, transportIcon } from "@/constants/transport";
@@ -13,30 +14,21 @@ import { TRANSPORT_COLOR, transportIcon } from "@/constants/transport";
 // Car: ~0.21 kg CO2/km | Austrian PT avg: ~0.05 kg CO2/km → savings: 0.16 kg/km
 const CO2_FACTOR = 0.16;
 
-// ── ISO-week helpers ──────────────────────────────────────────────────────────
+// ── Week helpers (Monday-based, local time) ───────────────────────────────────
 
-function getISOWeek(date: Date): string {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const day = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - day);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const week = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
-  return `${d.getUTCFullYear()}-W${week.toString().padStart(2, "0")}`;
+/** Mondays of the last n weeks, oldest first, ending with the current week. */
+function getLastNWeekStarts(n: number): Date[] {
+  const current = startOfWeek();
+  return Array.from({ length: n }, (_, i) => {
+    const monday = new Date(current);
+    monday.setDate(current.getDate() - (n - 1 - i) * 7);
+    return monday;
+  });
 }
 
-function getLastNWeekKeys(n: number): string[] {
-  const keys: string[] = [];
-  const now = new Date();
-  for (let i = n - 1; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(now.getDate() - i * 7);
-    keys.push(getISOWeek(d));
-  }
-  return keys;
-}
-
-function weekLabel(key: string): string {
-  return `W${key.split("-W")[1]}`;
+/** Short label for a week: the date of its Monday, e.g. "13.10." */
+function weekLabel(monday: Date): string {
+  return `${monday.getDate()}.${monday.getMonth() + 1}.`;
 }
 
 // ── Sub-components ───────────────────────────────────────────────────────────
@@ -178,15 +170,15 @@ export default function StatsScreen() {
   const klimaPct = Math.min((totalCost / klimaTicketCost) * 100, 100);
 
   // Weekly bar chart — last 8 weeks
-  const weekKeys = getLastNWeekKeys(8);
+  const weekStarts = getLastNWeekStarts(8);
   const weekCounts = trips.reduce<Record<string, number>>((acc, t) => {
-    const k = getISOWeek(new Date(t.date));
+    const k = weekStartKey(new Date(t.date));
     acc[k] = (acc[k] || 0) + 1;
     return acc;
   }, {});
-  const weeklyBarData = weekKeys.map((k) => ({
-    value: weekCounts[k] || 0,
-    label: weekLabel(k),
+  const weeklyBarData = weekStarts.map((monday) => ({
+    value: weekCounts[weekStartKey(monday)] || 0,
+    label: weekLabel(monday),
   }));
 
   // Transport breakdown
@@ -339,7 +331,7 @@ export default function StatsScreen() {
             <SectionTitle>Weekly Activity</SectionTitle>
             <View style={styles.card}>
               <WeeklyBarChart data={weeklyBarData} />
-              <ThemedText style={styles.chartLabel}>Trips per week (last 8 weeks)</ThemedText>
+              <ThemedText style={styles.chartLabel}>Trips per week (labelled by Monday, last 8 weeks)</ThemedText>
             </View>
 
             {/* ── Transport mix ── */}

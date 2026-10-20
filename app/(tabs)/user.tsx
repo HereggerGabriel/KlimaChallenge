@@ -55,6 +55,8 @@ type PrefillData = {
   description: string;
 };
 
+const MIN_FAVORITE_COUNT = 2;
+
 function computeFavorites(trips: Trip[]): FavoriteTrip[] {
   const map = new Map<string, FavoriteTrip>();
   for (const trip of trips) {
@@ -73,7 +75,11 @@ function computeFavorites(trips: Trip[]): FavoriteTrip[] {
       });
     }
   }
-  return [...map.values()].sort((a, b) => b.count - a.count).slice(0, 4);
+  // A route only counts as a favorite once it was taken at least twice.
+  return [...map.values()]
+    .filter((f) => f.count >= MIN_FAVORITE_COUNT)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 4);
 }
 
 const HOLD_DURATION = 1000;
@@ -484,10 +490,13 @@ export default function UserScreen() {
                 Recent Trips
               </ThemedText>
             </View>
-            <TouchableOpacity style={styles.addButton} onPress={() => setShowQuickAdd(true)}>
-              <MaterialIcons name="add-circle" size={20} color="#fff" />
-              <ThemedText style={styles.addButtonText}>Add Trip</ThemedText>
-            </TouchableOpacity>
+            {/* The empty state has its own Add Trip button. */}
+            {trips.length > 0 && (
+              <TouchableOpacity style={styles.addButton} onPress={() => setShowQuickAdd(true)}>
+                <MaterialIcons name="add-circle" size={20} color="#fff" />
+                <ThemedText style={styles.addButtonText}>Add Trip</ThemedText>
+              </TouchableOpacity>
+            )}
           </View>
 
           {trips.length === 0 && (

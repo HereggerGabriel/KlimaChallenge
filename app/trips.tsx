@@ -193,7 +193,9 @@ export default function TripsScreen() {
           <MaterialIcons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
         <ThemedText style={styles.headerTitle}>All Trips</ThemedText>
-        <ThemedText style={styles.headerCount}>{trips.length}</ThemedText>
+        <ThemedText style={styles.headerCount}>
+          {trips.length} {trips.length === 1 ? "trip" : "trips"}
+        </ThemedText>
       </View>
 
       {/* Filter chips */}

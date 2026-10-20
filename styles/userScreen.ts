@@ -149,7 +149,9 @@ export const styles = StyleSheet.create({
     gap: 10,
   },
   favoriteCard: {
-    width: "48%",
+    // Two per row; a single card (or the last odd one) stretches to full width.
+    flexBasis: "45%",
+    flexGrow: 1,
     backgroundColor: "rgba(255,255,255,0.07)",
     borderRadius: 12,
     padding: 12,
