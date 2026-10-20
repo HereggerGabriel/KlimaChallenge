@@ -5,8 +5,10 @@ Work happens on the `dev/prototype` branch.
 
 ## M1 — Foundation
 - [x] Enforce LF line endings (`.gitattributes`)
-- [x] Untrack `.claude/settings.local.json` (contained a Trello token), remove junk files and retired Trello/Excel tooling
-- [x] Move docs and old PM spreadsheets into `docs/`; replace CLAUDE.md and add this roadmap
+- [x] Remove junk files and retired Trello/Excel tooling
+- [ ] Untrack `.claude/settings.local.json` (contained a Trello token); needs your OK (Claude config)
+- [x] Move docs and old PM spreadsheets into `docs/`; add this roadmap
+- [ ] Updated CLAUDE.md + memory files (written, uncommitted); needs your OK (Claude config)
 - [x] Align dependencies with Expo SDK 54, remove unused ones, add `expo-dev-client`
 - [x] Remove dead template code and NativeWind
 - [x] Merge `app.json` + `app.config.ts` into one config; consistent KlimaChallenge branding
