@@ -44,3 +44,6 @@ app-example
 # Python
 __pycache__/
 *.pyc
+
+# Raw open-data downloads (ÖBB GTFS, price tables); processed output lives in assets/data
+data-raw/

@@ -5,3 +5,4 @@ docs/
 .claude/
 *.md
 package-lock.json
+data-raw/
