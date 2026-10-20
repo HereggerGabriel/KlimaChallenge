@@ -32,7 +32,7 @@ export default function LoginScreen() {
         <View style={styles.logoCircle}>
           <ThemedText style={styles.logoEmoji}>🚊</ThemedText>
         </View>
-        <ThemedText style={styles.appName}>TravelApp</ThemedText>
+        <ThemedText style={styles.appName}>KlimaChallenge</ThemedText>
         <ThemedText style={styles.tagline}>KLIMACHALLENGE</ThemedText>
       </View>
 

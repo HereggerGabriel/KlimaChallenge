@@ -67,13 +67,13 @@ export default function SplashScreen() {
 
       {/* App name + tagline */}
       <Animated.View style={[styles.textBlock, textStyle]}>
-        <Text style={styles.appName}>TravelApp</Text>
+        <Text style={styles.appName}>KlimaChallenge</Text>
         <Text style={styles.tagline}>Track. Save. Beat Break-Even.</Text>
       </Animated.View>
 
       {/* Bottom version hint */}
       <Animated.View style={[styles.versionBlock, textStyle]}>
-        <Text style={styles.version}>KlimaChallenge</Text>
+        <Text style={styles.version}>Prototype</Text>
       </Animated.View>
     </View>
   );
