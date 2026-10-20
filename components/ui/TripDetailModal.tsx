@@ -17,8 +17,7 @@ import { getXPForTrip } from "@/utils/levelSystem";
 import { TripRouteFields } from "@/components/ui/TripRouteFields";
 import { useTripAutofill } from "@/hooks/useTripAutofill";
 import { transportIcon } from "@/constants/transport";
-import { FARE_HINT } from "@/services/fareEstimate";
-import { CheckPriceLink } from "@/components/ui/CheckPriceLink";
+import { FareHints } from "@/components/ui/FareHints";
 
 const TRANSPORT_TYPES = ["Bus", "Train", "Tram", "Subway"];
 
@@ -304,15 +303,15 @@ export function TripDetailModal({
                   />
                 </View>
               </View>
-              {autofill.costSource && (
-                <ThemedText style={styles.editHint}>{FARE_HINT[autofill.costSource]}</ThemedText>
-              )}
-              {autofill.distanceFromNetwork && (
-                <ThemedText style={styles.editHint}>
-                  Rail distance from the ÖBB timetable
-                </ThemedText>
-              )}
-              <CheckPriceLink origin={editOrigin} destination={editDestination} />
+              <FareHints
+                costSource={autofill.costSource}
+                estimateAlternative={autofill.estimateAlternative}
+                onUseEstimate={autofill.applyEstimate}
+                distanceFromNetwork={autofill.distanceFromNetwork}
+                origin={editOrigin}
+                destination={editDestination}
+                date={editDate}
+              />
 
               {/* Transport type */}
               <ThemedText style={styles.fieldLabel}>Transport</ThemedText>
@@ -646,11 +645,6 @@ const styles = StyleSheet.create({
   },
   editValueColumn: {
     flex: 1,
-  },
-  editHint: {
-    fontSize: 12,
-    color: Palette.blue.light,
-    marginTop: 6,
   },
   editInputText: {
     color: "#fff",

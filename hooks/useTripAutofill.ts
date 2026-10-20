@@ -40,6 +40,10 @@ export function useTripAutofill({
 
   const [costSource, setCostSource] = useState<FareSuggestion["source"] | null>(null);
   const [distanceFromNetwork, setDistanceFromNetwork] = useState(false);
+  // The generic estimate when a remembered price was filled in, so the user can compare.
+  const [estimateAlternative, setEstimateAlternative] = useState<FareSuggestion["estimate"] | null>(
+    null,
+  );
 
   const isInitializedRoute = () =>
     initializedKey.current !== null &&
@@ -77,8 +81,14 @@ export function useTripAutofill({
         if (suggestion) {
           setCost(suggestion.price.toFixed(2));
           setCostSource(suggestion.source);
+          setEstimateAlternative(
+            suggestion.estimate && suggestion.estimate.price !== suggestion.price
+              ? suggestion.estimate
+              : null,
+          );
         } else {
           setCostSource(null);
+          setEstimateAlternative(null);
         }
       },
     );
@@ -90,6 +100,7 @@ export function useTripAutofill({
     initializedKey.current = keyOf(route);
     costTyped.current = true;
     setCostSource(null);
+    setEstimateAlternative(null);
     setDistanceFromNetwork(false);
   }, []);
 
@@ -97,10 +108,20 @@ export function useTripAutofill({
     (v: string) => {
       costTyped.current = true;
       setCostSource(null);
+      setEstimateAlternative(null);
       setCost(v);
     },
     [setCost],
   );
+
+  /** Replace the remembered price with the generic estimate (kept as the user's choice). */
+  const applyEstimate = useCallback(() => {
+    if (!estimateAlternative) return;
+    costTyped.current = true;
+    setCost(estimateAlternative.price.toFixed(2));
+    setCostSource(estimateAlternative.source);
+    setEstimateAlternative(null);
+  }, [estimateAlternative, setCost]);
 
   const onDistanceTyped = useCallback(
     (v: string) => {
@@ -120,6 +141,8 @@ export function useTripAutofill({
 
   return {
     costSource,
+    estimateAlternative,
+    applyEstimate,
     distanceFromNetwork,
     initialize,
     onCostTyped,

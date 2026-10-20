@@ -92,7 +92,23 @@ export type FareSuggestion = {
   price: number;
   /** Where the number comes from, for a small hint under the price field. */
   source: "remembered" | "oebb" | "local";
+  /** The generic estimate, also provided when a remembered price wins, so the user can compare. */
+  estimate?: { price: number; source: "oebb" | "local" };
 };
+
+/** The generic estimate without the user's remembered prices. */
+function genericEstimate(
+  transportType: string,
+  distanceKm: number | null,
+): FareSuggestion["estimate"] | undefined {
+  if (transportType === "Train") {
+    return distanceKm && distanceKm > 0
+      ? { price: estimateTrainFare(distanceKm), source: "oebb" }
+      : undefined;
+  }
+  const local = LOCAL_FARES[transportType];
+  return local ? { price: local, source: "local" } : undefined;
+}
 
 /**
  * Suggested ticket value for a trip: the user's remembered price for this route
@@ -106,15 +122,10 @@ export async function suggestFare(
   distanceKm: number | null,
 ): Promise<FareSuggestion | null> {
   if (!transportType) return null;
+  const estimate = genericEstimate(transportType, distanceKm);
   if (origin.trim() && destination.trim()) {
     const remembered = (await loadRemembered())[routeKey(origin, destination, transportType)];
-    if (remembered > 0) return { price: remembered, source: "remembered" };
+    if (remembered > 0) return { price: remembered, source: "remembered", estimate };
   }
-  if (transportType === "Train") {
-    return distanceKm && distanceKm > 0
-      ? { price: estimateTrainFare(distanceKm), source: "oebb" }
-      : null;
-  }
-  const local = LOCAL_FARES[transportType];
-  return local ? { price: local, source: "local" } : null;
+  return estimate ? { price: estimate.price, source: estimate.source } : null;
 }

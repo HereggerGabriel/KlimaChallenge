@@ -59,11 +59,12 @@ describe("suggestFare", () => {
     });
   });
 
-  it("prefers a remembered price, in both directions", async () => {
-    await rememberRoutePrice("Villach Hbf", "Klagenfurt Hbf", "Train", 10.2);
+  it("prefers a remembered price, in both directions, and still provides the estimate", async () => {
+    await rememberRoutePrice("Villach Hbf", "Klagenfurt Hbf", "Train", 10.5);
     expect(await suggestFare("Klagenfurt Hbf", "Villach Hbf", "Train", 37.9)).toEqual({
-      price: 10.2,
+      price: 10.5,
       source: "remembered",
+      estimate: { price: estimateTrainFare(37.9), source: "oebb" },
     });
   });
 

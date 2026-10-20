@@ -18,8 +18,7 @@ import { TRANSPORT_COLOR, transportIcon } from "@/constants/transport";
 import { TripRouteFields } from "@/components/ui/TripRouteFields";
 import { useTripAutofill } from "@/hooks/useTripAutofill";
 import { formatDateLabel } from "@/utils/tripGrouping";
-import { FARE_HINT } from "@/services/fareEstimate";
-import { CheckPriceLink } from "@/components/ui/CheckPriceLink";
+import { FareHints } from "@/components/ui/FareHints";
 
 type PrefillData = {
   origin: string;
@@ -221,21 +220,15 @@ export function QuickAddTripModal({
                 </View>
               </View>
             </View>
-            {(autofill.costSource || autofill.distanceFromNetwork) && (
-              <View style={styles.hintBox}>
-                {autofill.costSource && (
-                  <ThemedText style={styles.hintText}>
-                    € · {FARE_HINT[autofill.costSource]}
-                  </ThemedText>
-                )}
-                {autofill.distanceFromNetwork && (
-                  <ThemedText style={styles.hintText}>
-                    km · Rail distance from the ÖBB timetable
-                  </ThemedText>
-                )}
-              </View>
-            )}
-            <CheckPriceLink origin={origin} destination={destination} />
+            <FareHints
+              costSource={autofill.costSource}
+              estimateAlternative={autofill.estimateAlternative}
+              onUseEstimate={autofill.applyEstimate}
+              distanceFromNetwork={autofill.distanceFromNetwork}
+              origin={origin}
+              destination={destination}
+              date={date}
+            />
 
             {/* When: defaults to now */}
             <ThemedText style={styles.fieldLabel}>When</ThemedText>
@@ -413,14 +406,6 @@ const styles = StyleSheet.create({
   },
   input: { flex: 1, marginLeft: 8, fontSize: 15, color: "#fff" },
   affix: { fontSize: 15, color: "rgba(255,255,255,0.5)", paddingHorizontal: 2 },
-  hintBox: {
-    marginTop: 6,
-    gap: 2,
-  },
-  hintText: {
-    fontSize: 12,
-    color: Palette.blue.light,
-  },
   pickerButton: {
     flexDirection: "row",
     alignItems: "center",
