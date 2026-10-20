@@ -24,13 +24,6 @@ const LOCAL_FARES: Record<string, number> = {
 
 const REMEMBERED_KEY = "@rememberedRoutePrices";
 
-/**
- * ÖBB ticket shop, for users who want to look up the official price (it also
- * sells regional Verbund tickets). ÖBB offers pre-filled route links only to
- * partners on request, so this opens the plain shop.
- */
-export const OEBB_SHOP_URL = "https://shop.oebbtickets.at/de/ticket";
-
 /** Hint shown under an estimated price, by where the suggestion came from. */
 export const FARE_HINT = {
   oebb: "ÖBB standard fare · regional Verbund tickets often cost more, edit if needed",

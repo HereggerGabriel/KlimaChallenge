@@ -1,4 +1,4 @@
-import { oebbJourneyUrl } from "@/components/ui/CheckPriceLink";
+import { oebbJourneyUrl } from "@/services/oebbLinks";
 
 describe("oebbJourneyUrl", () => {
   it("fills origin, destination, date and time, URL-encoded", () => {

@@ -3,28 +3,7 @@ import { Linking, StyleSheet, TouchableOpacity, View } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { ThemedText } from "@/components/ThemedText";
 import { Palette } from "@/constants/Colors";
-import { OEBB_SHOP_URL } from "@/services/fareEstimate";
-
-const pad = (n: number) => String(n).padStart(2, "0");
-
-/**
- * ÖBB journey planner (Scotty) with origin, destination and time filled in. Its
- * results link each connection to the ticket shop with the route pre-filled
- * ("Ticket und Preise"), which shows the official price including Verbund
- * tickets. Station names that ÖBB spells differently show a short selection list.
- * Scotty's classic version is marked as deprecated; if it disappears, switch
- * this to OEBB_SHOP_URL.
- */
-export function oebbJourneyUrl(origin: string, destination: string, when: Date): string {
-  const params = [
-    `S=${encodeURIComponent(origin.trim())}`,
-    `Z=${encodeURIComponent(destination.trim())}`,
-    `date=${pad(when.getDate())}.${pad(when.getMonth() + 1)}.${when.getFullYear()}`,
-    `time=${pad(when.getHours())}:${pad(when.getMinutes())}`,
-    "start=1",
-  ];
-  return `https://fahrplan.oebb.at/bin/query.exe/dn?${params.join("&")}`;
-}
+import { OEBB_SHOP_URL, oebbJourneyUrl } from "@/services/oebbLinks";
 
 /**
  * Lets the user look up the official price for their route at ÖBB and type it
