@@ -53,13 +53,15 @@ Done: icons on Android, quest dates in local time (+ first unit tests), trips so
 - [ ] Show net savings (value used − ticket cost) honestly in the UI (data is there: `ticketProgress.netSavings`)
 - [x] Unit tests: levels, derived XP, migration, ticket periods, store (59 tests)
 - [ ] Unit tests: quest progress functions, import file parsing
-- [ ] Device test of the store migration flows (add/edit/delete, claims, import, logout)
+- [x] Device test of the store migration flows (add/edit/delete, claims, import, ticket start date)
 
 ## M4 — Cloud backup
 Builds on M3's data model; replaces the one-way study upload planned earlier. Background in `.claude/memory/plan_cloud_sync.md`.
 - [ ] Supabase tables for trips and claimed rewards, row-level security (each user only sees their own rows)
 - [ ] Save locally first, then upload in the background; works offline and catches up later
 - [ ] Restore on login / new phone; deletions propagate (soft delete)
+- [ ] Anonymous trips are kept when creating an account (same user ID via upgrade, nothing to move)
+- [ ] Decide: anonymous user logs in to an *existing* account → merge this phone's trips into it (suggested; UUIDs prevent duplicates) or ask first
 - [ ] Small sync status indicator (only shown when something fails)
 - [ ] Study export: query/view without station names (date, transport type, km, price, rewards)
 
