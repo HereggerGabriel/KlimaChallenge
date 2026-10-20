@@ -3,6 +3,7 @@ import * as Sharing from "expo-sharing";
 import * as DocumentPicker from "expo-document-picker";
 import { Trip } from "@/types/trip";
 import { localDateKey } from "@/utils/dateKeys";
+import { parseTripsPayload } from "./tripParsing";
 
 // ── Export format ──────────────────────────────────────────────────────────────
 
@@ -65,59 +66,7 @@ export async function pickTripsFile(): Promise<Trip[] | null> {
   } catch {
     throw new Error("This file isn't a KlimaChallenge export (not valid JSON).");
   }
-  const trips = parseTripsFromPayload(parsed);
+  const trips = parseTripsPayload(parsed);
   if (trips.length === 0) throw new Error("No valid trips found in this file.");
   return trips;
-}
-
-// ── Parsing helpers ────────────────────────────────────────────────────────────
-
-const VALID_TRANSPORT_TYPES = new Set(["Bus", "Train", "Tram", "Subway"]);
-
-function parseTripsFromPayload(parsed: unknown): Trip[] {
-  // Support both wrapped format { version, trips } and raw array
-  let rawTrips: unknown[];
-  if (Array.isArray(parsed)) {
-    rawTrips = parsed;
-  } else if (
-    parsed &&
-    typeof parsed === "object" &&
-    "trips" in parsed &&
-    Array.isArray((parsed as any).trips)
-  ) {
-    rawTrips = (parsed as any).trips;
-  } else {
-    throw new Error("This file isn't a KlimaChallenge export (no trips list).");
-  }
-
-  return rawTrips.map((raw: any) => validateTrip(raw)).filter((t): t is Trip => t !== null);
-}
-
-function validateTrip(raw: any): Trip | null {
-  if (!raw || typeof raw !== "object") return null;
-
-  const id = typeof raw.id === "string" ? raw.id : null;
-  const date = raw.date ? new Date(raw.date) : null;
-  const origin = typeof raw.origin === "string" ? raw.origin.trim() : null;
-  const destination = typeof raw.destination === "string" ? raw.destination.trim() : null;
-  const transportType = typeof raw.transportType === "string" ? raw.transportType : null;
-  const cost = typeof raw.cost === "number" ? raw.cost : parseFloat(raw.cost);
-  const distance = typeof raw.distance === "number" ? raw.distance : parseFloat(raw.distance);
-  const description = typeof raw.description === "string" ? raw.description : "";
-
-  if (
-    !id ||
-    !date ||
-    isNaN(date.getTime()) ||
-    !origin ||
-    !destination ||
-    !transportType ||
-    !VALID_TRANSPORT_TYPES.has(transportType) ||
-    isNaN(cost) ||
-    isNaN(distance)
-  ) {
-    return null;
-  }
-
-  return { id, date, origin, destination, transportType, cost, distance, description };
 }

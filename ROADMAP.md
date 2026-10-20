@@ -9,7 +9,7 @@ Work happens on the `dev/prototype` branch.
 |---|---|---|
 | M1 Foundation | Oct 20 | done |
 | M2 Trip entry + fixes | Oct 20 | done |
-| M3 Data core | Oct 20 – | in progress |
+| M3 Data core | Oct 20 | done |
 | M4 Cloud backup | Nov 16 – Nov 22 | |
 | Pilot test (5–8 people, 2 weeks) | Nov 30 – Dec 13 | runs in parallel with M5 |
 | M5 Polish + insights | Nov 23 – Dec 18 | |
@@ -50,9 +50,9 @@ Done: icons on Android, quest dates in local time (+ first unit tests), trips so
 - [x] XP calculated from trips plus a log of claimed rewards (with timestamps), instead of a stored counter; one-time migration of old data
 - [x] App-wide "+XP" / level-up feedback driven by the store
 - [x] Ticket profile with start date ("Ticket valid from"): break-even and main quest per ticket period
-- [ ] Show net savings (value used − ticket cost) honestly in the UI (data is there: `ticketProgress.netSavings`)
+- [x] Net savings after break-even ("Net Savings +€X") and the current ticket period ("Ticket year since … · N days left") in the overview and stats
 - [x] Unit tests: levels, derived XP, migration, ticket periods, store (59 tests)
-- [ ] Unit tests: quest progress functions, import file parsing
+- [x] Unit tests: quest progress functions, import file parsing (11 suites, 76 tests in total)
 - [x] Device test of the store migration flows (add/edit/delete, claims, import, ticket start date)
 
 ## M4 — Cloud backup
