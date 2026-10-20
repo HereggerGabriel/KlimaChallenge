@@ -4,7 +4,8 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
+  Modal,
+  Pressable,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
@@ -18,6 +19,7 @@ import { exportTrips, importTrips, ImportResult } from "@/services/tripExport";
 import { ThemedText } from "@/components/ThemedText";
 import { Palette } from "@/constants/Colors";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type TicketPreset = {
   label: string;
@@ -132,6 +134,7 @@ function SlideToDelete({ onConfirmed }: { onConfirmed: () => void }) {
 }
 
 export default function ProfileScreen() {
+  const insets = useSafeAreaInsets();
   const [name, setName] = useState("");
   const [selectedTicket, setSelectedTicket] = useState<string>("KlimaTicket Ö Classic");
   const [customTicketName, setCustomTicketName] = useState("");
@@ -286,70 +289,88 @@ export default function ProfileScreen() {
           />
         </TouchableOpacity>
 
-        {dropdownOpen && (
-          <View style={styles.dropdown}>
-            {TICKET_GROUPS.map((group) => (
-              <React.Fragment key={group.group}>
-                <View style={styles.dropdownGroupHeader}>
-                  <ThemedText style={styles.dropdownGroupHeaderText}>{group.group}</ThemedText>
-                </View>
-                {group.presets.map((preset) => {
-                  const active = selectedTicket === preset.label;
-                  return (
-                    <TouchableOpacity
-                      key={preset.label}
-                      style={[styles.dropdownItem, active && styles.dropdownItemActive]}
-                      onPress={() => {
-                        setSelectedTicket(preset.label);
-                        setDropdownOpen(false);
-                      }}
-                      activeOpacity={0.75}
-                    >
-                      <View style={{ flex: 1 }}>
-                        <ThemedText
-                          style={[
-                            styles.dropdownItemLabel,
-                            active && styles.dropdownItemLabelActive,
-                          ]}
+        <Modal
+          visible={dropdownOpen}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setDropdownOpen(false)}
+        >
+          <View style={styles.sheetRoot}>
+            <Pressable
+              style={StyleSheet.absoluteFill}
+              onPress={() => setDropdownOpen(false)}
+              accessibilityLabel="Close ticket selection"
+            />
+            <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
+              <View style={styles.sheetHandle} />
+              <ThemedText style={styles.sheetTitle}>Choose your KlimaTicket</ThemedText>
+              <ScrollView style={styles.dropdown}>
+                {TICKET_GROUPS.map((group) => (
+                  <React.Fragment key={group.group}>
+                    <View style={styles.dropdownGroupHeader}>
+                      <ThemedText style={styles.dropdownGroupHeaderText}>{group.group}</ThemedText>
+                    </View>
+                    {group.presets.map((preset) => {
+                      const active = selectedTicket === preset.label;
+                      return (
+                        <TouchableOpacity
+                          key={preset.label}
+                          style={[styles.dropdownItem, active && styles.dropdownItemActive]}
+                          onPress={() => {
+                            setSelectedTicket(preset.label);
+                            setDropdownOpen(false);
+                          }}
+                          activeOpacity={0.75}
                         >
-                          {preset.label}
-                        </ThemedText>
-                        <ThemedText style={styles.dropdownItemCost}>
-                          {formatCost(preset)}
-                        </ThemedText>
-                        <ThemedText style={styles.dropdownItemDesc}>
-                          {preset.description}
-                        </ThemedText>
-                      </View>
-                      {active && <MaterialIcons name="check" size={18} color={Palette.green.mid} />}
-                    </TouchableOpacity>
-                  );
-                })}
-              </React.Fragment>
-            ))}
+                          <View style={{ flex: 1 }}>
+                            <ThemedText
+                              style={[
+                                styles.dropdownItemLabel,
+                                active && styles.dropdownItemLabelActive,
+                              ]}
+                            >
+                              {preset.label}
+                            </ThemedText>
+                            <ThemedText style={styles.dropdownItemCost}>
+                              {formatCost(preset)}
+                            </ThemedText>
+                            <ThemedText style={styles.dropdownItemDesc}>
+                              {preset.description}
+                            </ThemedText>
+                          </View>
+                          {active && (
+                            <MaterialIcons name="check" size={18} color={Palette.green.mid} />
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </React.Fragment>
+                ))}
 
-            {/* Custom option */}
-            <TouchableOpacity
-              style={[
-                styles.dropdownItem,
-                isCustom && styles.dropdownItemActive,
-                styles.dropdownItemLast,
-              ]}
-              onPress={() => {
-                setSelectedTicket(CUSTOM_LABEL);
-                setDropdownOpen(false);
-              }}
-              activeOpacity={0.75}
-            >
-              <ThemedText
-                style={[styles.dropdownItemLabel, isCustom && styles.dropdownItemLabelActive]}
-              >
-                Custom
-              </ThemedText>
-              {isCustom && <MaterialIcons name="check" size={18} color={Palette.green.mid} />}
-            </TouchableOpacity>
+                {/* Custom option */}
+                <TouchableOpacity
+                  style={[
+                    styles.dropdownItem,
+                    isCustom && styles.dropdownItemActive,
+                    styles.dropdownItemLast,
+                  ]}
+                  onPress={() => {
+                    setSelectedTicket(CUSTOM_LABEL);
+                    setDropdownOpen(false);
+                  }}
+                  activeOpacity={0.75}
+                >
+                  <ThemedText
+                    style={[styles.dropdownItemLabel, isCustom && styles.dropdownItemLabelActive]}
+                  >
+                    Custom
+                  </ThemedText>
+                  {isCustom && <MaterialIcons name="check" size={18} color={Palette.green.mid} />}
+                </TouchableOpacity>
+              </ScrollView>
+            </View>
           </View>
-        )}
+        </Modal>
 
         {/* Custom ticket inputs */}
         {isCustom && (
@@ -457,13 +478,6 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-
-      {/* Dropdown dismiss overlay */}
-      {dropdownOpen && (
-        <TouchableWithoutFeedback onPress={() => setDropdownOpen(false)}>
-          <View style={styles.dropdownDismissOverlay} />
-        </TouchableWithoutFeedback>
-      )}
 
       {/* Delete confirmation overlay */}
       {showDeleteModal && (
@@ -628,14 +642,38 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
+  sheetRoot: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.55)",
+  },
+  sheet: {
+    maxHeight: "80%",
+    backgroundColor: Palette.blue.dark,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 8,
+    paddingHorizontal: 16,
+  },
+  sheetHandle: {
+    alignSelf: "center",
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(255,255,255,0.25)",
+    marginBottom: 12,
+  },
+  sheetTitle: {
+    color: "#fff",
+    fontSize: 17,
+    fontWeight: "700",
+    marginBottom: 12,
+  },
   dropdown: {
-    marginTop: 4,
     backgroundColor: "rgba(255,255,255,0.06)",
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.12)",
-    overflow: "hidden",
-    zIndex: 11,
   },
   dropdownGroupHeader: {
     paddingHorizontal: 14,
@@ -752,14 +790,6 @@ const styles = StyleSheet.create({
     color: Palette.red.light,
     fontSize: 15,
     fontWeight: "600",
-  },
-  dropdownDismissOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 10,
   },
   modalOverlay: {
     position: "absolute",
