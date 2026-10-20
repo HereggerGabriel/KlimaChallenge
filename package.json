@@ -14,7 +14,10 @@
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "data:stations": "node scripts/data/build-stations.mjs data-raw/gtfs",
+    "data:prices": "node scripts/data/extract-prices.mjs data-raw/v.pdf data-raw/ka_kl.pdf data-raw/wa_we.pdf",
+    "data:fares": "node scripts/data/build-fare-model.mjs"
   },
   "jest": {
     "preset": "jest-expo"
@@ -63,6 +66,7 @@
     "eslint-config-prettier": "^10.1.8",
     "jest": "^29.2.1",
     "jest-expo": "~54.0.18",
+    "pdfjs-dist": "^4.10.38",
     "prettier": "^3.9.10",
     "typescript": "~5.9.2"
   },
