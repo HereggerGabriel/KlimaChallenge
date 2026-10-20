@@ -2,7 +2,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import * as DocumentPicker from "expo-document-picker";
 import { Trip } from "@/types/trip";
-import { loadTrips, saveTrips } from "./tripStorage";
+import { loadTrips, saveTrips, sortTripsNewestFirst } from "./tripStorage";
 
 // ── Export format ──────────────────────────────────────────────────────────────
 
@@ -83,8 +83,7 @@ export async function importTrips(): Promise<ImportResult> {
   }
 
   if (newTrips.length > 0) {
-    const merged = [...newTrips, ...existingTrips];
-    merged.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const merged = sortTripsNewestFirst([...newTrips, ...existingTrips]);
     await saveTrips(merged);
   }
 

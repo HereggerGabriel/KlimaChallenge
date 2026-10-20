@@ -30,7 +30,7 @@ import {
 import { computeStreak, getNewMilestoneXP, STREAK_MILESTONES_KEY } from "@/utils/streakSystem";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Trip } from "@/types/trip";
-import { loadTrips, saveTrips, generateTripId } from "@/services/tripStorage";
+import { loadTrips, saveTrips, generateTripId, sortTripsNewestFirst } from "@/services/tripStorage";
 import { styles } from "@/styles/userScreen";
 import { supabase } from "@/lib/supabase";
 import { TRANSPORT_COLOR, transportIcon } from "@/constants/transport";
@@ -322,7 +322,7 @@ export default function UserScreen() {
     await AsyncStorage.setItem("userXP", newXP.toString());
     setUserXP(newXP);
     setUserLevel(calculateLevel(newXP));
-    setTrips((prev) => prev.map((t) => (t.id === tripId ? updatedTrip : t)));
+    setTrips((prev) => sortTripsNewestFirst(prev.map((t) => (t.id === tripId ? updatedTrip : t))));
     setSelectedTrip(updatedTrip);
   };
 
@@ -361,7 +361,7 @@ export default function UserScreen() {
     };
     const tripXP = getXPForTrip(fav.distance, fav.transportType);
     const { newXP, newLevel } = await awardXP(tripXP, userXP, userLevel);
-    const updatedTrips = [newTrip, ...trips];
+    const updatedTrips = sortTripsNewestFirst([newTrip, ...trips]);
     setTrips(updatedTrips);
     await checkMainQuest(updatedTrips, klimaTicketCost);
     await checkStreakMilestones(updatedTrips, newXP, newLevel, claimedMilestones);
@@ -390,7 +390,7 @@ export default function UserScreen() {
     const tripXP = getXPForTrip(tripData.distance, tripData.transportType);
     const { newXP, newLevel } = await awardXP(tripXP, userXP, userLevel);
 
-    const updatedTrips = [newTrip, ...trips];
+    const updatedTrips = sortTripsNewestFirst([newTrip, ...trips]);
     setTrips(updatedTrips);
     setShowQuickAdd(false);
     setPrefillData(undefined);

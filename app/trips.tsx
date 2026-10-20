@@ -12,7 +12,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { Palette } from "@/constants/Colors";
 import { router, useFocusEffect } from "expo-router";
 import { Trip } from "@/types/trip";
-import { loadTrips, saveTrips } from "@/services/tripStorage";
+import { loadTrips, saveTrips, sortTripsNewestFirst } from "@/services/tripStorage";
 import { getXPForTrip, calculateLevel } from "@/utils/levelSystem";
 import { TRANSPORT_COLOR } from "@/constants/transport";
 import { TripDetailModal } from "@/components/ui/TripDetailModal";
@@ -166,7 +166,7 @@ export default function TripsScreen() {
     const updatedTrip = { ...trip, ...updates };
     const newTripXP = getXPForTrip(updatedTrip.distance, updatedTrip.transportType);
     const newXP = Math.max(0, userXP + (newTripXP - oldXP));
-    const newTrips = trips.map((t) => (t.id === tripId ? updatedTrip : t));
+    const newTrips = sortTripsNewestFirst(trips.map((t) => (t.id === tripId ? updatedTrip : t)));
     await Promise.all([AsyncStorage.setItem("userXP", newXP.toString()), saveTrips(newTrips)]);
     setUserXP(newXP);
     setUserLevel(calculateLevel(newXP));

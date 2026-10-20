@@ -6,17 +6,23 @@ export const STORAGE_KEY = "@travelapp_trips";
 /** Generate a unique trip ID (UUID v4). Single source of truth for ID generation. */
 export const generateTripId = (): string => crypto.randomUUID();
 
+/** Newest first, the order every trip list in the app expects. Returns a new array. */
+export const sortTripsNewestFirst = (trips: Trip[]): Trip[] =>
+  [...trips].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
 export const loadTrips = async (): Promise<Trip[]> => {
   try {
     const storedTrips = await AsyncStorage.getItem(STORAGE_KEY);
     if (storedTrips) {
       const parsedTrips = JSON.parse(storedTrips);
-      return parsedTrips.map((trip: any) => ({
-        ...trip,
-        date: new Date(trip.date),
-        distance: parseFloat(trip.distance) || 0,
-        cost: parseFloat(trip.cost) || 0,
-      }));
+      return sortTripsNewestFirst(
+        parsedTrips.map((trip: any) => ({
+          ...trip,
+          date: new Date(trip.date),
+          distance: parseFloat(trip.distance) || 0,
+          cost: parseFloat(trip.cost) || 0,
+        })),
+      );
     }
     return [];
   } catch (error) {
