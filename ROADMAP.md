@@ -41,7 +41,8 @@ Done: icons on Android, quest dates in local time (+ first unit tests), trips so
 - [x] Quick Add flow: route → transport type → price/distance auto-filled → date defaults to now; dead "Connection" section removed
 - [x] Trip edit: ticket value and distance editable (weren't before)
 - [x] Hint under estimated prices (regional Verbund tickets often cost more) + "Check price at ÖBB" link to the ticket shop
-- [ ] Test the new trip entry on the device
+- [x] Test the new trip entry on the device
+- [x] "Check price at ÖBB" opens the route pre-filled in the ÖBB timetable (one tap on "Ticket und Preise" per connection); remembered price shows the ÖBB estimate alongside
 - [ ] Export/import: clear error messages
 
 ## M3 — Data core
