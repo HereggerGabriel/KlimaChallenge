@@ -9,7 +9,7 @@ Work happens on the `dev/prototype` branch.
 |---|---|---|
 | M1 Foundation | Oct 20 | done |
 | M2 Trip entry + fixes | Oct 20 | done |
-| M3 Data core | Nov 2 – Nov 15 | |
+| M3 Data core | Oct 20 – | in progress |
 | M4 Cloud backup | Nov 16 – Nov 22 | |
 | Pilot test (5–8 people, 2 weeks) | Nov 30 – Dec 13 | runs in parallel with M5 |
 | M5 Polish + insights | Nov 23 – Dec 18 | |
@@ -46,10 +46,14 @@ Done: icons on Android, quest dates in local time (+ first unit tests), trips so
 - [x] Export/import: clear messages (not JSON, no trips, nothing to export, sharing unavailable, X imported / Y already there)
 
 ## M3 — Data core
-- [ ] Shared trips store (one set of add/edit/delete functions for all screens)
-- [ ] XP calculated from trips plus a log of claimed rewards, instead of a stored counter
-- [ ] Ticket profile with start date: break-even per ticket year, honest "savings"
-- [ ] Unit tests: levels, streaks, quests, break-even, import
+- [x] Shared store `store/AppData.tsx` (trips, reward log, profile); all screens use it, none touch storage directly
+- [x] XP calculated from trips plus a log of claimed rewards (with timestamps), instead of a stored counter; one-time migration of old data
+- [x] App-wide "+XP" / level-up feedback driven by the store
+- [x] Ticket profile with start date ("Ticket valid from"): break-even and main quest per ticket period
+- [ ] Show net savings (value used − ticket cost) honestly in the UI (data is there: `ticketProgress.netSavings`)
+- [x] Unit tests: levels, derived XP, migration, ticket periods, store (59 tests)
+- [ ] Unit tests: quest progress functions, import file parsing
+- [ ] Device test of the store migration flows (add/edit/delete, claims, import, logout)
 
 ## M4 — Cloud backup
 Builds on M3's data model; replaces the one-way study upload planned earlier. Background in `.claude/memory/plan_cloud_sync.md`.
