@@ -208,7 +208,7 @@ export default function ProfileScreen() {
 				setImportResult(result);
 				setTimeout(() => setImportResult(null), 4000);
 			}
-		} catch (e) {
+		} catch {
 			setImportResult({ added: 0, skipped: 0, total: -1 });
 			setTimeout(() => setImportResult(null), 4000);
 		}

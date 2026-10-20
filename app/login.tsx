@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, ImageBackground, Dimensions } from "react-native";
+import { View, StyleSheet, ImageBackground } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ThemedText } from "@/components/ThemedText";
 import LoginForm from "@/components/ui/LoginForm";
@@ -7,7 +7,6 @@ import { Palette } from "@/constants/Colors";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 
-const { height } = Dimensions.get("window");
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();

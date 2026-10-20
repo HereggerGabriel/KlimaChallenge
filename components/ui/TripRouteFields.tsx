@@ -78,7 +78,6 @@ export function TripRouteFields({
 
 	// Price autofill when origin/destination/transport changes and cost is empty.
 	// Skip on initial mount so opening the modal doesn't pre-fill the price.
-	// eslint-disable-next-line react-hooks/exhaustive-deps
 	useEffect(() => {
 		if (!mountedRef.current) {
 			mountedRef.current = true;
@@ -88,6 +87,8 @@ export function TripRouteFields({
 			const suggested = lookupPrice(origin, destination, transportType);
 			if (suggested !== null) onCostChange(String(suggested));
 		}
+		// Intentionally only re-run on route/transport changes, not on cost edits.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [origin, destination, transportType]);
 
 	const handleSwap = () => {
