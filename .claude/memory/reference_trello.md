@@ -1,21 +1,10 @@
 ---
-name: Trello board reference
-description: KlimaChallenge Trello board ID, list structure, and sync script location
+name: Trello board reference (archived)
+description: KlimaChallenge Trello board — read-only archive of sessions S1–S18; sync tooling removed in M1
 type: reference
 ---
 
 **Board:** KlimaChallenge — https://trello.com/b/PbkrPAvm/klimachallenge
-**Board ID:** `69df5cc90cd28a274ecf9993`
-**Sync script:** `trello_sync.js` in project root (credentials in `.env`, gitignored)
-**Token expiry:** 30 days from 2026-04-15 (renew by ~2026-05-14)
+**Status:** Read-only archive of S1–S18. Not updated anymore — `trello_sync.js` was removed in M1 (Oct 2026); planning now lives in `ROADMAP.md` and `docs/KlimaChallenge_PM_v5.xlsx`.
 
-**List structure:**
-- Pre-Production — launch checklist items
-- Active — items queued for the next session (user-managed)
-- Backlog — prioritized upcoming work
-- Done (Current) — completed items from active sessions (archive when ~20 cards)
-- Done (S11-S16) — archived
-- Done (S6-S10) — archived
-- Done (S1-S5) — archived
-
-**Labels:** S effort (green), M effort (yellow), L effort (orange), Pre-launch (red), Tech Debt (blue), Bug Fix (purple), UX/Polish (sky)
+**List structure:** Pre-Production, Active, Backlog, Done (Current), Done (S11-S16), Done (S6-S10), Done (S1-S5)

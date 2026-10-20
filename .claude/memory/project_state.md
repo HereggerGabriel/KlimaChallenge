@@ -31,7 +31,7 @@ A React Native / Expo app for tracking public transport trips (bus, train, tram,
 - `app/trips.tsx` — Full trips list screen. Header (back + "All Trips" + count), filter chips (All/Bus/Train/Tram/Subway), date-grouped list, swipe-left-to-delete (RNGH Pan, -80px threshold, red zone revealed, 200ms fly-off + setTimeout), tap → TripDetailModal. Handles own XP updates + persists to AsyncStorage. useFocusEffect reloads on focus.
 - `app/(tabs)/_layout.tsx` — Tabs with hidden tab bar, single screen `user`
 - `app/(tabs)/user.tsx` — main screen (see below)
-- `app/(tabs)/_user_styles.tsx` — styles for user.tsx; includes `root: { flex: 1 }`, `dateGroupHeader` style; prefixed with `_` so Expo Router ignores it
+- `styles/userScreen.ts` — styles for user.tsx (moved out of `app/` in M2: Expo Router treated `_user_styles.tsx` as a route)
 - `lib/supabase.ts` — singleton Supabase client (AsyncStorage session persistence, Constants fallback for URL/key)
 - `services/tripStorage.ts` — AsyncStorage CRUD for trips; `loadTrips()` coerces distance+cost to float; storage key is `STORAGE_KEY = "@travelapp_trips"` (NOT `@trips`); **when key is missing, returns `[]`**; exports `generateTripId()` using `crypto.randomUUID()` — single source of truth for ID generation. `initialTrips` dead code removed in S18.
 - `services/tripExport.ts` — Trip export (JSON → share sheet) and import (document picker → merge by ID). Versioned export format (`version: 1`). Import validates all fields, skips trips whose ID already exists locally. Single `saveTrips()` call for bulk insert.
@@ -54,11 +54,10 @@ A React Native / Expo app for tracking public transport trips (bus, train, tram,
 - `components/ui/XPToast.tsx` — floating "+XP" badge animation (Reanimated spring+float)
 - `components/ui/LevelUpOverlay.tsx` — full-screen level-up celebration overlay (auto-dismisses ~2.8s)
 - `components/ui/MainQuestOverlay.tsx` — full-screen Main Quest celebration (6 floating stars, card spring-in, stats, Claim CTA); triggered when totalCost >= klimaTicketCost for the first time
-- `KlimaChallenge_PM_v5.xlsx` — project management Excel file (dashboard, backlog, milestones, architecture, feature registry). Current active PM file.
-- `pm_updater.py` — v2 structure; `PMUpdater` class; fill `__main__` block and run `python pm_updater.py` at end of each session. Points to `KlimaChallenge_PM_v5.xlsx`. Dashboard: Row 5 = headers, Row 6 = current values, Row 7 = previous values. All methods idempotent (skip if row already exists).
-- `trello_sync.js` — CLI tool for syncing project state to Trello board. Commands: add/done/move/update/find/lists/cards/archive-done. Credentials in `.env` (gitignored).
-- `.env` — Trello API key + token + board ID (gitignored, token expires ~2026-05-14)
-- `.claude/memory/` — project memory files (version-controlled in git); always update both this folder AND `C:\Users\gabri\.claude\projects\f--projects-TravelApp-travelapp\memory\` in sync.
+- `docs/KlimaChallenge_PM_v5.xlsx` — project management Excel (dashboard, backlog, milestones). Updated manually at milestones; `pm_updater.py` and `trello_sync.js` were removed in M1 (Oct 2026), recoverable from git history.
+- `ROADMAP.md` — current milestone plan (M1–M5) with checkboxes; the working tracker since Oct 2026.
+- `.env` — Supabase `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` (gitignored; template in `.env.example`)
+- `.claude/memory/` — project memory files (version-controlled in git).
 
 **`/(tabs)/user.tsx` — main screen layout:**
 1. Header: "My Climate Journey" title + subtitle (paddingTop: 52)
