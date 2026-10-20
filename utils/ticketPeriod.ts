@@ -91,3 +91,19 @@ export function computeTicketProgress(
     daysLeft: period ? Math.ceil((period.end.getTime() - now.getTime()) / 86_400_000) : null,
   };
 }
+
+/** "Ticket year since 1 Mar 2026 · 132 days left", or null without a start date. */
+export function describeTicketPeriod(
+  progress: TicketProgress,
+  period: TicketProfile["period"],
+): string | null {
+  if (!progress.period) return null;
+  const since = progress.period.start.toLocaleDateString("en-AT", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+  const unit = period === "month" ? "Ticket month" : "Ticket year";
+  const left = progress.daysLeft ?? 0;
+  return `${unit} since ${since} · ${left} day${left === 1 ? "" : "s"} left`;
+}

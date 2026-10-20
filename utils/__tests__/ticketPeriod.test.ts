@@ -1,5 +1,6 @@
 import {
   computeTicketProgress,
+  describeTicketPeriod,
   currentTicketPeriod,
   ticketPeriodKey,
   TicketProfile,
@@ -82,5 +83,18 @@ describe("computeTicketProgress", () => {
     expect(p.netSavings).toBe(200);
     expect(p.percent).toBe(100);
     expect(p.daysLeft).toBeNull();
+  });
+});
+
+describe("describeTicketPeriod", () => {
+  it("names the period and the days left", () => {
+    const now = new Date(2026, 9, 20, 12);
+    const p = computeTicketProgress([], ticket("2025-03-01"), now);
+    const text = describeTicketPeriod(p, "year")!;
+    expect(text).toMatch(/^Ticket year since 1 Mar 2026 · \d+ days left$/);
+  });
+
+  it("is null without a start date", () => {
+    expect(describeTicketPeriod(computeTicketProgress([], ticket(null)), "year")).toBeNull();
   });
 });

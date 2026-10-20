@@ -12,6 +12,8 @@ interface FinancialOverviewProps {
   totalDistance: number;
   totalCost: number;
   klimaTicketCost: number;
+  /** e.g. "Ticket year since 1 Mar 2026 · 132 days left"; null when no start date is set. */
+  periodLabel?: string | null;
   onStatsPress?: () => void;
 }
 
@@ -25,6 +27,7 @@ export function FinancialOverview({
   totalDistance,
   totalCost,
   klimaTicketCost,
+  periodLabel,
   onStatsPress,
 }: FinancialOverviewProps) {
   const [expanded, setExpanded] = useState(false);
@@ -32,6 +35,9 @@ export function FinancialOverview({
   const savings = totalCost;
   const savingsPercentage = ((savings / klimaTicketCost) * 100).toFixed(1);
   const remainingToBreakEven = Math.max(0, klimaTicketCost - savings);
+  // What the user actually saved once the ticket has paid for itself.
+  const netSavings = savings - klimaTicketCost;
+  const paidOff = remainingToBreakEven === 0 && klimaTicketCost > 0;
   const percentage = Math.min((savings / klimaTicketCost) * 100, 100);
   // Based on the user's own average trip value; unknown until the first trip is logged.
   const avgTripValue = totalTrips > 0 ? totalCost / totalTrips : 0;
@@ -61,6 +67,8 @@ export function FinancialOverview({
         />
       </TouchableOpacity>
 
+      {periodLabel ? <ThemedText style={styles.periodLabel}>{periodLabel}</ThemedText> : null}
+
       {/* Always visible: key summary rows */}
       <View style={styles.summaryRow}>
         <ThemedText style={styles.summaryLabel}>Ticket Value Used</ThemedText>
@@ -71,11 +79,11 @@ export function FinancialOverview({
       </View>
 
       <View style={styles.summaryRow}>
-        <ThemedText style={styles.summaryLabel}>To Break Even</ThemedText>
-        <ThemedText
-          style={[styles.summaryValue, remainingToBreakEven === 0 && styles.summaryValueDone]}
-        >
-          {remainingToBreakEven === 0 ? "Paid off! 🎉" : `€${remainingToBreakEven.toFixed(2)} left`}
+        <ThemedText style={styles.summaryLabel}>
+          {paidOff ? "Net Savings" : "To Break Even"}
+        </ThemedText>
+        <ThemedText style={[styles.summaryValue, paidOff && styles.summaryValueDone]}>
+          {paidOff ? `+€${netSavings.toFixed(2)} 🎉` : `€${remainingToBreakEven.toFixed(2)} left`}
         </ThemedText>
       </View>
 
@@ -198,6 +206,12 @@ export function FinancialOverview({
 }
 
 const styles = StyleSheet.create({
+  periodLabel: {
+    fontSize: 12,
+    color: Palette.blue.light,
+    marginTop: -4,
+    marginBottom: 8,
+  },
   container: {
     padding: 20,
     borderRadius: 16,

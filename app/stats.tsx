@@ -303,7 +303,10 @@ export default function StatsScreen() {
                 />
               </View>
               {klimaPct >= 100 ? (
-                <ThemedText style={styles.klimaDone}>Break-even reached!</ThemedText>
+                <ThemedText style={styles.klimaDone}>
+                  Break-even reached · €{ticketProgress.netSavings.toFixed(0)} saved beyond the
+                  ticket price
+                </ThemedText>
               ) : (
                 <ThemedText style={styles.klimaRemaining}>
                   €{ticketProgress.remaining.toFixed(0)} remaining to break even

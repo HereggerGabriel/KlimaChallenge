@@ -21,6 +21,7 @@ import { styles } from "@/styles/userScreen";
 import { TRANSPORT_COLOR, transportIcon } from "@/constants/transport";
 import { groupTripsByDate, recentPlaces } from "@/utils/tripGrouping";
 import { useAppData } from "@/store/AppData";
+import { describeTicketPeriod } from "@/utils/ticketPeriod";
 import { shortRoute, shortStationName } from "@/services/stations";
 import { formatKm } from "@/utils/format";
 
@@ -249,6 +250,7 @@ export default function UserScreen() {
           totalDistance={ticketProgress.trips.reduce((sum, t) => sum + t.distance, 0)}
           totalCost={ticketProgress.valueUsed}
           klimaTicketCost={ticketProgress.cost}
+          periodLabel={describeTicketPeriod(ticketProgress, profile.ticket.period)}
           onStatsPress={() => router.push("/stats")}
         />
 
