@@ -1,19 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-} from 'react-native';
-import { router } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { ThemedText } from '@/components/ThemedText';
-import { Palette } from '@/constants/Colors';
-import { loadTrips } from '@/services/tripStorage';
-import { Trip } from '@/types/trip';
-import { TRANSPORT_COLOR, transportIcon } from '@/constants/transport';
+import React, { useState, useEffect } from "react";
+import { View, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import { router } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { ThemedText } from "@/components/ThemedText";
+import { Palette } from "@/constants/Colors";
+import { loadTrips } from "@/services/tripStorage";
+import { Trip } from "@/types/trip";
+import { TRANSPORT_COLOR, transportIcon } from "@/constants/transport";
 
 // ── CO2 constant ─────────────────────────────────────────────────────────────
 // Car: ~0.21 kg CO2/km | Austrian PT avg: ~0.05 kg CO2/km → savings: 0.16 kg/km
@@ -27,7 +21,7 @@ function getISOWeek(date: Date): string {
   d.setUTCDate(d.getUTCDate() + 4 - day);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   const week = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
-  return `${d.getUTCFullYear()}-W${week.toString().padStart(2, '0')}`;
+  return `${d.getUTCFullYear()}-W${week.toString().padStart(2, "0")}`;
 }
 
 function getLastNWeekKeys(n: number): string[] {
@@ -42,7 +36,7 @@ function getLastNWeekKeys(n: number): string[] {
 }
 
 function weekLabel(key: string): string {
-  return `W${key.split('-W')[1]}`;
+  return `W${key.split("-W")[1]}`;
 }
 
 // ── Sub-components ───────────────────────────────────────────────────────────
@@ -57,15 +51,13 @@ function WeeklyBarChart({ data }: { data: { value: number; label: string }[] }) 
         const barH = item.value > 0 ? Math.max((item.value / maxValue) * BAR_MAX_HEIGHT, 8) : 4;
         return (
           <View key={i} style={barStyles.col}>
-            {item.value > 0 && (
-              <ThemedText style={barStyles.valueLabel}>{item.value}</ThemedText>
-            )}
+            {item.value > 0 && <ThemedText style={barStyles.valueLabel}>{item.value}</ThemedText>}
             <View
               style={[
                 barStyles.bar,
                 {
                   height: barH,
-                  backgroundColor: item.value > 0 ? Palette.green.mid : 'rgba(255,255,255,0.1)',
+                  backgroundColor: item.value > 0 ? Palette.green.mid : "rgba(255,255,255,0.1)",
                 },
               ]}
             />
@@ -79,30 +71,30 @@ function WeeklyBarChart({ data }: { data: { value: number; label: string }[] }) 
 
 const barStyles = StyleSheet.create({
   root: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    alignItems: "flex-end",
     gap: 5,
     height: BAR_MAX_HEIGHT + 40,
     paddingTop: 20,
   },
   col: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
+    alignItems: "center",
+    justifyContent: "flex-end",
     gap: 4,
   },
   valueLabel: {
     fontSize: 9,
-    color: 'rgba(255,255,255,0.5)',
-    fontWeight: '700',
+    color: "rgba(255,255,255,0.5)",
+    fontWeight: "700",
   },
   bar: {
-    width: '100%',
+    width: "100%",
     borderRadius: 4,
   },
   weekLabel: {
     fontSize: 9,
-    color: 'rgba(255,255,255,0.35)',
+    color: "rgba(255,255,255,0.35)",
     marginTop: 2,
   },
 });
@@ -129,7 +121,7 @@ function StatCard({
       activeOpacity={onLongPress ? 0.7 : 1}
       delayLongPress={400}
     >
-      <View style={[styles.statIconWrap, { backgroundColor: color + '22' }]}>
+      <View style={[styles.statIconWrap, { backgroundColor: color + "22" }]}>
         <MaterialIcons name={icon as any} size={20} color={color} />
       </View>
       <ThemedText style={styles.statValue}>{value}</ThemedText>
@@ -155,7 +147,7 @@ export default function StatsScreen() {
     const load = async () => {
       const [loaded, storedCost] = await Promise.all([
         loadTrips(),
-        AsyncStorage.getItem('klimaTicketCost'),
+        AsyncStorage.getItem("klimaTicketCost"),
       ]);
       setTrips(loaded);
       if (storedCost) {
@@ -245,9 +237,14 @@ export default function StatsScreen() {
             </View>
             <ThemedText style={styles.emptyTitle}>No trips yet</ThemedText>
             <ThemedText style={styles.emptyBody}>
-              Log your first public transport trip and your stats will appear here — distance, CO₂ savings, weekly activity and more.
+              Log your first public transport trip and your stats will appear here — distance, CO₂
+              savings, weekly activity and more.
             </ThemedText>
-            <TouchableOpacity style={styles.emptyButton} onPress={() => router.back()} activeOpacity={0.85}>
+            <TouchableOpacity
+              style={styles.emptyButton}
+              onPress={() => router.back()}
+              activeOpacity={0.85}
+            >
               <MaterialIcons name="add" size={18} color="#fff" />
               <ThemedText style={styles.emptyButtonText}>Log a Trip</ThemedText>
             </TouchableOpacity>
@@ -289,9 +286,16 @@ export default function StatsScreen() {
             {/* CO2 tooltip */}
             {co2TooltipVisible && (
               <View style={styles.tooltip}>
-                <MaterialIcons name="info-outline" size={14} color={Palette.green.light} style={{ marginTop: 1 }} />
+                <MaterialIcons
+                  name="info-outline"
+                  size={14}
+                  color={Palette.green.light}
+                  style={{ marginTop: 1 }}
+                />
                 <ThemedText style={styles.tooltipText}>
-                  Estimated savings vs car: car emits ~0.21 kg CO₂/km, Austrian public transport ~0.05 kg/km. Difference: 0.16 kg/km × {totalDistance} km = {co2Saved.toFixed(1)} kg CO₂ saved.
+                  Estimated savings vs car: car emits ~0.21 kg CO₂/km, Austrian public transport
+                  ~0.05 kg/km. Difference: 0.16 kg/km × {totalDistance} km = {co2Saved.toFixed(1)}{" "}
+                  kg CO₂ saved.
                 </ThemedText>
               </View>
             )}
@@ -305,7 +309,9 @@ export default function StatsScreen() {
                     €{totalCost.toFixed(0)} covered of €{klimaTicketCost.toFixed(0)}
                   </ThemedText>
                 </View>
-                <ThemedText style={[styles.klimaPct, { color: klimaPct >= 100 ? Palette.green.mid : '#fff' }]}>
+                <ThemedText
+                  style={[styles.klimaPct, { color: klimaPct >= 100 ? Palette.green.mid : "#fff" }]}
+                >
                   {klimaPct.toFixed(0)}%
                 </ThemedText>
               </View>
@@ -344,7 +350,11 @@ export default function StatsScreen() {
                   {transportData.map((item) => (
                     <View key={item.type} style={styles.transportRow}>
                       <View style={styles.transportLabelWrap}>
-                        <MaterialIcons name={transportIcon(item.type) as any} size={16} color={item.color} />
+                        <MaterialIcons
+                          name={transportIcon(item.type) as any}
+                          size={16}
+                          color={item.color}
+                        />
                         <ThemedText style={styles.transportLabel}>{item.type}</ThemedText>
                       </View>
                       <View style={styles.transportBarWrap}>
@@ -358,7 +368,10 @@ export default function StatsScreen() {
                         </View>
                       </View>
                       <ThemedText style={styles.transportCount}>
-                        {item.count} <ThemedText style={styles.transportPct}>({item.pct.toFixed(0)}%)</ThemedText>
+                        {item.count}{" "}
+                        <ThemedText style={styles.transportPct}>
+                          ({item.pct.toFixed(0)}%)
+                        </ThemedText>
                       </ThemedText>
                     </View>
                   ))}
@@ -372,11 +385,16 @@ export default function StatsScreen() {
                 <SectionTitle>Top Routes</SectionTitle>
                 <View style={styles.card}>
                   {topRoutes.map(([route, count], i) => (
-                    <View key={route} style={[styles.routeRow, i < topRoutes.length - 1 && styles.routeRowBorder]}>
+                    <View
+                      key={route}
+                      style={[styles.routeRow, i < topRoutes.length - 1 && styles.routeRowBorder]}
+                    >
                       <View style={styles.routeRank}>
                         <ThemedText style={styles.routeRankText}>{i + 1}</ThemedText>
                       </View>
-                      <ThemedText style={styles.routeLabel} numberOfLines={1}>{route}</ThemedText>
+                      <ThemedText style={styles.routeLabel} numberOfLines={1}>
+                        {route}
+                      </ThemedText>
                       <View style={styles.routeCountWrap}>
                         <ThemedText style={styles.routeCount}>{count}×</ThemedText>
                       </View>
@@ -407,35 +425,35 @@ const styles = StyleSheet.create({
 
   // Header
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 24,
   },
   backButton: {
     width: 40,
     height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: "700",
+    color: "#fff",
   },
 
   // Stat cards (2×2 grid)
   cardGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 10,
     marginBottom: 10,
   },
   statCard: {
-    width: '48%',
-    backgroundColor: 'rgba(255,255,255,0.07)',
+    width: "48%",
+    backgroundColor: "rgba(255,255,255,0.07)",
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: "rgba(255,255,255,0.1)",
     borderRadius: 16,
     padding: 16,
     gap: 6,
@@ -444,49 +462,49 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 2,
   },
   statValue: {
     fontSize: 22,
-    fontWeight: '800',
-    color: '#fff',
+    fontWeight: "800",
+    color: "#fff",
   },
   statLabel: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.5)',
-    fontWeight: '600',
+    color: "rgba(255,255,255,0.5)",
+    fontWeight: "600",
   },
   statSub: {
     fontSize: 10,
-    color: 'rgba(255,255,255,0.3)',
+    color: "rgba(255,255,255,0.3)",
   },
 
   // CO2 tooltip
   tooltip: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
-    backgroundColor: Palette.green.dark + '44',
+    backgroundColor: Palette.green.dark + "44",
     borderWidth: 1,
-    borderColor: Palette.green.light + '44',
+    borderColor: Palette.green.light + "44",
     borderRadius: 10,
     padding: 12,
     marginBottom: 12,
-    alignItems: 'flex-start',
+    alignItems: "flex-start",
   },
   tooltipText: {
     flex: 1,
     fontSize: 12,
-    color: 'rgba(255,255,255,0.65)',
+    color: "rgba(255,255,255,0.65)",
     lineHeight: 18,
   },
 
   // Generic card
   card: {
-    backgroundColor: 'rgba(255,255,255,0.07)',
+    backgroundColor: "rgba(255,255,255,0.07)",
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: "rgba(255,255,255,0.1)",
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -495,9 +513,9 @@ const styles = StyleSheet.create({
   // Section title
   sectionTitle: {
     fontSize: 13,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.5)',
-    textTransform: 'uppercase',
+    fontWeight: "700",
+    color: "rgba(255,255,255,0.5)",
+    textTransform: "uppercase",
     letterSpacing: 0.8,
     marginBottom: 10,
     marginTop: 4,
@@ -505,129 +523,129 @@ const styles = StyleSheet.create({
 
   // KlimaTicket card
   klimaHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: 12,
   },
   klimaTitle: {
     fontSize: 15,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: "700",
+    color: "#fff",
   },
   klimaSub: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.45)',
+    color: "rgba(255,255,255,0.45)",
     marginTop: 2,
   },
   klimaPct: {
     fontSize: 26,
-    fontWeight: '900',
+    fontWeight: "900",
   },
   progressBar: {
-    width: '100%',
+    width: "100%",
     height: 8,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: "rgba(255,255,255,0.12)",
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: 10,
   },
   progressFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: 4,
   },
   klimaDone: {
     fontSize: 12,
     color: Palette.green.mid,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: "600",
+    textAlign: "center",
   },
   klimaRemaining: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.35)',
-    textAlign: 'center',
+    color: "rgba(255,255,255,0.35)",
+    textAlign: "center",
   },
 
   // Chart
   chartLabel: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.3)',
-    textAlign: 'center',
+    color: "rgba(255,255,255,0.3)",
+    textAlign: "center",
     marginTop: 8,
   },
 
   // Transport mix
   transportRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
     marginBottom: 12,
   },
   transportLabelWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     width: 72,
   },
   transportLabel: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.7)',
-    fontWeight: '600',
+    color: "rgba(255,255,255,0.7)",
+    fontWeight: "600",
   },
   transportBarWrap: {
     flex: 1,
   },
   transportBarTrack: {
     height: 8,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: "rgba(255,255,255,0.1)",
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   transportBarFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: 4,
   },
   transportCount: {
     fontSize: 12,
-    color: '#fff',
-    fontWeight: '700',
+    color: "#fff",
+    fontWeight: "700",
     minWidth: 52,
-    textAlign: 'right',
+    textAlign: "right",
   },
   transportPct: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.4)',
-    fontWeight: '400',
+    color: "rgba(255,255,255,0.4)",
+    fontWeight: "400",
   },
 
   // Top routes
   routeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
     paddingVertical: 10,
   },
   routeRowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.07)',
+    borderBottomColor: "rgba(255,255,255,0.07)",
   },
   routeRank: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(255,255,255,0.1)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   routeRankText: {
     fontSize: 11,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.6)',
+    fontWeight: "700",
+    color: "rgba(255,255,255,0.6)",
   },
   routeLabel: {
     flex: 1,
     fontSize: 13,
-    color: '#fff',
+    color: "#fff",
   },
   routeCountWrap: {
     backgroundColor: Palette.blue.mid,
@@ -637,13 +655,13 @@ const styles = StyleSheet.create({
   },
   routeCount: {
     fontSize: 12,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.7)',
+    fontWeight: "700",
+    color: "rgba(255,255,255,0.7)",
   },
 
   // Empty state
   emptyState: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 64,
     paddingHorizontal: 32,
     gap: 16,
@@ -652,27 +670,27 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 24,
-    backgroundColor: Palette.green.mid + '1A',
+    backgroundColor: Palette.green.mid + "1A",
     borderWidth: 1,
-    borderColor: Palette.green.mid + '33',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: Palette.green.mid + "33",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 4,
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: "700",
+    color: "#fff",
   },
   emptyBody: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.45)',
-    textAlign: 'center',
+    color: "rgba(255,255,255,0.45)",
+    textAlign: "center",
     lineHeight: 21,
   },
   emptyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     marginTop: 8,
     backgroundColor: Palette.green.mid,
@@ -681,8 +699,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   emptyButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 });

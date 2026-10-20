@@ -1,13 +1,13 @@
-import { Trip } from '@/types/trip';
+import { Trip } from "@/types/trip";
 
-export const STREAK_MILESTONES_KEY = '@claimedStreakMilestones';
+export const STREAK_MILESTONES_KEY = "@claimedStreakMilestones";
 
 export const STREAK_MILESTONES = [
-  { days: 3,   xp: 50 },
-  { days: 7,   xp: 150 },
-  { days: 14,  xp: 300 },
-  { days: 30,  xp: 600 },
-  { days: 60,  xp: 1000 },
+  { days: 3, xp: 50 },
+  { days: 7, xp: 150 },
+  { days: 14, xp: 300 },
+  { days: 30, xp: 600 },
+  { days: 60, xp: 1000 },
   { days: 100, xp: 2000 },
 ];
 
@@ -18,7 +18,7 @@ export const STREAK_MILESTONES = [
  */
 export function getNewMilestoneXP(
   streak: number,
-  claimed: Set<number>
+  claimed: Set<number>,
 ): { xp: number; milestones: number[] } {
   let xp = 0;
   const milestones: number[] = [];
@@ -42,8 +42,8 @@ export function computeStreak(trips: Trip[]): number {
 
   const toDateStr = (d: Date) => {
     const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
     return `${y}-${m}-${day}`;
   };
 
@@ -51,7 +51,7 @@ export function computeStreak(trips: Trip[]): number {
     trips.map((t) => {
       const d = t.date instanceof Date ? t.date : new Date(t.date);
       return toDateStr(d);
-    })
+    }),
   );
 
   const today = new Date();

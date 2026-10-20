@@ -21,8 +21,10 @@ export async function estimateDistanceKm(origin: string, destination: string): P
   const [from, to] = await Promise.all([searchStation(origin), searchStation(destination)]);
   if (!from.location || !to.location) throw new Error("Station coordinates unavailable");
   const straight = haversineKm(
-    from.location.latitude, from.location.longitude,
-    to.location.latitude, to.location.longitude
+    from.location.latitude,
+    from.location.longitude,
+    to.location.latitude,
+    to.location.longitude,
   );
   return Math.round(straight * 1.25 * 10) / 10;
 }
@@ -67,7 +69,7 @@ export async function searchConnections(
   origin: string,
   destination: string,
   departure: Date = new Date(),
-  results: number = 5
+  results: number = 5,
 ): Promise<ConnectionSearchResult> {
   const fromStation = await searchStation(origin);
   const toStation = await searchStation(destination);
@@ -113,7 +115,7 @@ export interface JourneySummary {
 
 export function summariseJourney(
   journey: OebbJourney,
-  fallbackCoords?: { from: OebbStation; to: OebbStation }
+  fallbackCoords?: { from: OebbStation; to: OebbStation },
 ): JourneySummary {
   const legs = journey.legs;
   const dep = new Date(legs[0].departure);
@@ -123,17 +125,28 @@ export function summariseJourney(
   const trainNames = legs.filter((l) => l.line).map((l) => l.line!.name);
   const ticketPrice = journey.tickets?.find((t) => t.price?.amount !== undefined)?.price;
   const price = journey.price ?? ticketPrice;
-  const fmt = (d: Date) =>
-    d.toLocaleTimeString("de-AT", { hour: "2-digit", minute: "2-digit" });
+  const fmt = (d: Date) => d.toLocaleTimeString("de-AT", { hour: "2-digit", minute: "2-digit" });
   const totalMeters = legs.reduce((sum, l) => sum + (l.distance ?? 0), 0);
   let distanceKm = Math.round((totalMeters / 1000) * 10) / 10;
   if (distanceKm === 0 && fallbackCoords?.from.location && fallbackCoords?.to.location) {
     const { from, to } = fallbackCoords;
     const straight = haversineKm(
-      from.location!.latitude, from.location!.longitude,
-      to.location!.latitude, to.location!.longitude
+      from.location!.latitude,
+      from.location!.longitude,
+      to.location!.latitude,
+      to.location!.longitude,
     );
     distanceKm = Math.round(straight * 1.25 * 10) / 10;
   }
-  return { dep, arr, durationMin, transfers, trainNames, price, depLabel: fmt(dep), arrLabel: fmt(arr), distanceKm };
+  return {
+    dep,
+    arr,
+    durationMin,
+    transfers,
+    trainNames,
+    price,
+    depLabel: fmt(dep),
+    arrLabel: fmt(arr),
+    distanceKm,
+  };
 }

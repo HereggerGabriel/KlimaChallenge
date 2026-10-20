@@ -1,11 +1,11 @@
 export const getLevelTitle = (level: number): string => {
-  if (level < 5) return 'Novice Explorer';
-  if (level < 10) return 'Adventure Seeker';
-  if (level < 15) return 'Journey Master';
-  if (level < 20) return 'Travel Expert';
-  if (level < 25) return 'Globe Trotter';
-  if (level < 30) return 'World Wanderer';
-  return 'Legendary Voyager';
+  if (level < 5) return "Novice Explorer";
+  if (level < 10) return "Adventure Seeker";
+  if (level < 15) return "Journey Master";
+  if (level < 20) return "Travel Expert";
+  if (level < 25) return "Globe Trotter";
+  if (level < 30) return "World Wanderer";
+  return "Legendary Voyager";
 };
 
 // XP required to complete level N (i.e. to advance from level N to N+1)
@@ -46,10 +46,18 @@ export const getXPForTrip = (distance: number, transportType: string): number =>
   baseXP += distanceXP;
 
   switch (transportType.toLowerCase()) {
-    case 'tram':   baseXP *= 1.4; break;
-    case 'subway': baseXP *= 1.3; break;
-    case 'train':  baseXP *= 1.2; break;
-    case 'bus':    baseXP *= 1.1; break;
+    case "tram":
+      baseXP *= 1.4;
+      break;
+    case "subway":
+      baseXP *= 1.3;
+      break;
+    case "train":
+      baseXP *= 1.2;
+      break;
+    case "bus":
+      baseXP *= 1.1;
+      break;
   }
 
   return Math.round(baseXP);

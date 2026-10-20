@@ -49,8 +49,7 @@ const SLIDES: Slide[] = [
     image: require("@/assets/images/loginbg.png"),
     fallbackColors: [Palette.green.mid, Palette.blue.dark],
     title: "Your Journey Starts Here",
-    subtitle:
-      "Log your first trip and watch the KlimaChallenge begin. Austria is your playground.",
+    subtitle: "Log your first trip and watch the KlimaChallenge begin. Austria is your playground.",
   },
 ];
 
@@ -68,13 +67,11 @@ export default function OnboardingScreen() {
     router.replace("/login");
   };
 
-  const onViewableItemsChanged = useRef(
-    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      if (viewableItems[0]?.index != null) {
-        setActiveIndex(viewableItems[0].index);
-      }
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    if (viewableItems[0]?.index != null) {
+      setActiveIndex(viewableItems[0].index);
     }
-  ).current;
+  }).current;
 
   const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
 
@@ -107,11 +104,7 @@ export default function OnboardingScreen() {
         style={styles.flatList}
         renderItem={({ item }) =>
           item.image ? (
-            <ImageBackground
-              source={item.image}
-              style={{ width, height }}
-              resizeMode="contain"
-            >
+            <ImageBackground source={item.image} style={{ width, height }} resizeMode="contain">
               <LinearGradient
                 colors={["transparent", "rgba(0,20,40,0.6)", Palette.blue.dark]}
                 locations={[0.25, 0.6, 1]}
@@ -147,21 +140,14 @@ export default function OnboardingScreen() {
               hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
             >
               <View
-                style={[
-                  styles.dot,
-                  i === activeIndex ? styles.dotActive : styles.dotInactive,
-                ]}
+                style={[styles.dot, i === activeIndex ? styles.dotActive : styles.dotInactive]}
               />
             </TouchableOpacity>
           ))}
         </View>
 
         {isLast && (
-          <TouchableOpacity
-            style={styles.ctaButton}
-            onPress={handleFinish}
-            activeOpacity={0.85}
-          >
+          <TouchableOpacity style={styles.ctaButton} onPress={handleFinish} activeOpacity={0.85}>
             <Text style={styles.ctaText}>Get Started →</Text>
           </TouchableOpacity>
         )}

@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useEffect } from "react";
+import { View, StyleSheet, TouchableOpacity, Dimensions } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -9,13 +9,13 @@ import Animated, {
   withRepeat,
   withSequence,
   Easing,
-} from 'react-native-reanimated';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { ThemedText } from '@/components/ThemedText';
-import { Palette } from '@/constants/Colors';
-import { MAIN_QUEST_XP } from '@/utils/questSystem';
+} from "react-native-reanimated";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { ThemedText } from "@/components/ThemedText";
+import { Palette } from "@/constants/Colors";
+import { MAIN_QUEST_XP } from "@/utils/questSystem";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 interface MainQuestOverlayProps {
   visible: boolean;
@@ -60,7 +60,7 @@ function FloatingStar({
   }, []);
 
   const style = useAnimatedStyle(() => ({
-    position: 'absolute',
+    position: "absolute",
     left,
     top,
     opacity: opacity.value,
@@ -136,14 +136,32 @@ export function MainQuestOverlay({
   const pct = Math.min((totalCost / klimaTicketCost) * 100, 100);
 
   return (
-    <Animated.View style={[styles.backdrop, bgStyle]} pointerEvents={visible ? 'auto' : 'none'}>
+    <Animated.View style={[styles.backdrop, bgStyle]} pointerEvents={visible ? "auto" : "none"}>
       {/* Floating stars */}
       <FloatingStar left={width * 0.08} top={120} size={22} delay={400} color={Palette.red.light} />
-      <FloatingStar left={width * 0.78} top={100} size={18} delay={600} color={Palette.green.light} />
-      <FloatingStar left={width * 0.15} top={280} size={14} delay={700} color={Palette.blue.light} />
+      <FloatingStar
+        left={width * 0.78}
+        top={100}
+        size={18}
+        delay={600}
+        color={Palette.green.light}
+      />
+      <FloatingStar
+        left={width * 0.15}
+        top={280}
+        size={14}
+        delay={700}
+        color={Palette.blue.light}
+      />
       <FloatingStar left={width * 0.72} top={260} size={20} delay={500} color={Palette.red.light} />
       <FloatingStar left={width * 0.85} top={370} size={14} delay={800} color={Palette.green.mid} />
-      <FloatingStar left={width * 0.04} top={400} size={16} delay={550} color={Palette.green.light} />
+      <FloatingStar
+        left={width * 0.04}
+        top={400}
+        size={16}
+        delay={550}
+        color={Palette.green.light}
+      />
 
       <Animated.View style={[styles.card, cardStyle]}>
         {/* Badge */}
@@ -156,7 +174,7 @@ export function MainQuestOverlay({
           <MaterialIcons name="emoji-events" size={72} color={Palette.red.light} />
         </Animated.View>
 
-        <ThemedText style={styles.title}>KlimaTicket{'\n'}Paid Off!</ThemedText>
+        <ThemedText style={styles.title}>KlimaTicket{"\n"}Paid Off!</ThemedText>
         <ThemedText style={styles.subtitle}>
           Your logged trips have covered the full cost of your climate pass.
         </ThemedText>
@@ -167,7 +185,12 @@ export function MainQuestOverlay({
             <ThemedText style={styles.statValue}>€{totalCost.toFixed(0)}</ThemedText>
             <ThemedText style={styles.statLabel}>Trips logged</ThemedText>
           </View>
-          <MaterialIcons name="check-circle" size={22} color={Palette.green.mid} style={{ marginTop: 4 }} />
+          <MaterialIcons
+            name="check-circle"
+            size={22}
+            color={Palette.green.mid}
+            style={{ marginTop: 4 }}
+          />
           <View style={styles.statBlock}>
             <ThemedText style={styles.statValue}>€{klimaTicketCost.toFixed(0)}</ThemedText>
             <ThemedText style={styles.statLabel}>KlimaTicket cost</ThemedText>
@@ -199,9 +222,9 @@ export function MainQuestOverlay({
 const styles = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 10, 20, 1)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(0, 10, 20, 1)",
+    alignItems: "center",
+    justifyContent: "center",
     zIndex: 300,
   },
   card: {
@@ -212,7 +235,7 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     paddingVertical: 36,
     paddingHorizontal: 28,
-    alignItems: 'center',
+    alignItems: "center",
     gap: 12,
     shadowColor: Palette.red.light,
     shadowOpacity: 0.5,
@@ -221,9 +244,9 @@ const styles = StyleSheet.create({
     elevation: 24,
   },
   questBadge: {
-    backgroundColor: Palette.red.light + '33',
+    backgroundColor: Palette.red.light + "33",
     borderWidth: 1,
-    borderColor: Palette.red.light + '66',
+    borderColor: Palette.red.light + "66",
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 5,
@@ -231,65 +254,65 @@ const styles = StyleSheet.create({
   questBadgeText: {
     color: Palette.red.light,
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: "800",
     letterSpacing: 2,
   },
   trophyWrap: {
     marginVertical: 4,
   },
   title: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 28,
-    fontWeight: '900',
-    textAlign: 'center',
+    fontWeight: "900",
+    textAlign: "center",
     lineHeight: 34,
   },
   subtitle: {
-    color: 'rgba(255,255,255,0.6)',
+    color: "rgba(255,255,255,0.6)",
     fontSize: 13,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 19,
   },
   statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 16,
     marginTop: 4,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: "rgba(255,255,255,0.06)",
     borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 20,
-    width: '100%',
-    justifyContent: 'center',
+    width: "100%",
+    justifyContent: "center",
   },
   statBlock: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: 2,
   },
   statValue: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: "800",
   },
   statLabel: {
-    color: 'rgba(255,255,255,0.45)',
+    color: "rgba(255,255,255,0.45)",
     fontSize: 11,
   },
   progressBar: {
-    width: '100%',
+    width: "100%",
     height: 6,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: "rgba(255,255,255,0.12)",
     borderRadius: 3,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   progressFill: {
-    height: '100%',
+    height: "100%",
     backgroundColor: Palette.green.mid,
     borderRadius: 3,
   },
   xpBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
     backgroundColor: Palette.green.mid,
     borderRadius: 20,
@@ -298,22 +321,22 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   xpBadgeText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: "800",
     letterSpacing: 0.5,
   },
   claimButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     backgroundColor: Palette.red.light,
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 28,
     marginTop: 8,
-    width: '100%',
-    justifyContent: 'center',
+    width: "100%",
+    justifyContent: "center",
     shadowColor: Palette.red.light,
     shadowOpacity: 0.4,
     shadowRadius: 12,
@@ -321,9 +344,9 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   claimButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 17,
-    fontWeight: '800',
+    fontWeight: "800",
     letterSpacing: 0.3,
   },
 });

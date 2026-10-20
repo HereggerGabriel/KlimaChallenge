@@ -1,25 +1,19 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  View,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-} from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Haptics from 'expo-haptics';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { ThemedText } from '@/components/ThemedText';
-import { Palette } from '@/constants/Colors';
-import { loadTrips } from '@/services/tripStorage';
-import { Trip } from '@/types/trip';
+import React, { useState, useEffect, useCallback } from "react";
+import { View, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Haptics from "expo-haptics";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { ThemedText } from "@/components/ThemedText";
+import { Palette } from "@/constants/Colors";
+import { loadTrips } from "@/services/tripStorage";
+import { Trip } from "@/types/trip";
 import {
   calculateLevel,
   calculateCurrentLevelXP,
   calculateXPForNextLevel,
   addXP,
-} from '@/utils/levelSystem';
+} from "@/utils/levelSystem";
 import {
   DAILY_QUEST_POOL,
   WEEKLY_QUEST_POOL,
@@ -32,24 +26,24 @@ import {
   QUESTS_PER_ROTATION,
   MAIN_QUEST_ID,
   MAIN_QUEST_XP,
-} from '@/utils/questSystem';
+} from "@/utils/questSystem";
 import {
   ACHIEVEMENTS,
   ACHIEVEMENT_CATEGORIES,
   Achievement,
   computeStreak,
   computeSavedVsCar,
-} from '@/utils/achievementSystem';
-import { XPToast } from '@/components/ui/XPToast';
-import { LevelUpOverlay } from '@/components/ui/LevelUpOverlay';
+} from "@/utils/achievementSystem";
+import { XPToast } from "@/components/ui/XPToast";
+import { LevelUpOverlay } from "@/components/ui/LevelUpOverlay";
 
-const CLAIMED_QUESTS_KEY = '@claimedQuests';
-const CLAIMED_ACHIEVEMENTS_KEY = '@claimedAchievements';
-const DAILY_SELECTION_KEY = '@dailyQuestSelection';
-const WEEKLY_SELECTION_KEY = '@weeklyQuestSelection';
+const CLAIMED_QUESTS_KEY = "@claimedQuests";
+const CLAIMED_ACHIEVEMENTS_KEY = "@claimedAchievements";
+const DAILY_SELECTION_KEY = "@dailyQuestSelection";
+const WEEKLY_SELECTION_KEY = "@weeklyQuestSelection";
 
 function getTodayKey(): string {
-  return new Date().toISOString().split('T')[0];
+  return new Date().toISOString().split("T")[0];
 }
 
 function getWeekStartKey(): string {
@@ -57,7 +51,7 @@ function getWeekStartKey(): string {
   const day = now.getDay();
   const monday = new Date(now);
   monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
-  return monday.toISOString().split('T')[0];
+  return monday.toISOString().split("T")[0];
 }
 
 async function loadOrRefreshSelection(
@@ -74,14 +68,19 @@ async function loadOrRefreshSelection(
         if (quests.length === QUESTS_PER_ROTATION) return quests;
       }
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   // Generate fresh random selection
   const selected = pickRandomQuests(pool, QUESTS_PER_ROTATION);
-  await AsyncStorage.setItem(storageKey, JSON.stringify({ period: periodKey, ids: selected.map((q) => q.id) }));
+  await AsyncStorage.setItem(
+    storageKey,
+    JSON.stringify({ period: periodKey, ids: selected.map((q) => q.id) }),
+  );
   return selected;
 }
 
-type Tab = 'quests' | 'achievements';
+type Tab = "quests" | "achievements";
 
 // ── Main quest featured card ─────────────────────────────────────────────────
 
@@ -105,7 +104,7 @@ function MainQuestFeaturedCard({
         <View style={styles.mainQuestBadge}>
           <ThemedText style={styles.mainQuestBadgeText}>MAIN QUEST</ThemedText>
         </View>
-        <View style={[styles.xpBadge, { backgroundColor: Palette.red.light + '33' }]}>
+        <View style={[styles.xpBadge, { backgroundColor: Palette.red.light + "33" }]}>
           <ThemedText style={[styles.xpBadgeText, { color: Palette.red.light }]}>
             +{MAIN_QUEST_XP} XP
           </ThemedText>
@@ -141,7 +140,11 @@ function MainQuestFeaturedCard({
             <ThemedText style={styles.mainQuestClaimedText}>Claimed</ThemedText>
           </View>
         ) : complete ? (
-          <TouchableOpacity style={styles.mainQuestClaimButton} onPress={onClaim} activeOpacity={0.85}>
+          <TouchableOpacity
+            style={styles.mainQuestClaimButton}
+            onPress={onClaim}
+            activeOpacity={0.85}
+          >
             <MaterialIcons name="bolt" size={15} color="#fff" />
             <ThemedText style={styles.mainQuestClaimText}>CLAIM {MAIN_QUEST_XP} XP</ThemedText>
           </TouchableOpacity>
@@ -169,19 +172,19 @@ function QuestCard({
   const progress = Math.min(current / target, 1);
 
   const typeColor =
-    quest.type === 'daily'
+    quest.type === "daily"
       ? Palette.blue.light
-      : quest.type === 'weekly'
+      : quest.type === "weekly"
         ? Palette.green.mid
         : Palette.red.light;
 
   return (
     <View style={[styles.questCard, claimed && styles.questCardClaimed]}>
-      <View style={[styles.questIconWrap, { backgroundColor: typeColor + '22' }]}>
+      <View style={[styles.questIconWrap, { backgroundColor: typeColor + "22" }]}>
         <MaterialIcons
           name={quest.icon as any}
           size={22}
-          color={claimed ? 'rgba(255,255,255,0.3)' : typeColor}
+          color={claimed ? "rgba(255,255,255,0.3)" : typeColor}
         />
       </View>
 
@@ -190,7 +193,7 @@ function QuestCard({
           <ThemedText style={[styles.questTitle, claimed && styles.questTitleClaimed]}>
             {quest.title}
           </ThemedText>
-          <View style={[styles.xpBadge, { backgroundColor: typeColor + '33' }]}>
+          <View style={[styles.xpBadge, { backgroundColor: typeColor + "33" }]}>
             <ThemedText style={[styles.xpBadgeText, { color: typeColor }]}>
               +{quest.xpReward} XP
             </ThemedText>
@@ -250,24 +253,29 @@ function AchievementCard({
   const locked = !completed && !claimed;
 
   const catColor =
-    achievement.category === 'distance'
+    achievement.category === "distance"
       ? Palette.blue.light
-      : achievement.category === 'transport'
+      : achievement.category === "transport"
         ? Palette.blue.mid
-        : achievement.category === 'streak'
+        : achievement.category === "streak"
           ? Palette.red.light
-          : achievement.category === 'savings'
+          : achievement.category === "savings"
             ? Palette.green.mid
             : Palette.green.light;
 
   return (
     <View style={[styles.achCard, claimed && styles.achCardClaimed]}>
       {/* Icon */}
-      <View style={[styles.achIconWrap, { backgroundColor: catColor + '22', opacity: locked ? 0.5 : 1 }]}>
+      <View
+        style={[
+          styles.achIconWrap,
+          { backgroundColor: catColor + "22", opacity: locked ? 0.5 : 1 },
+        ]}
+      >
         <MaterialIcons
           name={achievement.icon as any}
           size={28}
-          color={locked ? 'rgba(255,255,255,0.3)' : catColor}
+          color={locked ? "rgba(255,255,255,0.3)" : catColor}
         />
         {locked && (
           <View style={styles.lockOverlay}>
@@ -301,7 +309,7 @@ function AchievementCard({
 
       {/* XP badge + claim */}
       <View style={styles.achFooter}>
-        <View style={[styles.xpBadge, { backgroundColor: catColor + '33' }]}>
+        <View style={[styles.xpBadge, { backgroundColor: catColor + "33" }]}>
           <ThemedText style={[styles.xpBadgeText, { color: catColor }]}>
             +{achievement.xpReward} XP
           </ThemedText>
@@ -335,10 +343,12 @@ function SectionHeader({
       {subtitle ? <ThemedText style={styles.sectionSubtitle}>{subtitle}</ThemedText> : null}
       {count !== undefined && (
         <ThemedText style={[styles.sectionSubtitle, styles.sectionCount]}>
-          <ThemedText style={{ color: count.claimed > 0 ? Palette.green.mid : 'rgba(255,255,255,0.3)' }}>
+          <ThemedText
+            style={{ color: count.claimed > 0 ? Palette.green.mid : "rgba(255,255,255,0.3)" }}
+          >
             {count.claimed}
           </ThemedText>
-          <ThemedText style={{ color: 'rgba(255,255,255,0.3)' }}>/{count.total}</ThemedText>
+          <ThemedText style={{ color: "rgba(255,255,255,0.3)" }}>/{count.total}</ThemedText>
         </ThemedText>
       )}
     </View>
@@ -349,7 +359,9 @@ function SectionHeader({
 
 export default function QuestsScreen() {
   const { tab } = useLocalSearchParams<{ tab?: string }>();
-  const [activeTab, setActiveTab] = useState<Tab>(tab === 'achievements' ? 'achievements' : 'quests');
+  const [activeTab, setActiveTab] = useState<Tab>(
+    tab === "achievements" ? "achievements" : "quests",
+  );
   const [trips, setTrips] = useState<Trip[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userXP, setUserXP] = useState(0);
@@ -364,15 +376,16 @@ export default function QuestsScreen() {
 
   useEffect(() => {
     const init = async () => {
-      const [loaded, storedXP, rawClaimed, rawAch, daily, weekly, storedTicketCost] = await Promise.all([
-        loadTrips(),
-        AsyncStorage.getItem('userXP'),
-        AsyncStorage.getItem(CLAIMED_QUESTS_KEY),
-        AsyncStorage.getItem(CLAIMED_ACHIEVEMENTS_KEY),
-        loadOrRefreshSelection(DAILY_SELECTION_KEY, getTodayKey(), DAILY_QUEST_POOL),
-        loadOrRefreshSelection(WEEKLY_SELECTION_KEY, getWeekStartKey(), WEEKLY_QUEST_POOL),
-        AsyncStorage.getItem('klimaTicketCost'),
-      ]);
+      const [loaded, storedXP, rawClaimed, rawAch, daily, weekly, storedTicketCost] =
+        await Promise.all([
+          loadTrips(),
+          AsyncStorage.getItem("userXP"),
+          AsyncStorage.getItem(CLAIMED_QUESTS_KEY),
+          AsyncStorage.getItem(CLAIMED_ACHIEVEMENTS_KEY),
+          loadOrRefreshSelection(DAILY_SELECTION_KEY, getTodayKey(), DAILY_QUEST_POOL),
+          loadOrRefreshSelection(WEEKLY_SELECTION_KEY, getWeekStartKey(), WEEKLY_QUEST_POOL),
+          AsyncStorage.getItem("klimaTicketCost"),
+        ]);
 
       setTrips(loaded);
       const xp = storedXP ? parseInt(storedXP) : 0;
@@ -386,10 +399,18 @@ export default function QuestsScreen() {
       }
 
       if (rawClaimed) {
-        try { setClaimedKeys(new Set(JSON.parse(rawClaimed))); } catch { /* ignore */ }
+        try {
+          setClaimedKeys(new Set(JSON.parse(rawClaimed)));
+        } catch {
+          /* ignore */
+        }
       }
       if (rawAch) {
-        try { setClaimedAchievements(new Set(JSON.parse(rawAch))); } catch { /* ignore */ }
+        try {
+          setClaimedAchievements(new Set(JSON.parse(rawAch)));
+        } catch {
+          /* ignore */
+        }
       }
 
       setIsLoading(false);
@@ -397,34 +418,43 @@ export default function QuestsScreen() {
     init();
   }, []);
 
-  const awardXP = useCallback(async (amount: number) => {
-    const newXP = addXP(userXP, amount);
-    const newLevel = calculateLevel(newXP);
-    await AsyncStorage.setItem('userXP', newXP.toString());
-    setUserXP(newXP);
-    setXpGained(amount);
-    if (newLevel > userLevel) setLevelUpData({ level: newLevel });
-    setUserLevel(newLevel);
-  }, [userXP, userLevel]);
+  const awardXP = useCallback(
+    async (amount: number) => {
+      const newXP = addXP(userXP, amount);
+      const newLevel = calculateLevel(newXP);
+      await AsyncStorage.setItem("userXP", newXP.toString());
+      setUserXP(newXP);
+      setXpGained(amount);
+      if (newLevel > userLevel) setLevelUpData({ level: newLevel });
+      setUserLevel(newLevel);
+    },
+    [userXP, userLevel],
+  );
 
-  const handleClaimQuest = useCallback(async (quest: Quest) => {
-    const key = getClaimKey(quest);
-    if (claimedKeys.has(key)) return;
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    const next = new Set(claimedKeys).add(key);
-    setClaimedKeys(next);
-    await AsyncStorage.setItem(CLAIMED_QUESTS_KEY, JSON.stringify([...next]));
-    await awardXP(quest.xpReward);
-  }, [claimedKeys, awardXP]);
+  const handleClaimQuest = useCallback(
+    async (quest: Quest) => {
+      const key = getClaimKey(quest);
+      if (claimedKeys.has(key)) return;
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      const next = new Set(claimedKeys).add(key);
+      setClaimedKeys(next);
+      await AsyncStorage.setItem(CLAIMED_QUESTS_KEY, JSON.stringify([...next]));
+      await awardXP(quest.xpReward);
+    },
+    [claimedKeys, awardXP],
+  );
 
-  const handleClaimAchievement = useCallback(async (achievement: Achievement) => {
-    if (claimedAchievements.has(achievement.id)) return;
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    const next = new Set(claimedAchievements).add(achievement.id);
-    setClaimedAchievements(next);
-    await AsyncStorage.setItem(CLAIMED_ACHIEVEMENTS_KEY, JSON.stringify([...next]));
-    await awardXP(achievement.xpReward);
-  }, [claimedAchievements, awardXP]);
+  const handleClaimAchievement = useCallback(
+    async (achievement: Achievement) => {
+      if (claimedAchievements.has(achievement.id)) return;
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      const next = new Set(claimedAchievements).add(achievement.id);
+      setClaimedAchievements(next);
+      await AsyncStorage.setItem(CLAIMED_ACHIEVEMENTS_KEY, JSON.stringify([...next]));
+      await awardXP(achievement.xpReward);
+    },
+    [claimedAchievements, awardXP],
+  );
 
   const handleClaimMainQuest = useCallback(async () => {
     if (claimedKeys.has(MAIN_QUEST_ID)) return;
@@ -476,34 +506,32 @@ export default function QuestsScreen() {
         {/* Segmented control */}
         <View style={styles.segmented}>
           <TouchableOpacity
-            style={[styles.segButton, activeTab === 'quests' && styles.segButtonActive]}
-            onPress={() => setActiveTab('quests')}
+            style={[styles.segButton, activeTab === "quests" && styles.segButtonActive]}
+            onPress={() => setActiveTab("quests")}
             activeOpacity={0.8}
           >
             <MaterialIcons
               name="assignment"
               size={16}
-              color={activeTab === 'quests' ? '#fff' : 'rgba(255,255,255,0.45)'}
+              color={activeTab === "quests" ? "#fff" : "rgba(255,255,255,0.45)"}
             />
-            <ThemedText
-              style={[styles.segLabel, activeTab === 'quests' && styles.segLabelActive]}
-            >
+            <ThemedText style={[styles.segLabel, activeTab === "quests" && styles.segLabelActive]}>
               Quests
             </ThemedText>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.segButton, activeTab === 'achievements' && styles.segButtonActive]}
-            onPress={() => setActiveTab('achievements')}
+            style={[styles.segButton, activeTab === "achievements" && styles.segButtonActive]}
+            onPress={() => setActiveTab("achievements")}
             activeOpacity={0.8}
           >
             <MaterialIcons
               name="emoji-events"
               size={16}
-              color={activeTab === 'achievements' ? '#fff' : 'rgba(255,255,255,0.45)'}
+              color={activeTab === "achievements" ? "#fff" : "rgba(255,255,255,0.45)"}
             />
             <ThemedText
-              style={[styles.segLabel, activeTab === 'achievements' && styles.segLabelActive]}
+              style={[styles.segLabel, activeTab === "achievements" && styles.segLabelActive]}
             >
               Achievements
             </ThemedText>
@@ -511,7 +539,7 @@ export default function QuestsScreen() {
         </View>
 
         {/* ── Quests tab ── */}
-        {activeTab === 'quests' && (
+        {activeTab === "quests" && (
           <View>
             {trips.length === 0 && (
               <View style={styles.emptyBanner}>
@@ -585,16 +613,23 @@ export default function QuestsScreen() {
         )}
 
         {/* ── Achievements tab ── */}
-        {activeTab === 'achievements' && (
+        {activeTab === "achievements" && (
           <View>
             {/* Total summary */}
             <View style={styles.achTotalRow}>
               <ThemedText style={styles.achTotalLabel}>Total</ThemedText>
               <ThemedText style={styles.achTotalValue}>
-                <ThemedText style={{ color: claimedAchievements.size > 0 ? Palette.green.mid : 'rgba(255,255,255,0.55)' }}>
+                <ThemedText
+                  style={{
+                    color:
+                      claimedAchievements.size > 0 ? Palette.green.mid : "rgba(255,255,255,0.55)",
+                  }}
+                >
                   {claimedAchievements.size}
                 </ThemedText>
-                <ThemedText style={{ color: 'rgba(255,255,255,0.3)' }}>/{ACHIEVEMENTS.length}</ThemedText>
+                <ThemedText style={{ color: "rgba(255,255,255,0.3)" }}>
+                  /{ACHIEVEMENTS.length}
+                </ThemedText>
               </ThemedText>
             </View>
 
@@ -603,7 +638,10 @@ export default function QuestsScreen() {
               const claimedCount = items.filter((a) => claimedAchievements.has(a.id)).length;
               return (
                 <View key={key}>
-                  <SectionHeader label={label} count={{ claimed: claimedCount, total: items.length }} />
+                  <SectionHeader
+                    label={label}
+                    count={{ claimed: claimedCount, total: items.length }}
+                  />
                   <View style={styles.achGrid}>
                     {items.map((a) => (
                       <AchievementCard
@@ -649,53 +687,53 @@ const styles = StyleSheet.create({
 
   // Header
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 20,
   },
   backButton: {
     width: 40,
     height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: "700",
+    color: "#fff",
   },
 
   // XP summary
   xpSummary: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 20,
     paddingHorizontal: 4,
   },
   xpSummaryLevel: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   xpSummaryXP: {
-    color: 'rgba(255,255,255,0.55)',
+    color: "rgba(255,255,255,0.55)",
     fontSize: 14,
   },
 
   // Segmented control
   segmented: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.07)',
+    flexDirection: "row",
+    backgroundColor: "rgba(255,255,255,0.07)",
     borderRadius: 12,
     padding: 3,
     marginBottom: 24,
   },
   segButton: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 6,
     paddingVertical: 10,
     borderRadius: 10,
@@ -705,46 +743,46 @@ const styles = StyleSheet.create({
   },
   segLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.45)',
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.45)",
   },
   segLabelActive: {
-    color: '#fff',
+    color: "#fff",
   },
 
   // Section header
   sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
+    flexDirection: "row",
+    alignItems: "baseline",
     gap: 8,
     marginTop: 8,
     marginBottom: 10,
   },
   sectionLabel: {
     fontSize: 13,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.55)',
-    textTransform: 'uppercase',
+    fontWeight: "700",
+    color: "rgba(255,255,255,0.55)",
+    textTransform: "uppercase",
     letterSpacing: 0.8,
   },
   sectionSubtitle: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.3)',
+    color: "rgba(255,255,255,0.3)",
   },
   sectionCount: {
-    marginLeft: 'auto',
+    marginLeft: "auto",
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 
   // Achievement total row
   achTotalRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(255,255,255,0.07)',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "rgba(255,255,255,0.07)",
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: "rgba(255,255,255,0.1)",
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -752,23 +790,23 @@ const styles = StyleSheet.create({
   },
   achTotalLabel: {
     fontSize: 14,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.55)',
-    textTransform: 'uppercase',
+    fontWeight: "700",
+    color: "rgba(255,255,255,0.55)",
+    textTransform: "uppercase",
     letterSpacing: 0.8,
   },
   achTotalValue: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 
   // Quest card
   questCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.07)',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.07)",
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: "rgba(255,255,255,0.1)",
     borderRadius: 14,
     padding: 14,
     marginBottom: 10,
@@ -781,58 +819,58 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   questBody: {
     flex: 1,
     gap: 4,
   },
   questTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
-    flexWrap: 'wrap',
+    flexWrap: "wrap",
   },
   questTitle: {
     fontSize: 14,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: "700",
+    color: "#fff",
     flex: 1,
   },
   questTitleClaimed: {
-    color: 'rgba(255,255,255,0.4)',
+    color: "rgba(255,255,255,0.4)",
   },
   questDesc: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.45)',
+    color: "rgba(255,255,255,0.45)",
   },
   questProgressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     marginTop: 4,
   },
   questProgressBar: {
     flex: 1,
     height: 4,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: "rgba(255,255,255,0.12)",
     borderRadius: 2,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   questProgressFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: 2,
   },
   questProgressText: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.4)',
+    color: "rgba(255,255,255,0.4)",
     minWidth: 28,
-    textAlign: 'right',
+    textAlign: "right",
   },
   questAction: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     minWidth: 52,
   },
 
@@ -844,7 +882,7 @@ const styles = StyleSheet.create({
   },
   xpBadgeText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 
   // Claim buttons
@@ -861,43 +899,43 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   claimButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: "800",
     letterSpacing: 0.5,
   },
 
   // Achievement grid
   achGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 10,
     marginBottom: 8,
   },
   achCard: {
-    width: '48%',
-    backgroundColor: 'rgba(255,255,255,0.07)',
+    width: "48%",
+    backgroundColor: "rgba(255,255,255,0.07)",
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: "rgba(255,255,255,0.1)",
     borderRadius: 14,
     padding: 14,
     gap: 6,
   },
   achCardClaimed: {
-    borderColor: Palette.green.mid + '55',
-    backgroundColor: 'rgba(63,178,143,0.07)',
+    borderColor: Palette.green.mid + "55",
+    backgroundColor: "rgba(63,178,143,0.07)",
   },
   achIconWrap: {
     width: 48,
     height: 48,
     borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 2,
-    position: 'relative',
+    position: "relative",
   },
   lockOverlay: {
-    position: 'absolute',
+    position: "absolute",
     bottom: -2,
     right: -2,
     backgroundColor: Palette.blue.dark,
@@ -906,47 +944,47 @@ const styles = StyleSheet.create({
   },
   achTitle: {
     fontSize: 13,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: "700",
+    color: "#fff",
   },
   achTitleLocked: {
-    color: 'rgba(255,255,255,0.35)',
+    color: "rgba(255,255,255,0.35)",
   },
   achDesc: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.4)',
+    color: "rgba(255,255,255,0.4)",
     lineHeight: 15,
   },
   achProgressBar: {
     height: 3,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: "rgba(255,255,255,0.12)",
     borderRadius: 2,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginTop: 2,
   },
   achProgressFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: 2,
   },
   achProgressText: {
     fontSize: 10,
-    color: 'rgba(255,255,255,0.35)',
+    color: "rgba(255,255,255,0.35)",
   },
   achFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginTop: 2,
   },
 
   // Empty banner
   emptyBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
-    backgroundColor: Palette.blue.mid + '22',
+    backgroundColor: Palette.blue.mid + "22",
     borderWidth: 1,
-    borderColor: Palette.blue.light + '33',
+    borderColor: Palette.blue.light + "33",
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -955,7 +993,7 @@ const styles = StyleSheet.create({
   emptyBannerText: {
     flex: 1,
     fontSize: 13,
-    color: 'rgba(255,255,255,0.55)',
+    color: "rgba(255,255,255,0.55)",
     lineHeight: 18,
   },
 
@@ -963,7 +1001,7 @@ const styles = StyleSheet.create({
   mainQuestCard: {
     backgroundColor: Palette.blue.mid,
     borderWidth: 1.5,
-    borderColor: Palette.red.light + '66',
+    borderColor: Palette.red.light + "66",
     borderRadius: 18,
     padding: 18,
     marginBottom: 20,
@@ -975,14 +1013,14 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   mainQuestBadgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   mainQuestBadge: {
-    backgroundColor: Palette.red.light + '22',
+    backgroundColor: Palette.red.light + "22",
     borderWidth: 1,
-    borderColor: Palette.red.light + '55',
+    borderColor: Palette.red.light + "55",
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -990,62 +1028,62 @@ const styles = StyleSheet.create({
   mainQuestBadgeText: {
     color: Palette.red.light,
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: "800",
     letterSpacing: 1.5,
   },
   mainQuestBody: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 14,
   },
   mainQuestTitle: {
     fontSize: 16,
-    fontWeight: '800',
-    color: '#fff',
+    fontWeight: "800",
+    color: "#fff",
   },
   mainQuestDesc: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.5)',
+    color: "rgba(255,255,255,0.5)",
     marginTop: 2,
     lineHeight: 17,
   },
   mainQuestStats: {
-    alignItems: 'flex-start',
+    alignItems: "flex-start",
   },
   mainQuestStatValue: {
     fontSize: 22,
-    fontWeight: '900',
-    color: '#fff',
+    fontWeight: "900",
+    color: "#fff",
   },
   mainQuestStatOf: {
     fontSize: 14,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.45)',
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.45)",
   },
   mainQuestProgressBar: {
-    width: '100%',
+    width: "100%",
     height: 6,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: "rgba(255,255,255,0.12)",
     borderRadius: 3,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   mainQuestProgressFill: {
-    height: '100%',
+    height: "100%",
     backgroundColor: Palette.red.light,
     borderRadius: 3,
   },
   mainQuestFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   mainQuestPct: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.4)',
+    color: "rgba(255,255,255,0.4)",
   },
   mainQuestClaimButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 5,
     backgroundColor: Palette.red.light,
     borderRadius: 10,
@@ -1053,19 +1091,19 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   mainQuestClaimText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: "800",
     letterSpacing: 0.5,
   },
   mainQuestClaimed: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 5,
   },
   mainQuestClaimedText: {
     fontSize: 12,
     color: Palette.green.mid,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 });

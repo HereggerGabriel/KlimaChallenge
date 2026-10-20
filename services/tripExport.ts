@@ -115,9 +115,7 @@ function parseTripsFromPayload(parsed: unknown): Trip[] {
     throw new Error("Invalid file format: expected a trips array");
   }
 
-  return rawTrips
-    .map((raw: any) => validateTrip(raw))
-    .filter((t): t is Trip => t !== null);
+  return rawTrips.map((raw: any) => validateTrip(raw)).filter((t): t is Trip => t !== null);
 }
 
 function validateTrip(raw: any): Trip | null {

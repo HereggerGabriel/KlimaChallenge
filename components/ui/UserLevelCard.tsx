@@ -1,16 +1,16 @@
-import React, { useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { ThemedText } from '@/components/ThemedText';
-import { LinearGradient } from 'expo-linear-gradient';
+import React, { useEffect } from "react";
+import { View, StyleSheet, TouchableOpacity } from "react-native";
+import { ThemedText } from "@/components/ThemedText";
+import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
   Easing,
-} from 'react-native-reanimated';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Palette } from '@/constants/Colors';
-import { getLevelTitle } from '@/utils/levelSystem';
+} from "react-native-reanimated";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { Palette } from "@/constants/Colors";
+import { getLevelTitle } from "@/utils/levelSystem";
 
 interface UserLevelCardProps {
   level: number;
@@ -20,7 +20,13 @@ interface UserLevelCardProps {
   onQuestsPress?: () => void;
 }
 
-export default function UserLevelCard({ level, currentXP, xpToNextLevel, streak = 0, onQuestsPress }: UserLevelCardProps) {
+export default function UserLevelCard({
+  level,
+  currentXP,
+  xpToNextLevel,
+  streak = 0,
+  onQuestsPress,
+}: UserLevelCardProps) {
   const progress = Math.min((currentXP / xpToNextLevel) * 100, 100);
   const title = getLevelTitle(level);
   const barWidth = useSharedValue(0);
@@ -62,9 +68,7 @@ export default function UserLevelCard({ level, currentXP, xpToNextLevel, streak 
             <ThemedText style={styles.streakText}>{streak}d</ThemedText>
           </View>
         )}
-        <ThemedText style={styles.percentageText}>
-          {Math.round(progress)}%
-        </ThemedText>
+        <ThemedText style={styles.percentageText}>{Math.round(progress)}%</ThemedText>
       </View>
 
       {onQuestsPress && (
@@ -85,68 +89,68 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
   levelText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   titleText: {
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: "rgba(255, 255, 255, 0.8)",
     fontSize: 14,
   },
   progressBar: {
     height: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   progressFill: {
-    height: '100%',
+    height: "100%",
     backgroundColor: Palette.green.mid,
     borderRadius: 4,
   },
   footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: 8,
   },
   xpText: {
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: "rgba(255, 255, 255, 0.8)",
     fontSize: 14,
   },
   percentageText: {
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: "rgba(255, 255, 255, 0.8)",
     fontSize: 14,
   },
   streakBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 2,
   },
   streakText: {
     color: Palette.red.light,
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   questsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 6,
     marginTop: 14,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.12)',
+    borderTopColor: "rgba(255,255,255,0.12)",
   },
   questsButtonText: {
     flex: 1,
-    color: 'rgba(255,255,255,0.6)',
+    color: "rgba(255,255,255,0.6)",
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

@@ -9,10 +9,15 @@ export const TRANSPORT_COLOR: Record<string, string> = {
 
 export function transportIcon(type: string): string {
   switch (type) {
-    case "Train": return "train";
-    case "Bus": return "directions-bus";
-    case "Tram": return "tram";
-    case "Subway": return "subway";
-    default: return "directions-transit";
+    case "Train":
+      return "train";
+    case "Bus":
+      return "directions-bus";
+    case "Tram":
+      return "tram";
+    case "Subway":
+      return "subway";
+    default:
+      return "directions-transit";
   }
 }

@@ -7,7 +7,6 @@ import { Palette } from "@/constants/Colors";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 
-
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
 

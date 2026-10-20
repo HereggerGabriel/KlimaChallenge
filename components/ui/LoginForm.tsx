@@ -103,10 +103,16 @@ export default function LoginForm() {
 
       {/* Forgot / Sign up links */}
       <View style={styles.linksRow}>
-        <TouchableOpacity onPress={handleForgotPassword} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
+        <TouchableOpacity
+          onPress={handleForgotPassword}
+          hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+        >
           <Text style={styles.linkText}>Forgot password?</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.push("/register")} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
+        <TouchableOpacity
+          onPress={() => router.push("/register")}
+          hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+        >
           <Text style={styles.linkText}>Sign up</Text>
         </TouchableOpacity>
       </View>

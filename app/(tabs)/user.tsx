@@ -2,10 +2,10 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { ScrollView, TouchableOpacity, View, ActivityIndicator } from "react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, {
-	useSharedValue,
-	withTiming,
-	withSequence,
-	useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  withSequence,
+  useAnimatedStyle,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/ThemedText";
@@ -21,17 +21,13 @@ import { LevelUpOverlay } from "@/components/ui/LevelUpOverlay";
 import { MainQuestOverlay } from "@/components/ui/MainQuestOverlay";
 import { MAIN_QUEST_CELEBRATED_KEY } from "@/utils/questSystem";
 import {
-	calculateLevel,
-	calculateXPForNextLevel,
-	calculateCurrentLevelXP,
-	getXPForTrip,
-	addXP,
+  calculateLevel,
+  calculateXPForNextLevel,
+  calculateCurrentLevelXP,
+  getXPForTrip,
+  addXP,
 } from "@/utils/levelSystem";
-import {
-	computeStreak,
-	getNewMilestoneXP,
-	STREAK_MILESTONES_KEY,
-} from "@/utils/streakSystem";
+import { computeStreak, getNewMilestoneXP, STREAK_MILESTONES_KEY } from "@/utils/streakSystem";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Trip } from "@/types/trip";
 import { loadTrips, saveTrips, generateTripId } from "@/services/tripStorage";
@@ -43,543 +39,565 @@ import { groupTripsByDate } from "@/utils/tripGrouping";
 const TRIPS_PREVIEW = 5;
 
 type FavoriteTrip = {
-	origin: string;
-	destination: string;
-	transportType: string;
-	distance: number;
-	cost: number;
-	count: number;
+  origin: string;
+  destination: string;
+  transportType: string;
+  distance: number;
+  cost: number;
+  count: number;
 };
 
 type PrefillData = {
-	origin: string;
-	destination: string;
-	transportType: string;
-	cost: string;
-	distance: string;
-	description: string;
+  origin: string;
+  destination: string;
+  transportType: string;
+  cost: string;
+  distance: string;
+  description: string;
 };
 
 function computeFavorites(trips: Trip[]): FavoriteTrip[] {
-	const map = new Map<string, FavoriteTrip>();
-	for (const trip of trips) {
-		const key = `${trip.origin}|${trip.destination}|${trip.transportType}`;
-		const existing = map.get(key);
-		if (existing) {
-			existing.count++;
-		} else {
-			map.set(key, {
-				origin: trip.origin,
-				destination: trip.destination,
-				transportType: trip.transportType,
-				distance: trip.distance,
-				cost: trip.cost,
-				count: 1,
-			});
-		}
-	}
-	return [...map.values()].sort((a, b) => b.count - a.count).slice(0, 4);
+  const map = new Map<string, FavoriteTrip>();
+  for (const trip of trips) {
+    const key = `${trip.origin}|${trip.destination}|${trip.transportType}`;
+    const existing = map.get(key);
+    if (existing) {
+      existing.count++;
+    } else {
+      map.set(key, {
+        origin: trip.origin,
+        destination: trip.destination,
+        transportType: trip.transportType,
+        distance: trip.distance,
+        cost: trip.cost,
+        count: 1,
+      });
+    }
+  }
+  return [...map.values()].sort((a, b) => b.count - a.count).slice(0, 4);
 }
 
 const HOLD_DURATION = 1000;
 
 function FavoriteCard({ fav, onAdd }: { fav: FavoriteTrip; onAdd: () => void }) {
-	const progress = useSharedValue(0);
-	const flashOpacity = useSharedValue(0);
+  const progress = useSharedValue(0);
+  const flashOpacity = useSharedValue(0);
 
-	const fillStyle = useAnimatedStyle(() => ({
-		height: `${progress.value * 100}%` as any,
-	}));
+  const fillStyle = useAnimatedStyle(() => ({
+    height: `${progress.value * 100}%` as any,
+  }));
 
-	const flashStyle = useAnimatedStyle(() => ({
-		opacity: flashOpacity.value,
-	}));
+  const flashStyle = useAnimatedStyle(() => ({
+    opacity: flashOpacity.value,
+  }));
 
-	const gesture = Gesture.LongPress()
-		.minDuration(HOLD_DURATION)
-		.runOnJS(true)
-		.onBegin(() => {
-			progress.value = withTiming(1, { duration: HOLD_DURATION });
-		})
-		.onStart(() => {
-			progress.value = 0;
-			flashOpacity.value = withSequence(
-				withTiming(1, { duration: 120 }),
-				withTiming(0, { duration: 220 }),
-			);
-			onAdd();
-		})
-		.onFinalize((_e, success) => {
-			if (!success) {
-				progress.value = 0;
-			}
-		});
+  const gesture = Gesture.LongPress()
+    .minDuration(HOLD_DURATION)
+    .runOnJS(true)
+    .onBegin(() => {
+      progress.value = withTiming(1, { duration: HOLD_DURATION });
+    })
+    .onStart(() => {
+      progress.value = 0;
+      flashOpacity.value = withSequence(
+        withTiming(1, { duration: 120 }),
+        withTiming(0, { duration: 220 }),
+      );
+      onAdd();
+    })
+    .onFinalize((_e, success) => {
+      if (!success) {
+        progress.value = 0;
+      }
+    });
 
-	return (
-		<GestureDetector gesture={gesture}>
-			<View style={styles.favoriteCard}>
-				<Animated.View style={[styles.fillOverlay, fillStyle]} />
-				<Animated.View style={[styles.flashOverlay, flashStyle]} />
+  return (
+    <GestureDetector gesture={gesture}>
+      <View style={styles.favoriteCard}>
+        <Animated.View style={[styles.fillOverlay, fillStyle]} />
+        <Animated.View style={[styles.flashOverlay, flashStyle]} />
 
-				<View style={styles.favoriteCardTop}>
-					<ThemedText style={styles.favoriteRoute} numberOfLines={1}>
-						{fav.origin} → {fav.destination}
-					</ThemedText>
-					<View style={styles.favoriteBadge}>
-						<ThemedText style={styles.favoriteBadgeText}>{fav.count}×</ThemedText>
-					</View>
-				</View>
-				<View style={styles.favoriteCardBottom}>
-					<IconSymbol name="bus" size={14} color={Palette.blue.light} />
-					<ThemedText style={styles.favoriteTransport}>{fav.transportType}</ThemedText>
-					<ThemedText style={styles.favoriteDistance}>{fav.distance} km</ThemedText>
-				</View>
-			</View>
-		</GestureDetector>
-	);
+        <View style={styles.favoriteCardTop}>
+          <ThemedText style={styles.favoriteRoute} numberOfLines={1}>
+            {fav.origin} → {fav.destination}
+          </ThemedText>
+          <View style={styles.favoriteBadge}>
+            <ThemedText style={styles.favoriteBadgeText}>{fav.count}×</ThemedText>
+          </View>
+        </View>
+        <View style={styles.favoriteCardBottom}>
+          <IconSymbol name="bus" size={14} color={Palette.blue.light} />
+          <ThemedText style={styles.favoriteTransport}>{fav.transportType}</ThemedText>
+          <ThemedText style={styles.favoriteDistance}>{fav.distance} km</ThemedText>
+        </View>
+      </View>
+    </GestureDetector>
+  );
 }
 
 export default function UserScreen() {
-	const [showQuickAdd, setShowQuickAdd] = useState(false);
-	const [prefillData, setPrefillData] = useState<PrefillData | undefined>(undefined);
-	const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
-	const [trips, setTrips] = useState<Trip[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-	const [userXP, setUserXP] = useState(0);
-	const [userLevel, setUserLevel] = useState(1);
-	const [xpGained, setXpGained] = useState<number | null>(null);
-	const [levelUpData, setLevelUpData] = useState<{ level: number } | null>(null);
-	const [userName, setUserName] = useState("");
-	const [klimaTicketCost, setKlimaTicketCost] = useState(1400);
-	const [mainQuestOverlay, setMainQuestOverlay] = useState<{ totalCost: number; klimaTicketCost: number } | null>(null);
-	const [claimedMilestones, setClaimedMilestones] = useState<Set<number>>(new Set());
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [prefillData, setPrefillData] = useState<PrefillData | undefined>(undefined);
+  const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userXP, setUserXP] = useState(0);
+  const [userLevel, setUserLevel] = useState(1);
+  const [xpGained, setXpGained] = useState<number | null>(null);
+  const [levelUpData, setLevelUpData] = useState<{ level: number } | null>(null);
+  const [userName, setUserName] = useState("");
+  const [klimaTicketCost, setKlimaTicketCost] = useState(1400);
+  const [mainQuestOverlay, setMainQuestOverlay] = useState<{
+    totalCost: number;
+    klimaTicketCost: number;
+  } | null>(null);
+  const [claimedMilestones, setClaimedMilestones] = useState<Set<number>>(new Set());
 
-	const loadProfile = useCallback(async () => {
-		const [storedName, storedCost] = await Promise.all([
-			AsyncStorage.getItem("userName"),
-			AsyncStorage.getItem("klimaTicketCost"),
-		]);
-		if (storedName) setUserName(storedName);
-		if (storedCost) {
-			const parsed = parseFloat(storedCost);
-			if (!isNaN(parsed) && parsed > 0) setKlimaTicketCost(parsed);
-		}
-	}, []);
+  const loadProfile = useCallback(async () => {
+    const [storedName, storedCost] = await Promise.all([
+      AsyncStorage.getItem("userName"),
+      AsyncStorage.getItem("klimaTicketCost"),
+    ]);
+    if (storedName) setUserName(storedName);
+    if (storedCost) {
+      const parsed = parseFloat(storedCost);
+      if (!isNaN(parsed) && parsed > 0) setKlimaTicketCost(parsed);
+    }
+  }, []);
 
-	const loadClaimedMilestones = useCallback(async () => {
-		const stored = await AsyncStorage.getItem(STREAK_MILESTONES_KEY);
-		setClaimedMilestones(new Set(stored ? JSON.parse(stored) : []));
-	}, []);
+  const loadClaimedMilestones = useCallback(async () => {
+    const stored = await AsyncStorage.getItem(STREAK_MILESTONES_KEY);
+    setClaimedMilestones(new Set(stored ? JSON.parse(stored) : []));
+  }, []);
 
-	useEffect(() => {
-		const init = async () => {
-			const loaded = await loadTrips();
-			setTrips(loaded);
-			setIsLoading(false);
+  useEffect(() => {
+    const init = async () => {
+      const loaded = await loadTrips();
+      setTrips(loaded);
+      setIsLoading(false);
 
-			const storedXP = await AsyncStorage.getItem("userXP");
-			const parsedXP = storedXP ? parseInt(storedXP) : NaN;
-			if (!isNaN(parsedXP)) {
-				setUserXP(parsedXP);
-				setUserLevel(calculateLevel(parsedXP));
-			} else {
-				const seeded = loaded.reduce(
-					(total, trip) => total + getXPForTrip(trip.distance, trip.transportType),
-					0,
-				);
-				await AsyncStorage.setItem("userXP", seeded.toString());
-				setUserXP(seeded);
-				setUserLevel(calculateLevel(seeded));
-			}
+      const storedXP = await AsyncStorage.getItem("userXP");
+      const parsedXP = storedXP ? parseInt(storedXP) : NaN;
+      if (!isNaN(parsedXP)) {
+        setUserXP(parsedXP);
+        setUserLevel(calculateLevel(parsedXP));
+      } else {
+        const seeded = loaded.reduce(
+          (total, trip) => total + getXPForTrip(trip.distance, trip.transportType),
+          0,
+        );
+        await AsyncStorage.setItem("userXP", seeded.toString());
+        setUserXP(seeded);
+        setUserLevel(calculateLevel(seeded));
+      }
 
-			await Promise.all([loadProfile(), loadClaimedMilestones()]);
-		};
-		init();
-	}, []);
+      await Promise.all([loadProfile(), loadClaimedMilestones()]);
+    };
+    init();
+  }, []);
 
-	useFocusEffect(useCallback(() => {
-		loadProfile();
-		loadClaimedMilestones();
-		loadTrips().then((loaded) => {
-			setTrips(loaded);
-			AsyncStorage.getItem("userXP").then((storedXP) => {
-				const parsedXP = storedXP ? parseInt(storedXP) : NaN;
-				if (!isNaN(parsedXP)) {
-					setUserXP(parsedXP);
-					setUserLevel(calculateLevel(parsedXP));
-				} else {
-					const seeded = loaded.reduce(
-						(total, trip) => total + getXPForTrip(trip.distance, trip.transportType),
-						0,
-					);
-					AsyncStorage.setItem("userXP", seeded.toString());
-					setUserXP(seeded);
-					setUserLevel(calculateLevel(seeded));
-				}
-			});
-		});
-	}, [loadProfile, loadClaimedMilestones]));
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+      loadClaimedMilestones();
+      loadTrips().then((loaded) => {
+        setTrips(loaded);
+        AsyncStorage.getItem("userXP").then((storedXP) => {
+          const parsedXP = storedXP ? parseInt(storedXP) : NaN;
+          if (!isNaN(parsedXP)) {
+            setUserXP(parsedXP);
+            setUserLevel(calculateLevel(parsedXP));
+          } else {
+            const seeded = loaded.reduce(
+              (total, trip) => total + getXPForTrip(trip.distance, trip.transportType),
+              0,
+            );
+            AsyncStorage.setItem("userXP", seeded.toString());
+            setUserXP(seeded);
+            setUserLevel(calculateLevel(seeded));
+          }
+        });
+      });
+    }, [loadProfile, loadClaimedMilestones]),
+  );
 
-	useEffect(() => {
-		if (!isLoading) {
-			saveTrips(trips);
-		}
-	}, [trips, isLoading]);
+  useEffect(() => {
+    if (!isLoading) {
+      saveTrips(trips);
+    }
+  }, [trips, isLoading]);
 
-	const favorites = useMemo(() => computeFavorites(trips), [trips]);
-	const streak = useMemo(() => computeStreak(trips), [trips]);
+  const favorites = useMemo(() => computeFavorites(trips), [trips]);
+  const streak = useMemo(() => computeStreak(trips), [trips]);
 
-	// Award XP, fire toast + level-up. Returns updated XP and level.
-	const awardXP = useCallback(async (
-		amount: number,
-		currentXP: number,
-		currentLevel: number,
-	): Promise<{ newXP: number; newLevel: number }> => {
-		const newXP = addXP(currentXP, amount);
-		const newLevel = calculateLevel(newXP);
-		await AsyncStorage.setItem("userXP", newXP.toString());
-		setUserXP(newXP);
-		setXpGained(amount);
-		if (newLevel > currentLevel) {
-			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-			setLevelUpData({ level: newLevel });
-		} else {
-			Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-		}
-		setUserLevel(newLevel);
-		return { newXP, newLevel };
-	}, []);
+  // Award XP, fire toast + level-up. Returns updated XP and level.
+  const awardXP = useCallback(
+    async (
+      amount: number,
+      currentXP: number,
+      currentLevel: number,
+    ): Promise<{ newXP: number; newLevel: number }> => {
+      const newXP = addXP(currentXP, amount);
+      const newLevel = calculateLevel(newXP);
+      await AsyncStorage.setItem("userXP", newXP.toString());
+      setUserXP(newXP);
+      setXpGained(amount);
+      if (newLevel > currentLevel) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setLevelUpData({ level: newLevel });
+      } else {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
+      setUserLevel(newLevel);
+      return { newXP, newLevel };
+    },
+    [],
+  );
 
-	// Check streak milestones after a new trip is added. Awards bonus XP if a
-	// new milestone is reached.
-	const checkStreakMilestones = useCallback(async (
-		newTrips: Trip[],
-		currentXP: number,
-		currentLevel: number,
-		currentClaimed: Set<number>,
-	) => {
-		const newStreak = computeStreak(newTrips);
-		const { xp, milestones } = getNewMilestoneXP(newStreak, currentClaimed);
-		if (xp === 0 || milestones.length === 0) return;
+  // Check streak milestones after a new trip is added. Awards bonus XP if a
+  // new milestone is reached.
+  const checkStreakMilestones = useCallback(
+    async (
+      newTrips: Trip[],
+      currentXP: number,
+      currentLevel: number,
+      currentClaimed: Set<number>,
+    ) => {
+      const newStreak = computeStreak(newTrips);
+      const { xp, milestones } = getNewMilestoneXP(newStreak, currentClaimed);
+      if (xp === 0 || milestones.length === 0) return;
 
-		const updatedClaimed = new Set([...currentClaimed, ...milestones]);
-		await AsyncStorage.setItem(STREAK_MILESTONES_KEY, JSON.stringify([...updatedClaimed]));
-		setClaimedMilestones(updatedClaimed);
+      const updatedClaimed = new Set([...currentClaimed, ...milestones]);
+      await AsyncStorage.setItem(STREAK_MILESTONES_KEY, JSON.stringify([...updatedClaimed]));
+      setClaimedMilestones(updatedClaimed);
 
-		// Show milestone reward as a second XP toast after a short delay
-		setTimeout(async () => {
-			const newXP = addXP(currentXP, xp);
-			const newLevel = calculateLevel(newXP);
-			await AsyncStorage.setItem("userXP", newXP.toString());
-			setUserXP(newXP);
-			setXpGained(xp);
-			if (newLevel > currentLevel) {
-				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-				setLevelUpData({ level: newLevel });
-			}
-			setUserLevel(newLevel);
-		}, 1800);
-	}, []);
+      // Show milestone reward as a second XP toast after a short delay
+      setTimeout(async () => {
+        const newXP = addXP(currentXP, xp);
+        const newLevel = calculateLevel(newXP);
+        await AsyncStorage.setItem("userXP", newXP.toString());
+        setUserXP(newXP);
+        setXpGained(xp);
+        if (newLevel > currentLevel) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setLevelUpData({ level: newLevel });
+        }
+        setUserLevel(newLevel);
+      }, 1800);
+    },
+    [],
+  );
 
-	const handleLogout = async () => {
-		await supabase.auth.signOut();
-		router.replace("/onboarding");
-	};
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.replace("/onboarding");
+  };
 
-	const handleTripPress = (trip: Trip) => {
-		setSelectedTrip(trip);
-	};
+  const handleTripPress = (trip: Trip) => {
+    setSelectedTrip(trip);
+  };
 
-	const handleDeleteTrip = async (tripId: string) => {
-		const trip = trips.find((t) => t.id === tripId);
-		if (!trip) return;
-		const removedXP = getXPForTrip(trip.distance, trip.transportType);
-		const newXP = Math.max(0, userXP - removedXP);
-		await AsyncStorage.setItem("userXP", newXP.toString());
-		setUserXP(newXP);
-		setUserLevel(calculateLevel(newXP));
-		setTrips((prev) => prev.filter((t) => t.id !== tripId));
-	};
+  const handleDeleteTrip = async (tripId: string) => {
+    const trip = trips.find((t) => t.id === tripId);
+    if (!trip) return;
+    const removedXP = getXPForTrip(trip.distance, trip.transportType);
+    const newXP = Math.max(0, userXP - removedXP);
+    await AsyncStorage.setItem("userXP", newXP.toString());
+    setUserXP(newXP);
+    setUserLevel(calculateLevel(newXP));
+    setTrips((prev) => prev.filter((t) => t.id !== tripId));
+  };
 
-	const handleEditTrip = async (tripId: string, updates: Partial<Trip>) => {
-		const trip = trips.find((t) => t.id === tripId);
-		if (!trip) return;
-		const oldXP = getXPForTrip(trip.distance, trip.transportType);
-		const updatedTrip = { ...trip, ...updates };
-		const newTripXP = getXPForTrip(updatedTrip.distance, updatedTrip.transportType);
-		const newXP = Math.max(0, userXP + (newTripXP - oldXP));
-		await AsyncStorage.setItem("userXP", newXP.toString());
-		setUserXP(newXP);
-		setUserLevel(calculateLevel(newXP));
-		setTrips((prev) => prev.map((t) => (t.id === tripId ? updatedTrip : t)));
-		setSelectedTrip(updatedTrip);
-	};
+  const handleEditTrip = async (tripId: string, updates: Partial<Trip>) => {
+    const trip = trips.find((t) => t.id === tripId);
+    if (!trip) return;
+    const oldXP = getXPForTrip(trip.distance, trip.transportType);
+    const updatedTrip = { ...trip, ...updates };
+    const newTripXP = getXPForTrip(updatedTrip.distance, updatedTrip.transportType);
+    const newXP = Math.max(0, userXP + (newTripXP - oldXP));
+    await AsyncStorage.setItem("userXP", newXP.toString());
+    setUserXP(newXP);
+    setUserLevel(calculateLevel(newXP));
+    setTrips((prev) => prev.map((t) => (t.id === tripId ? updatedTrip : t)));
+    setSelectedTrip(updatedTrip);
+  };
 
-	const handleLogAgain = (trip: Trip) => {
-		setSelectedTrip(null);
-		setPrefillData({
-			origin: trip.origin,
-			destination: trip.destination,
-			transportType: trip.transportType,
-			cost: trip.cost.toString(),
-			distance: trip.distance.toString(),
-			description: trip.description ?? "",
-		});
-		setShowQuickAdd(true);
-	};
+  const handleLogAgain = (trip: Trip) => {
+    setSelectedTrip(null);
+    setPrefillData({
+      origin: trip.origin,
+      destination: trip.destination,
+      transportType: trip.transportType,
+      cost: trip.cost.toString(),
+      distance: trip.distance.toString(),
+      description: trip.description ?? "",
+    });
+    setShowQuickAdd(true);
+  };
 
-	const checkMainQuest = async (allTrips: Trip[], ticketCost: number) => {
-		const totalCost = allTrips.reduce((sum, t) => sum + t.cost, 0);
-		if (totalCost < ticketCost) return;
-		const celebrated = await AsyncStorage.getItem(MAIN_QUEST_CELEBRATED_KEY);
-		if (celebrated) return;
-		await AsyncStorage.setItem(MAIN_QUEST_CELEBRATED_KEY, 'true');
-		setMainQuestOverlay({ totalCost, klimaTicketCost: ticketCost });
-	};
+  const checkMainQuest = async (allTrips: Trip[], ticketCost: number) => {
+    const totalCost = allTrips.reduce((sum, t) => sum + t.cost, 0);
+    if (totalCost < ticketCost) return;
+    const celebrated = await AsyncStorage.getItem(MAIN_QUEST_CELEBRATED_KEY);
+    if (celebrated) return;
+    await AsyncStorage.setItem(MAIN_QUEST_CELEBRATED_KEY, "true");
+    setMainQuestOverlay({ totalCost, klimaTicketCost: ticketCost });
+  };
 
-	const handleFavoritePress = async (fav: FavoriteTrip) => {
-		const newTrip: Trip = {
-			id: generateTripId(),
-			date: new Date(),
-			origin: fav.origin,
-			destination: fav.destination,
-			transportType: fav.transportType,
-			cost: fav.cost,
-			distance: fav.distance,
-			description: "",
-		};
-		const tripXP = getXPForTrip(fav.distance, fav.transportType);
-		const { newXP, newLevel } = await awardXP(tripXP, userXP, userLevel);
-		const updatedTrips = [newTrip, ...trips];
-		setTrips(updatedTrips);
-		await checkMainQuest(updatedTrips, klimaTicketCost);
-		await checkStreakMilestones(updatedTrips, newXP, newLevel, claimedMilestones);
-	};
+  const handleFavoritePress = async (fav: FavoriteTrip) => {
+    const newTrip: Trip = {
+      id: generateTripId(),
+      date: new Date(),
+      origin: fav.origin,
+      destination: fav.destination,
+      transportType: fav.transportType,
+      cost: fav.cost,
+      distance: fav.distance,
+      description: "",
+    };
+    const tripXP = getXPForTrip(fav.distance, fav.transportType);
+    const { newXP, newLevel } = await awardXP(tripXP, userXP, userLevel);
+    const updatedTrips = [newTrip, ...trips];
+    setTrips(updatedTrips);
+    await checkMainQuest(updatedTrips, klimaTicketCost);
+    await checkStreakMilestones(updatedTrips, newXP, newLevel, claimedMilestones);
+  };
 
-	const handleQuickAddSubmit = async (tripData: {
-		date: Date;
-		origin: string;
-		destination: string;
-		transportType: string;
-		cost: number;
-		description?: string;
-		distance: number;
-	}) => {
-		const newTrip: Trip = {
-			id: generateTripId(),
-			date: tripData.date,
-			origin: tripData.origin,
-			destination: tripData.destination,
-			transportType: tripData.transportType,
-			cost: tripData.cost,
-			distance: tripData.distance,
-			description: tripData.description || "",
-		};
+  const handleQuickAddSubmit = async (tripData: {
+    date: Date;
+    origin: string;
+    destination: string;
+    transportType: string;
+    cost: number;
+    description?: string;
+    distance: number;
+  }) => {
+    const newTrip: Trip = {
+      id: generateTripId(),
+      date: tripData.date,
+      origin: tripData.origin,
+      destination: tripData.destination,
+      transportType: tripData.transportType,
+      cost: tripData.cost,
+      distance: tripData.distance,
+      description: tripData.description || "",
+    };
 
-		const tripXP = getXPForTrip(tripData.distance, tripData.transportType);
-		const { newXP, newLevel } = await awardXP(tripXP, userXP, userLevel);
+    const tripXP = getXPForTrip(tripData.distance, tripData.transportType);
+    const { newXP, newLevel } = await awardXP(tripXP, userXP, userLevel);
 
-		const updatedTrips = [newTrip, ...trips];
-		setTrips(updatedTrips);
-		setShowQuickAdd(false);
-		setPrefillData(undefined);
-		await checkMainQuest(updatedTrips, klimaTicketCost);
-		await checkStreakMilestones(updatedTrips, newXP, newLevel, claimedMilestones);
-	};
+    const updatedTrips = [newTrip, ...trips];
+    setTrips(updatedTrips);
+    setShowQuickAdd(false);
+    setPrefillData(undefined);
+    await checkMainQuest(updatedTrips, klimaTicketCost);
+    await checkStreakMilestones(updatedTrips, newXP, newLevel, claimedMilestones);
+  };
 
-	const formatTime = (date: Date) => {
-		const d = date instanceof Date ? date : new Date(date);
-		return d.toLocaleTimeString("en-AT", { hour: "2-digit", minute: "2-digit", hour12: false });
-	};
+  const formatTime = (date: Date) => {
+    const d = date instanceof Date ? date : new Date(date);
+    return d.toLocaleTimeString("en-AT", { hour: "2-digit", minute: "2-digit", hour12: false });
+  };
 
-	const totalCost = trips.reduce((sum, trip) => sum + trip.cost, 0);
-	const totalDistance = trips.reduce((sum, trip) => sum + trip.distance, 0);
-	const previewGroups = useMemo(() => groupTripsByDate(trips.slice(0, TRIPS_PREVIEW)), [trips]);
+  const totalCost = trips.reduce((sum, trip) => sum + trip.cost, 0);
+  const totalDistance = trips.reduce((sum, trip) => sum + trip.distance, 0);
+  const previewGroups = useMemo(() => groupTripsByDate(trips.slice(0, TRIPS_PREVIEW)), [trips]);
 
-	const recentPlaces = useMemo(() => {
-		const counts = new Map<string, number>();
-		for (const t of trips) {
-			counts.set(t.origin, (counts.get(t.origin) ?? 0) + 1);
-			counts.set(t.destination, (counts.get(t.destination) ?? 0) + 1);
-		}
-		return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([p]) => p);
-	}, [trips]);
+  const recentPlaces = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const t of trips) {
+      counts.set(t.origin, (counts.get(t.origin) ?? 0) + 1);
+      counts.set(t.destination, (counts.get(t.destination) ?? 0) + 1);
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([p]) => p);
+  }, [trips]);
 
-	if (isLoading) {
-		return (
-			<View style={styles.loadingContainer}>
-				<ActivityIndicator size="large" color={Palette.green.mid} />
-			</View>
-		);
-	}
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={Palette.green.mid} />
+      </View>
+    );
+  }
 
-	return (
-		<View style={styles.root}>
-		<ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-			{/* Header */}
-			<View style={styles.header}>
-				<View style={{ flex: 1 }}>
-					<ThemedText type="title" style={styles.headerTitle}>
-						My Climate Journey
-					</ThemedText>
-					<ThemedText style={styles.subtitle}>Track your impact and savings</ThemedText>
-				</View>
-				<TouchableOpacity onPress={() => router.push("/profile")} activeOpacity={0.8}>
-					<View style={styles.avatarCircle}>
-						<ThemedText style={styles.avatarInitial}>
-							{userName.trim() ? userName.trim()[0].toUpperCase() : "?"}
-						</ThemedText>
-					</View>
-				</TouchableOpacity>
-			</View>
+  return (
+    <View style={styles.root}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={{ flex: 1 }}>
+            <ThemedText type="title" style={styles.headerTitle}>
+              My Climate Journey
+            </ThemedText>
+            <ThemedText style={styles.subtitle}>Track your impact and savings</ThemedText>
+          </View>
+          <TouchableOpacity onPress={() => router.push("/profile")} activeOpacity={0.8}>
+            <View style={styles.avatarCircle}>
+              <ThemedText style={styles.avatarInitial}>
+                {userName.trim() ? userName.trim()[0].toUpperCase() : "?"}
+              </ThemedText>
+            </View>
+          </TouchableOpacity>
+        </View>
 
-			<UserLevelCard
-				level={userLevel}
-				currentXP={calculateCurrentLevelXP(userXP, userLevel)}
-				xpToNextLevel={calculateXPForNextLevel(userLevel)}
-				streak={streak}
-				onQuestsPress={() => router.push('/quests')}
-			/>
+        <UserLevelCard
+          level={userLevel}
+          currentXP={calculateCurrentLevelXP(userXP, userLevel)}
+          xpToNextLevel={calculateXPForNextLevel(userLevel)}
+          streak={streak}
+          onQuestsPress={() => router.push("/quests")}
+        />
 
-			<FinancialOverview
-				totalTrips={trips.length}
-				totalDistance={totalDistance}
-				totalCost={totalCost}
-				klimaTicketCost={klimaTicketCost}
-				onStatsPress={() => router.push('/stats')}
-			/>
+        <FinancialOverview
+          totalTrips={trips.length}
+          totalDistance={totalDistance}
+          totalCost={totalCost}
+          klimaTicketCost={klimaTicketCost}
+          onStatsPress={() => router.push("/stats")}
+        />
 
-			{/* Favorites */}
-			{favorites.length > 0 && (
-				<View style={styles.section}>
-					<View style={styles.sectionTitleRow}>
-						<IconSymbol name="star.fill" size={16} color={Palette.green.mid} />
-						<ThemedText type="subtitle" style={styles.sectionTitle}>
-							Favorites
-						</ThemedText>
-					</View>
-					<View style={styles.favoritesGrid}>
-						{favorites.map((fav) => (
-							<FavoriteCard
-								key={`${fav.origin}|${fav.destination}|${fav.transportType}`}
-								fav={fav}
-								onAdd={() => handleFavoritePress(fav)}
-							/>
-						))}
-					</View>
-				</View>
-			)}
+        {/* Favorites */}
+        {favorites.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionTitleRow}>
+              <IconSymbol name="star.fill" size={16} color={Palette.green.mid} />
+              <ThemedText type="subtitle" style={styles.sectionTitle}>
+                Favorites
+              </ThemedText>
+            </View>
+            <View style={styles.favoritesGrid}>
+              {favorites.map((fav) => (
+                <FavoriteCard
+                  key={`${fav.origin}|${fav.destination}|${fav.transportType}`}
+                  fav={fav}
+                  onAdd={() => handleFavoritePress(fav)}
+                />
+              ))}
+            </View>
+          </View>
+        )}
 
-			{/* Recent Trips */}
-			<View style={styles.section}>
-				<View style={styles.sectionHeader}>
-					<View style={styles.sectionTitleRow}>
-						<IconSymbol name="clock" size={16} color={Palette.blue.light} />
-						<ThemedText type="subtitle" style={styles.sectionTitle}>
-							Recent Trips
-						</ThemedText>
-					</View>
-					<TouchableOpacity style={styles.addButton} onPress={() => setShowQuickAdd(true)}>
-						<IconSymbol name="plus.circle.fill" size={20} color="#fff" />
-						<ThemedText style={styles.addButtonText}>Add Trip</ThemedText>
-					</TouchableOpacity>
-				</View>
+        {/* Recent Trips */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleRow}>
+              <IconSymbol name="clock" size={16} color={Palette.blue.light} />
+              <ThemedText type="subtitle" style={styles.sectionTitle}>
+                Recent Trips
+              </ThemedText>
+            </View>
+            <TouchableOpacity style={styles.addButton} onPress={() => setShowQuickAdd(true)}>
+              <IconSymbol name="plus.circle.fill" size={20} color="#fff" />
+              <ThemedText style={styles.addButtonText}>Add Trip</ThemedText>
+            </TouchableOpacity>
+          </View>
 
-				{trips.length === 0 && (
-					<View style={styles.emptyState}>
-						<IconSymbol name="bus" size={36} color="rgba(255,255,255,0.18)" />
-						<ThemedText style={styles.emptyStateTitle}>No trips yet</ThemedText>
-						<ThemedText style={styles.emptyStateSubtitle}>
-							Add your first trip to start tracking your climate impact
-						</ThemedText>
-						<TouchableOpacity style={styles.emptyStateCTA} onPress={() => setShowQuickAdd(true)}>
-							<IconSymbol name="plus.circle.fill" size={18} color="#fff" />
-							<ThemedText style={styles.emptyStateCTAText}>Add Trip</ThemedText>
-						</TouchableOpacity>
-					</View>
-				)}
+          {trips.length === 0 && (
+            <View style={styles.emptyState}>
+              <IconSymbol name="bus" size={36} color="rgba(255,255,255,0.18)" />
+              <ThemedText style={styles.emptyStateTitle}>No trips yet</ThemedText>
+              <ThemedText style={styles.emptyStateSubtitle}>
+                Add your first trip to start tracking your climate impact
+              </ThemedText>
+              <TouchableOpacity style={styles.emptyStateCTA} onPress={() => setShowQuickAdd(true)}>
+                <IconSymbol name="plus.circle.fill" size={18} color="#fff" />
+                <ThemedText style={styles.emptyStateCTAText}>Add Trip</ThemedText>
+              </TouchableOpacity>
+            </View>
+          )}
 
-				{previewGroups.map((group) => (
-					<View key={group.label}>
-						<ThemedText style={styles.dateGroupHeader}>{group.label}</ThemedText>
-						{group.trips.map((trip) => (
-							<TouchableOpacity key={trip.id} onPress={() => handleTripPress(trip)} activeOpacity={0.75}>
-								<View style={styles.tripCard}>
-									<View
-										style={[styles.tripAccentBar, { backgroundColor: TRANSPORT_COLOR[trip.transportType] ?? Palette.blue.mid }]}
-									/>
-									<View style={styles.tripCardContent}>
-										<View style={styles.tripHeader}>
-											<View style={{ flex: 1, marginRight: 8 }}>
-												<ThemedText style={styles.tripTitle} numberOfLines={1}>
-													{trip.origin} → {trip.destination}
-												</ThemedText>
-												<ThemedText style={styles.tripDate}>
-													{trip.transportType} · {formatTime(trip.date)}
-												</ThemedText>
-											</View>
-											<ThemedText style={styles.tripCost}>€{trip.cost.toFixed(2)}</ThemedText>
-										</View>
-									</View>
-								</View>
-							</TouchableOpacity>
-						))}
-					</View>
-				))}
+          {previewGroups.map((group) => (
+            <View key={group.label}>
+              <ThemedText style={styles.dateGroupHeader}>{group.label}</ThemedText>
+              {group.trips.map((trip) => (
+                <TouchableOpacity
+                  key={trip.id}
+                  onPress={() => handleTripPress(trip)}
+                  activeOpacity={0.75}
+                >
+                  <View style={styles.tripCard}>
+                    <View
+                      style={[
+                        styles.tripAccentBar,
+                        {
+                          backgroundColor: TRANSPORT_COLOR[trip.transportType] ?? Palette.blue.mid,
+                        },
+                      ]}
+                    />
+                    <View style={styles.tripCardContent}>
+                      <View style={styles.tripHeader}>
+                        <View style={{ flex: 1, marginRight: 8 }}>
+                          <ThemedText style={styles.tripTitle} numberOfLines={1}>
+                            {trip.origin} → {trip.destination}
+                          </ThemedText>
+                          <ThemedText style={styles.tripDate}>
+                            {trip.transportType} · {formatTime(trip.date)}
+                          </ThemedText>
+                        </View>
+                        <ThemedText style={styles.tripCost}>€{trip.cost.toFixed(2)}</ThemedText>
+                      </View>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ))}
 
-				{trips.length > TRIPS_PREVIEW && (
-					<TouchableOpacity
-						style={styles.showAllButton}
-						onPress={() => router.push("/trips")}
-					>
-						<ThemedText style={styles.showAllText}>
-							See all {trips.length} trips
-						</ThemedText>
-						<IconSymbol name="chevron.right" size={14} color={Palette.blue.light} />
-					</TouchableOpacity>
-				)}
-			</View>
+          {trips.length > TRIPS_PREVIEW && (
+            <TouchableOpacity style={styles.showAllButton} onPress={() => router.push("/trips")}>
+              <ThemedText style={styles.showAllText}>See all {trips.length} trips</ThemedText>
+              <IconSymbol name="chevron.right" size={14} color={Palette.blue.light} />
+            </TouchableOpacity>
+          )}
+        </View>
 
-			{/* Logout */}
-			<View style={styles.logoutSection}>
-				<TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-					<IconSymbol name="rectangle.portrait.and.arrow.right" size={18} color={Palette.red.light} />
-					<ThemedText style={styles.logoutButtonText}>Log Out</ThemedText>
-				</TouchableOpacity>
-			</View>
+        {/* Logout */}
+        <View style={styles.logoutSection}>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <IconSymbol
+              name="rectangle.portrait.and.arrow.right"
+              size={18}
+              color={Palette.red.light}
+            />
+            <ThemedText style={styles.logoutButtonText}>Log Out</ThemedText>
+          </TouchableOpacity>
+        </View>
 
-			<QuickAddTripModal
-				visible={showQuickAdd}
-				onClose={() => { setShowQuickAdd(false); setPrefillData(undefined); }}
-				onSubmit={handleQuickAddSubmit}
-				recentPlaces={recentPlaces}
-				prefill={prefillData}
-			/>
-			<TripDetailModal
-				visible={selectedTrip !== null}
-				trip={selectedTrip}
-				onClose={() => setSelectedTrip(null)}
-				onDelete={handleDeleteTrip}
-				onEdit={handleEditTrip}
-				onLogAgain={handleLogAgain}
-				recentPlaces={recentPlaces}
-			/>
-		</ScrollView>
-		<XPToast xp={xpGained} onDone={() => setXpGained(null)} />
-		<LevelUpOverlay
-			visible={levelUpData !== null}
-			newLevel={levelUpData?.level ?? 1}
-			onDone={() => setLevelUpData(null)}
-		/>
-		<MainQuestOverlay
-			visible={mainQuestOverlay !== null}
-			totalCost={mainQuestOverlay?.totalCost ?? 0}
-			klimaTicketCost={mainQuestOverlay?.klimaTicketCost ?? 1400}
-			onGoToClaim={() => {
-				setMainQuestOverlay(null);
-				router.push('/quests');
-			}}
-		/>
-		</View>
-	);
+        <QuickAddTripModal
+          visible={showQuickAdd}
+          onClose={() => {
+            setShowQuickAdd(false);
+            setPrefillData(undefined);
+          }}
+          onSubmit={handleQuickAddSubmit}
+          recentPlaces={recentPlaces}
+          prefill={prefillData}
+        />
+        <TripDetailModal
+          visible={selectedTrip !== null}
+          trip={selectedTrip}
+          onClose={() => setSelectedTrip(null)}
+          onDelete={handleDeleteTrip}
+          onEdit={handleEditTrip}
+          onLogAgain={handleLogAgain}
+          recentPlaces={recentPlaces}
+        />
+      </ScrollView>
+      <XPToast xp={xpGained} onDone={() => setXpGained(null)} />
+      <LevelUpOverlay
+        visible={levelUpData !== null}
+        newLevel={levelUpData?.level ?? 1}
+        onDone={() => setLevelUpData(null)}
+      />
+      <MainQuestOverlay
+        visible={mainQuestOverlay !== null}
+        totalCost={mainQuestOverlay?.totalCost ?? 0}
+        klimaTicketCost={mainQuestOverlay?.klimaTicketCost ?? 1400}
+        onGoToClaim={() => {
+          setMainQuestOverlay(null);
+          router.push("/quests");
+        }}
+      />
+    </View>
+  );
 }
