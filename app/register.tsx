@@ -1,5 +1,7 @@
 import React from "react";
-import { View, StyleSheet, ImageBackground, Text } from "react-native";
+import { View, StyleSheet, ImageBackground, Text, TouchableOpacity } from "react-native";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import RegisterForm from "@/components/ui/RegisterForm";
 import { Palette } from "@/constants/Colors";
@@ -23,13 +25,22 @@ export default function RegisterScreen() {
         style={StyleSheet.absoluteFill}
       />
 
+      <TouchableOpacity
+        style={[styles.backButton, { top: insets.top + 8 }]}
+        onPress={() => router.back()}
+        accessibilityLabel="Back"
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <MaterialIcons name="chevron-left" size={30} color="#fff" />
+      </TouchableOpacity>
+
       {/* Brand block */}
       <View style={[styles.brandBlock, { paddingTop: insets.top + 40 }]}>
         <View style={styles.logoCircle}>
           <Text style={styles.logoEmoji}>🚊</Text>
         </View>
         <Text style={styles.appName}>Create Account</Text>
-        <Text style={styles.tagline}>JOIN THE KLIMACHALLENGE</Text>
+        <Text style={styles.tagline}>SIGN IN AGAIN ON ANY PHONE</Text>
       </View>
 
       {/* Form */}
@@ -44,6 +55,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Palette.blue.dark,
+  },
+  backButton: {
+    position: "absolute",
+    left: 12,
+    zIndex: 10,
   },
   brandBlock: {
     alignItems: "center",

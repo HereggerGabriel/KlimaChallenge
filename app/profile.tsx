@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Modal,
   Pressable,
+  Alert,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
@@ -20,6 +21,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { Palette } from "@/constants/Colors";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { isAnonymous, signOutAndClearLocalData, useSession } from "@/lib/auth";
 
 type TicketPreset = {
   label: string;
@@ -135,6 +137,8 @@ function SlideToDelete({ onConfirmed }: { onConfirmed: () => void }) {
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
+  const session = useSession();
+  const anonymous = isAnonymous(session);
   const [name, setName] = useState("");
   const [selectedTicket, setSelectedTicket] = useState<string>("KlimaTicket Ö Classic");
   const [customTicketName, setCustomTicketName] = useState("");
@@ -208,6 +212,25 @@ export default function ProfileScreen() {
       ]),
     ]);
     setShowDeleteModal(false);
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      "Log out?",
+      "Your trips are only stored on this phone and will be deleted when you log out. Export them first if you want a backup.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Log out",
+          style: "destructive",
+          onPress: async () => {
+            await signOutAndClearLocalData();
+            // The splash screen starts a fresh anonymous session and shows onboarding.
+            router.replace("/");
+          },
+        },
+      ],
+    );
   };
 
   const handleExport = async () => {
@@ -434,6 +457,50 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Account */}
+        <View style={styles.navSection}>
+          <ThemedText style={styles.dataLabel}>Account</ThemedText>
+          {anonymous ? (
+            <>
+              <ThemedText style={styles.accountHint}>
+                You are using KlimaChallenge without an account. Create one to sign in with the same
+                identity on another phone. Trips stay on this phone; use Export below for a backup.
+              </ThemedText>
+              <TouchableOpacity
+                style={styles.navButton}
+                onPress={() => router.push("/register")}
+                activeOpacity={0.8}
+              >
+                <MaterialIcons name="person-add" size={20} color={Palette.green.mid} />
+                <ThemedText style={styles.navButtonText}>Create Account</ThemedText>
+                <MaterialIcons name="chevron-right" size={20} color="rgba(255,255,255,0.4)" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.navButton}
+                onPress={() => router.push("/login")}
+                activeOpacity={0.8}
+              >
+                <MaterialIcons name="login" size={20} color={Palette.blue.light} />
+                <ThemedText style={styles.navButtonText}>I already have an account</ThemedText>
+                <MaterialIcons name="chevron-right" size={20} color="rgba(255,255,255,0.4)" />
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <View style={styles.navButton}>
+                <MaterialIcons name="account-circle" size={20} color={Palette.green.mid} />
+                <ThemedText style={styles.navButtonText} numberOfLines={1}>
+                  {session?.user.email}
+                </ThemedText>
+              </View>
+              <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+                <MaterialIcons name="logout" size={18} color={Palette.red.light} />
+                <ThemedText style={styles.logoutButtonText}>Log Out</ThemedText>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+
         {/* Data Management */}
         <View style={styles.navSection}>
           <ThemedText style={styles.dataLabel}>Data</ThemedText>
@@ -533,14 +600,6 @@ const sliderStyles = StyleSheet.create({
     backgroundColor: Palette.red.light,
     alignItems: "center",
     justifyContent: "center",
-  },
-  dataLabel: {
-    fontSize: 12,
-    color: "rgba(255,255,255,0.55)",
-    fontWeight: "600",
-    marginBottom: 8,
-    letterSpacing: 0.8,
-    textTransform: "uppercase" as const,
   },
   importFeedback: {
     flexDirection: "row" as const,
@@ -758,6 +817,27 @@ const styles = StyleSheet.create({
   navButtonText: {
     flex: 1,
     color: "#fff",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  accountHint: {
+    color: "rgba(255,255,255,0.6)",
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 4,
+  },
+  logoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: Palette.red.light,
+  },
+  logoutButtonText: {
+    color: Palette.red.light,
     fontSize: 15,
     fontWeight: "600",
   },

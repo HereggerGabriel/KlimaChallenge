@@ -251,22 +251,4 @@ export const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 4,
   },
-  logoutSection: {
-    marginTop: 36,
-  },
-  logoutButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: Palette.red.light,
-  },
-  logoutButtonText: {
-    color: Palette.red.light,
-    fontSize: 15,
-    fontWeight: "600",
-  },
 });

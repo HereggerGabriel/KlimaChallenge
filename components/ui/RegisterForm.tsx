@@ -9,7 +9,8 @@ import {
 } from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import { router } from "expo-router";
-import { supabase } from "@/lib/supabase";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { upgradeAnonymousAccount, UpgradeResult } from "@/lib/auth";
 import { Palette } from "@/constants/Colors";
 
 type FormData = {
@@ -26,32 +27,36 @@ export default function RegisterForm() {
     reset,
   } = useForm<FormData>();
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [result, setResult] = useState<UpgradeResult | null>(null);
 
+  // Upgrades the current anonymous user (same user ID) instead of creating a new one.
   const onSubmit = async (data: FormData) => {
     setError(null);
-    const { error: signUpError } = await supabase.auth.signUp({
-      email: data.email,
-      password: data.password,
-      options: { data: { name: data.name } },
-    });
-    if (signUpError) {
-      setError(signUpError.message);
-      return;
+    try {
+      const name = data.name.trim();
+      const outcome = await upgradeAnonymousAccount(data.email.trim(), data.password, name);
+      // Use the name as display name unless the user already set one in the profile.
+      if (name && !(await AsyncStorage.getItem("userName"))) {
+        await AsyncStorage.setItem("userName", name);
+      }
+      setResult(outcome);
+      reset();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
     }
-    setSuccess(true);
-    reset();
   };
 
-  if (success) {
+  if (result) {
     return (
       <View style={styles.container}>
         <Text style={styles.successText}>
-          Account created! Check your email to confirm your account, then log in.
+          {result === "linked"
+            ? "Account created! You can now log in with this email on another phone. Your trips stay stored on this phone; use Export in your profile for a backup."
+            : "Almost done: check your inbox and confirm your email address to finish creating your account."}
         </Text>
         <View style={styles.buttonRow}>
-          <TouchableOpacity style={styles.button} onPress={() => router.replace("/login")}>
-            <Text style={styles.buttonText}>Go to Login</Text>
+          <TouchableOpacity style={styles.button} onPress={() => router.back()}>
+            <Text style={styles.buttonText}>Done</Text>
           </TouchableOpacity>
         </View>
       </View>

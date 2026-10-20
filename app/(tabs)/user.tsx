@@ -32,8 +32,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Trip } from "@/types/trip";
 import { loadTrips, saveTrips, generateTripId, sortTripsNewestFirst } from "@/services/tripStorage";
 import { styles } from "@/styles/userScreen";
-import { supabase } from "@/lib/supabase";
-import { isAnonymous, signOutAndClearLocalData } from "@/lib/auth";
 import { TRANSPORT_COLOR, transportIcon } from "@/constants/transport";
 import { groupTripsByDate } from "@/utils/tripGrouping";
 
@@ -157,16 +155,6 @@ export default function UserScreen() {
     klimaTicketCost: number;
   } | null>(null);
   const [claimedMilestones, setClaimedMilestones] = useState<Set<number>>(new Set());
-  // Only linked (email) accounts can log out; anonymous accounts would lose their data.
-  const [hasLinkedAccount, setHasLinkedAccount] = useState(false);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setHasLinkedAccount(!isAnonymous(data.session)));
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) =>
-      setHasLinkedAccount(!isAnonymous(session)),
-    );
-    return () => sub.subscription.unsubscribe();
-  }, []);
 
   const loadProfile = useCallback(async () => {
     const [storedName, storedCost] = await Promise.all([
@@ -302,12 +290,6 @@ export default function UserScreen() {
     },
     [],
   );
-
-  const handleLogout = async () => {
-    await signOutAndClearLocalData();
-    // The splash screen signs in anonymously again and shows onboarding.
-    router.replace("/");
-  };
 
   const handleTripPress = (trip: Trip) => {
     setSelectedTrip(trip);
@@ -566,16 +548,6 @@ export default function UserScreen() {
             </TouchableOpacity>
           )}
         </View>
-
-        {/* Logout (linked accounts only) */}
-        {hasLinkedAccount && (
-          <View style={styles.logoutSection}>
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-              <MaterialIcons name="logout" size={18} color={Palette.red.light} />
-              <ThemedText style={styles.logoutButtonText}>Log Out</ThemedText>
-            </TouchableOpacity>
-          </View>
-        )}
 
         <QuickAddTripModal
           visible={showQuickAdd}
