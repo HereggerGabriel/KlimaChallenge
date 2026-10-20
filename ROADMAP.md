@@ -7,17 +7,17 @@ Work happens on the `dev/prototype` branch.
 - [x] Enforce LF line endings (`.gitattributes`)
 - [x] Untrack `.claude/settings.local.json` (contained a Trello token), remove junk files and retired Trello/Excel tooling
 - [x] Move docs and old PM spreadsheets into `docs/`; replace CLAUDE.md and add this roadmap
-- [ ] Align dependencies with Expo SDK 54, remove unused ones, add `expo-dev-client`
-- [ ] Remove dead template code and NativeWind
-- [ ] Merge `app.json` + `app.config.ts` into one config; consistent KlimaChallenge branding
-- [ ] Prettier + ESLint, one-time formatting pass
-- [ ] `tsc` at 0 errors
+- [x] Align dependencies with Expo SDK 54, remove unused ones, add `expo-dev-client`
+- [x] Remove dead template code and NativeWind
+- [x] Merge `app.json` + `app.config.ts` into one config; consistent KlimaChallenge branding
+- [x] Prettier + ESLint, one-time formatting pass
+- [x] `tsc` at 0 errors
 - [ ] EAS development build installed on an Android phone
 
 ## M2 — Fix what's broken
 - [ ] Replace the dead ÖBB proxy (`oebb.macistry.com`, suspended) with a bundled Austrian station list (GTFS), autocomplete and a distance estimate
 - [ ] Replace `IconSymbol` with `MaterialIcons` everywhere (icons blank on Android)
-- [ ] Fix trip export/import (`expo-file-system/legacy`) and add error handling
+- [ ] Fix trip export/import: `expo-file-system/legacy` import done in M1; error handling still open
 - [ ] Daily/weekly quest keys in local time instead of UTC
 - [ ] Keep trips sorted by date after add/edit
 - [ ] Clear local data on logout
