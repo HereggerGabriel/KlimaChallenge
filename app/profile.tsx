@@ -544,6 +544,13 @@ export default function ProfileScreen() {
             <ThemedText style={styles.deleteButtonText}>Delete All Trips</ThemedText>
           </TouchableOpacity>
         </View>
+
+        {/* Data sources (CC BY 4.0 attribution) */}
+        <ThemedText style={[styles.sourcesText, { marginBottom: insets.bottom + 24 }]}>
+          Stations, rail distances and fare estimates based on ÖBB Open Data (GTFS Fahrplan 2026,
+          Relationspreise), ÖBB-Personenverkehr AG, licensed under CC BY 4.0. Estimates are
+          approximate; actual ticket prices may differ.
+        </ThemedText>
       </ScrollView>
 
       {/* Delete confirmation overlay */}
@@ -865,6 +872,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(220,50,50,0.35)",
     backgroundColor: "rgba(220,50,50,0.08)",
+  },
+  sourcesText: {
+    marginTop: 32,
+    fontSize: 11,
+    lineHeight: 16,
+    color: "rgba(255,255,255,0.4)",
+    textAlign: "center",
   },
   deleteButtonText: {
     color: Palette.red.light,
