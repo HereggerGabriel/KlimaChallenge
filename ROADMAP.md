@@ -61,7 +61,7 @@ Builds on M3's data model; replaces the one-way study upload planned earlier. Ba
 - [ ] Save locally first, then upload in the background; works offline and catches up later
 - [ ] Restore on login / new phone; deletions propagate (soft delete)
 - [ ] Anonymous trips are kept when creating an account (same user ID via upgrade, nothing to move)
-- [ ] Decide: anonymous user logs in to an *existing* account → merge this phone's trips into it (suggested; UUIDs prevent duplicates) or ask first
+- [ ] Anonymous user logs in to an *existing* account: ask "Add the N trips from this phone to your account?" → Yes merges them (UUIDs prevent duplicates), No keeps only the account's data (decided Oct 20, 2026)
 - [ ] Small sync status indicator (only shown when something fails)
 - [ ] Study export: query/view without station names (date, transport type, km, price, rewards)
 
