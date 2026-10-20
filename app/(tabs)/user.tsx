@@ -31,7 +31,7 @@ import { computeStreak, getNewMilestoneXP, STREAK_MILESTONES_KEY } from "@/utils
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Trip } from "@/types/trip";
 import { loadTrips, saveTrips, generateTripId } from "@/services/tripStorage";
-import { styles } from "./_user_styles";
+import { styles } from "@/styles/userScreen";
 import { supabase } from "@/lib/supabase";
 import { TRANSPORT_COLOR, transportIcon } from "@/constants/transport";
 import { groupTripsByDate } from "@/utils/tripGrouping";
