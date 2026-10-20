@@ -52,6 +52,41 @@ Work happens on the `dev/prototype` branch.
 - [ ] Accessibility basics
 - [ ] Bottom spacing for Android's navigation bar on all screens
 
+### UI findings from the device walkthrough (Oct 20, 2026)
+Fixed on the spot: black donut center, "560 trips needed" with no trips, trip creation crash (`crypto` missing on Hermes), unscrollable ticket picker, duplicated login subtitle.
+
+All screens
+- [ ] Edge-to-edge: content scrolls under the status bar; buttons and forms sit behind Android's navigation bar (fix centrally with safe-area insets)
+- [ ] One term for the trip amount everywhere ("Ticket value"); currently "Cost", "Ticket Price" and "Ticket Value"
+- [ ] Consistent money formatting (always cents, or always rounded); stats and quests mix both
+- [ ] Remove extra bottom padding in cards (trip card, transport mix)
+
+Main screen
+- [ ] Only one "Add Trip" button in the empty state
+- [ ] Remove the large gap between Financial Overview and Recent Trips
+- [ ] New-user hint on the level card ("Log your first trip to earn XP")
+- [ ] Favorites only for routes with 2+ trips; layout adapts to 1–2 cards (no half-width card, no truncated route)
+- [ ] Badge on the level card when rewards are ready to claim ("1 ready")
+- [ ] Financial Overview: show each number once (donut + 2–3 key figures), details live on the stats screen
+- [ ] Log Out moves to the profile (or goes away with anonymous sign-in)
+
+Trip form and detail
+- [ ] Quick Add flow: route (station autocomplete) → transport type → price/distance auto-filled and editable → date defaults to now
+- [ ] Remove the dead "Connection" section
+- [ ] Detail view: route title on two lines instead of truncating; transport row uses the trip's transport icon
+
+Trip list
+- [ ] Label the trip count ("1 trip")
+- [ ] Undo after swipe-delete ("Trip deleted · Undo")
+- [ ] Add-trip button on the list screen
+- [ ] Daily totals in group headers ("TODAY · €10.20 · 42 km")
+
+Stats and quests
+- [ ] Week labels as dates ("13 Oct") instead of "W43"
+- [ ] Show "saved vs. driving" (already computed in achievementSystem) as a headline number
+- [ ] Top routes: tap to log again
+- [ ] Quest cards: fixed layout (XP top right, CLAIM below), full-width progress bars
+
 ## M5 — Study-ready
 - [ ] Consent screen, anonymized one-way data upload
 - [ ] Switch for the game features (optional baseline phase)
