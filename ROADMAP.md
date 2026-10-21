@@ -89,6 +89,7 @@ Notes for later:
 - "No" on the merge question leaves the phone's anonymous trips in the cloud under an anonymous user nobody can reach; in the study views that user counts as a separate person.
 
 ## M5 — Polish + insights
+Session plan with order, approach and open questions: [`docs/M5_PLAN.md`](docs/M5_PLAN.md).
 General
 - [ ] Translation setup (German + English, follows the phone language); all UI texts in translation files
 - [ ] Edge-to-edge: content under the status bar, buttons behind Android's navigation bar (central fix with safe-area insets)
