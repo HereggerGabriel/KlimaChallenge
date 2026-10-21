@@ -13,10 +13,13 @@ export function AccountMergePrompt() {
 
   useEffect(() => {
     if (count === 0) return;
-    const trips = `${count} trip${count === 1 ? "" : "s"}`;
+    const one = count === 1;
+    const trips = one ? "the trip" : `the ${count} trips`;
     Alert.alert(
-      `Add the ${trips} from this phone to your account?`,
-      `Yes: they're added to the trips already in your account.\nNo: only your account's trips are kept, and the ${trips} are removed from this phone.`,
+      one
+        ? "Add the trip from this phone to your account?"
+        : `Add the ${count} trips from this phone to your account?`,
+      `Yes: ${one ? "it's" : "they're"} added to the trips already in your account.\nNo: only your account's trips are kept, and ${trips} from this phone ${one ? "is" : "are"} removed.`,
       [
         { text: "No", style: "destructive", onPress: () => resolveMerge(false) },
         { text: "Yes, add them", onPress: () => resolveMerge(true) },
