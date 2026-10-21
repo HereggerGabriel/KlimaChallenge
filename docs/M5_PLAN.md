@@ -70,7 +70,7 @@ Planned dates: M5 23 Nov – 18 Dec, but we are about four weeks ahead. **The pi
 7. **Community total:** km, money and CO₂ tracked, shown in turn, with a shared goal per season (1,000 km → one KlimaTicket's value → X kg CO₂).
 8. **Hypothetical ticket:** all KlimaTickets, in a searchable list.
 9. **App icon / splash:** designed together from a few concepts.
-10. **ÖBB deep link:** the user emails ÖBB (draft below); if they answer, "Check price" opens the shop directly.
+10. **ÖBB deep link:** request sent on 21 Oct 2026 via the ÖBB form (text below); if they answer, "Check price" opens the shop directly.
 
 Still to settle in the session that builds it: season length (proposal: 3 × 2 weeks), the CO₂ goal amount, fixed vs fitted monthly km target.
 
@@ -90,7 +90,7 @@ Still to settle in the session that builds it: season length (proposal: 3 × 2 w
 - EAS login / build quota check (S22).
 - Supabase dashboard: run migrations 2 and 3 (S24, S25); add the password-reset redirect URL (S24).
 - Pick and refine the app icon concept with Claude (S27, or earlier if you like).
-- Send the ÖBB request (any time; draft above) through ÖBB's form "Anfrage zur Onlinekooperation": https://www.oebb.at/de/kooperationen/online-kooperationen/anfrage-onlinekooperation (their "Textlink Ticketshop" offer is exactly a shop link with preset stations).
+- ✅ ÖBB request sent on 21 Oct 2026 through ÖBB's form "Anfrage zur Onlinekooperation": https://www.oebb.at/de/kooperationen/online-kooperationen/anfrage-onlinekooperation (their "Textlink Ticketshop" offer is exactly a shop link with preset stations). Waiting for a reply; when it comes, update `services/oebbLinks.ts`.
 - Recruit the 5–8 pilot participants (before 30 Nov).
 
 ## Risks

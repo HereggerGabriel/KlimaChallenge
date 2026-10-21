@@ -39,7 +39,7 @@ Work happens on the `dev/prototype` branch (pushed to GitHub).
 - **Thesis language** English; app German + English.
 - **Supabase** stays free, kept active; weekly study-data export (M6).
 - **Documentation:** PM spreadsheet updated at each milestone + Project Log doc every session.
-- **M5/M5b details** (decided end of S21): i18next; reminders at 19:00 on days without a trip + Sunday weekly-goal reminder (opt-in); journey map per ticket region; seasonal "Winter weeks" + monthly distance; surprise bonus 25 XP (new station/mode, max 1/week); fitted quests = own average × 1.2; community total (km, money, CO₂ in turn) with a shared goal per season; hypothetical ticket from all KlimaTickets (searchable); app icon designed together; user emails ÖBB about shop deep links. Full list: `docs/M5_PLAN.md` → Decisions.
+- **M5/M5b details** (decided end of S21): i18next; reminders at 19:00 on days without a trip + Sunday weekly-goal reminder (opt-in); journey map per ticket region; seasonal "Winter weeks" + monthly distance; surprise bonus 25 XP (new station/mode, max 1/week); fitted quests = own average × 1.2; community total (km, money, CO₂ in turn) with a shared goal per season; hypothetical ticket from all KlimaTickets (searchable); app icon designed together; ÖBB asked for shop deep-link parameters (request sent Oct 21). Full list: `docs/M5_PLAN.md` → Decisions.
 
 ## M1 — Foundation ✅
 Done: LF line endings, repo cleanup, dependencies aligned with SDK 54, dead code and NativeWind removed, single app config, Prettier + ESLint, `tsc` at 0, dev build on Android (USB + `adb reverse`, `npm run dev`).
@@ -99,7 +99,8 @@ General
 - [ ] App icon, splash screen, compressed images
 - [ ] Onboarding rework (#44): ticket + start date (or hypothetical ticket), usual trip + real price, reminders yes/no, study code
 - [ ] Onboarding asks for the most common trip and its real price (seeds the remembered route price; real prices for the study)
-- [ ] Optional: request ÖBB's partner deep-link parameters so "Check price" opens the shop with the route pre-filled
+- [x] Request ÖBB's partner deep-link parameters (sent Oct 21, 2026 via the "Anfrage zur Onlinekooperation" form)
+- [ ] If ÖBB answers: "Check price" opens the shop with the route pre-filled (`services/oebbLinks.ts`)
 - [ ] Undo for deletes; offline/error states (#51)
 - [ ] Trip list search and filter (#46): search box, filter by transport type and date range
 - [ ] Accessibility basics
