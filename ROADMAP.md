@@ -99,10 +99,12 @@ General
 - [ ] Onboarding asks for the most common trip and its real price (seeds the remembered route price; real prices for the study)
 - [ ] Optional: request ÖBB's partner deep-link parameters so "Check price" opens the shop with the route pre-filled
 - [ ] Undo for deletes; offline/error states (#51)
+- [ ] Trip list search and filter (#46): search box, filter by transport type and date range
 - [ ] Accessibility basics
 - [ ] Password reset for accounts (needs an email link back into the app)
 
 Insights (second research goal: motivation through insight)
+- [ ] Citable source for the CO₂ factor (0.16 kg/km in `app/stats.tsx`, currently an estimate: car 0.21 − public transport 0.05), e.g. Umweltbundesamt Austria; needed before "Saved vs. driving" shows it
 - [ ] "Saved vs. driving" as a headline number
 - [ ] Weekly recap: this week vs. last week
 - [ ] Break-even forecast ("pays off around [date]")
@@ -141,6 +143,7 @@ Walkthrough findings (Oct 20, 2026)
 - [ ] Decide on email confirmation for accounts (currently off)
 - [ ] Regenerate stations/fares with 2027 ÖBB data (mid-December)
 - [ ] Internal builds: Android APK; TestFlight (Apple account by mid-December)
+- [ ] Final test round on Android and iPhone before handing out builds (PP5): sign-in, trip entry, backup + restore, rewards
 - [ ] Pre/post questionnaires ready; analysis script for the exported data
 
 ## Out of scope for the thesis
