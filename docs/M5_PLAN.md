@@ -90,7 +90,7 @@ Still to settle in the session that builds it: season length (proposal: 3 × 2 w
 - EAS login / build quota check (S22).
 - Supabase dashboard: run migrations 2 and 3 (S24, S25); add the password-reset redirect URL (S24).
 - Pick and refine the app icon concept with Claude (S27, or earlier if you like).
-- Send the ÖBB email (any time; draft above).
+- Send the ÖBB request (any time; draft above) through ÖBB's form "Anfrage zur Onlinekooperation": https://www.oebb.at/de/kooperationen/online-kooperationen/anfrage-onlinekooperation (their "Textlink Ticketshop" offer is exactly a shop link with preset stations).
 - Recruit the 5–8 pilot participants (before 30 Nov).
 
 ## Risks
