@@ -23,7 +23,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { Palette } from "@/constants/Colors";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { isAnonymous, signOutAndClearLocalData, useSession } from "@/lib/auth";
+import { isAnonymous, useSession } from "@/lib/auth";
 
 type TicketPreset = {
   label: string;
@@ -149,7 +149,7 @@ export default function ProfileScreen() {
   const [saved, setSaved] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [dataFeedback, setDataFeedback] = useState<{ ok: boolean; message: string } | null>(null);
-  const { isLoaded, profile, updateProfile, deleteAllTrips, mergeTrips, trips, reload } =
+  const { isLoaded, profile, updateProfile, deleteAllTrips, mergeTrips, trips, syncNow, logOut } =
     useAppData();
   const [startDate, setStartDate] = useState<string | null>(null);
   const [showStartPicker, setShowStartPicker] = useState(false);
@@ -207,18 +207,21 @@ export default function ProfileScreen() {
     setShowDeleteModal(false);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Upload what's still waiting, so logging out loses nothing if we're online.
+    const { pending } = await syncNow();
     Alert.alert(
       "Log out?",
-      "Your trips are only stored on this phone and will be deleted when you log out. Export them first if you want a backup.",
+      pending > 0
+        ? `${pending} change${pending === 1 ? "" : "s"} couldn't be backed up yet (no connection?) and will be lost if you log out now.`
+        : "Your trips are backed up to your account. Logging out removes them from this phone; log in again to get them back.",
       [
         { text: "Cancel", style: "cancel" },
         {
           text: "Log out",
           style: "destructive",
           onPress: async () => {
-            await signOutAndClearLocalData();
-            await reload(); // the store still held the old data in memory
+            await logOut();
             // The splash screen starts a fresh anonymous session and shows onboarding.
             router.replace("/");
           },

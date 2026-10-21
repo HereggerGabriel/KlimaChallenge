@@ -9,6 +9,9 @@ import { Trip } from "@/types/trip";
 jest.mock("@react-native-async-storage/async-storage", () =>
   require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
 );
+jest.mock("@/lib/supabase", () => ({
+  supabase: require("@/testing/fakeSupabase").createFakeSupabase().client,
+}));
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <AppDataProvider>{children}</AppDataProvider>
