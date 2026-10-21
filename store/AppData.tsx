@@ -105,9 +105,10 @@ export interface Profile {
 
 const DEFAULT_PROFILE: Profile = { name: "", ticket: DEFAULT_TICKET };
 
-/** One "+XP" moment for the feedback overlay; several can queue up. */
+/** One "+XP" (or "−XP") moment for the feedback overlay; several can queue up. */
 export interface RewardEvent {
   id: number;
+  /** Negative when XP was lost, e.g. a deleted trip. */
   xp: number;
   /** The new level if this reward crossed a level boundary. */
   levelUp: number | null;
@@ -551,9 +552,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     }
   }, [reload]);
 
-  /** Queue the "+XP" feedback for a change from `before` to `after` XP. */
+  /** Queue the "+XP" / "−XP" feedback for a change from `before` to `after` XP. */
   const emitReward = useCallback((before: number, after: number) => {
-    if (after <= before) return;
+    if (after === before) return;
     const oldLevel = calculateLevel(before);
     const newLevel = calculateLevel(after);
     setRewardEvents((q) => [
@@ -611,23 +612,28 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
   const updateTrip = useCallback(
     async (id: string, updates: Partial<Omit<Trip, "id">>) => {
+      const { trips: oldTrips, claims: c } = state.current;
       const next = sortTripsNewestFirst(
-        state.current.trips.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+        oldTrips.map((t) => (t.id === id ? { ...t, ...updates } : t)),
       );
       await commitTrips(next);
+      emitReward(totalXP(oldTrips, c), totalXP(next, c));
       const changed = next.find((t) => t.id === id);
       if (changed) await queue((o, now) => queueTrips(o, [changed], now));
     },
-    [commitTrips, queue],
+    [commitTrips, emitReward, queue],
   );
 
   const deleteTrip = useCallback(
     async (id: string) => {
-      const removed = state.current.trips.filter((t) => t.id === id);
-      await commitTrips(state.current.trips.filter((t) => t.id !== id));
+      const { trips: oldTrips, claims: c } = state.current;
+      const removed = oldTrips.filter((t) => t.id === id);
+      const next = oldTrips.filter((t) => t.id !== id);
+      await commitTrips(next);
+      emitReward(totalXP(oldTrips, c), totalXP(next, c)); // "−XP"
       await queue((o, now) => queueTripDeletes(o, removed, now));
     },
-    [commitTrips, queue],
+    [commitTrips, emitReward, queue],
   );
 
   const mergeTrips = useCallback(

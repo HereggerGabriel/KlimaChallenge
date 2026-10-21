@@ -17,6 +17,7 @@ export function RewardFeedback() {
   useEffect(() => {
     if (!event) return;
     if (event.levelUp) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    else if (event.xp < 0) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     else Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   }, [event]);
 

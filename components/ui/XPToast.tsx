@@ -40,10 +40,10 @@ export function XPToast({ xp, onDone }: XPToastProps) {
       }),
     );
 
-    // Float up after hold
+    // Float up after hold (sink for lost XP)
     translateY.value = withSequence(
       withTiming(0, { duration: 750 }),
-      withTiming(-52, { duration: 400 }),
+      withTiming((xp ?? 0) < 0 ? 40 : -52, { duration: 400 }),
     );
   }, [xp]);
 
@@ -52,9 +52,13 @@ export function XPToast({ xp, onDone }: XPToastProps) {
     transform: [{ translateY: translateY.value }, { scale: scale.value }],
   }));
 
+  const lost = (xp ?? 0) < 0;
   return (
-    <Animated.View style={[styles.container, animStyle]} pointerEvents="none">
-      <Text style={styles.text}>+{xp ?? 0} XP</Text>
+    <Animated.View style={[styles.container, lost && styles.lost, animStyle]} pointerEvents="none">
+      <Text style={styles.text}>
+        {lost ? "−" : "+"}
+        {Math.abs(xp ?? 0)} XP
+      </Text>
     </Animated.View>
   );
 }
@@ -76,6 +80,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
     elevation: 8,
     zIndex: 100,
+  },
+  lost: {
+    backgroundColor: Palette.red.dark,
+    borderColor: Palette.red.light,
+    shadowColor: Palette.red.mid,
   },
   text: {
     color: "#fff",

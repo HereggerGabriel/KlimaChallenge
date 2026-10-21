@@ -60,6 +60,10 @@ describe("AppData store", () => {
     await act(() => result.current.deleteTrip(result.current.trips[0].id));
     expect(result.current.trips).toHaveLength(0);
     expect(result.current.xp).toBe(0);
+    expect(result.current.rewardEvents.at(-1)).toMatchObject({
+      xp: -getXPForTrip(37.9, "Train"),
+      levelUp: null,
+    });
   });
 
   it("recomputes XP when a trip is edited", async () => {
