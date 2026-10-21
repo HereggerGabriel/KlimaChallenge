@@ -12,7 +12,7 @@ Work happens on the `dev/prototype` branch (pushed to GitHub).
 | M1 Foundation | Oct 20 | done |
 | M2 Trip entry + fixes | Oct 20 | done |
 | M3 Data core | Oct 20 | done |
-| M4 Cloud backup | Nov 16 – Nov 22 | |
+| M4 Cloud backup | Nov 16 – Nov 22 | done Oct 21 |
 | Pilot test (5–8 people, 2 weeks) | Nov 30 – Dec 13 | runs in parallel with M5 |
 | M5 Polish + insights | Nov 23 – Dec 18 | |
 | M6 Study-ready | Dec 19 – Jan 10 | includes holidays |
@@ -71,15 +71,22 @@ Done: icons on Android, quest dates in local time (+ first unit tests), trips so
 - [x] Unit tests: quest progress functions, import file parsing (11 suites, 76 tests in total)
 - [x] Device test of the store migration flows (add/edit/delete, claims, import, ticket start date)
 
-## M4 — Cloud backup
-Builds on M3's data model; replaces the one-way study upload planned earlier. Background in `.claude/memory/plan_cloud_sync.md`.
-- [ ] Supabase tables for trips and claimed rewards, row-level security (each user only sees their own rows)
-- [ ] Save locally first, then upload in the background; works offline and catches up later
-- [ ] Restore on login / new phone; deletions propagate (soft delete)
-- [ ] Anonymous trips are kept when creating an account (same user ID via upgrade, nothing to move)
-- [ ] Anonymous user logs in to an *existing* account: ask "Add the N trips from this phone to your account?" → Yes merges them (UUIDs prevent duplicates), No keeps only the account's data (decided Oct 20, 2026)
-- [ ] Small sync status indicator (only shown when something fails)
-- [ ] Study export: query/view without station names (date, transport type, km, price, rewards)
+## M4 — Cloud backup ✅
+Done Oct 21, 2026 (planned Nov 16–22). Migration `supabase/migrations/20261021120000_cloud_backup.sql` (run once in the dashboard SQL editor); how it works: `docs/ARCHITECTURE.md` → Cloud backup.
+- [x] Supabase tables for trips, claimed rewards and the profile (name + ticket), row-level security (each user only sees their own rows)
+- [x] Save locally first, then upload in the background; works offline and catches up later (outbox survives restarts)
+- [x] Restore on login / new phone; deletions propagate (soft delete via `deleted_at`)
+- [x] Anonymous trips are kept when creating an account (same user ID via upgrade, nothing to move)
+- [x] Anonymous user logs in to an *existing* account: ask "Add the N trips from this phone to your account?" → Yes merges them (UUIDs prevent duplicates), No keeps only the account's data (decided Oct 20, 2026)
+- [x] Small sync status indicator (red cloud on the main screen, only shown when something fails; tap for details + retry)
+- [x] Study export: views `study.trips`, `study.rewards`, `study.tickets` without station names or free text (dashboard only, not exposed to the app's API; merged anonymous users left out to avoid double counting)
+- [x] Red "−XP" toast when deleting a trip (or an edit lowers its XP)
+- [x] Device test: offline + catch-up, soft delete, logout + restore, merge Yes and No
+- [x] Tests: sync logic + store sync/merge against an in-memory Supabase fake (13 suites, 106 tests)
+
+Notes for later:
+- Name is also stored once in the auth user metadata at account creation (not kept in sync; the app only uses `profiles.name`).
+- "No" on the merge question leaves the phone's anonymous trips in the cloud under an anonymous user nobody can reach; in the study views that user counts as a separate person.
 
 ## M5 — Polish + insights
 General
@@ -124,7 +131,7 @@ Walkthrough findings (Oct 20, 2026)
 - [ ] Reflection line after logging ("your best week so far")
 - [ ] Surprise bonuses (new station or mode, sparingly)
 - [ ] Community total (needs M4)
-- [ ] Automatic reward revocation on delete/edit
+- [ ] Automatic reward revocation on delete/edit (the "−XP" toast for deleted trips exists; claimed rewards are not revoked yet)
 
 ## M6 — Study-ready
 - [ ] Privacy notice (everyone) + study code and consent (participants), leave-study option
