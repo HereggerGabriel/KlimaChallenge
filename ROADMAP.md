@@ -1,7 +1,9 @@
 # KlimaChallenge — Roadmap
 
 Goal: a polished, well-functioning prototype, then a user study (Jan–Feb 2027), then thesis submission (end of March 2027).
-Work happens on the `dev/prototype` branch.
+Work happens on the `dev/prototype` branch (pushed to GitHub).
+
+**New session? Start here:** this file, then `docs/ARCHITECTURE.md`. Readable progress: [Project Log](https://claude.ai/artifact/5H3s9HaFLvgKiXJ3ESSi3j) (add a session row at the end of each session) · decisions of 21 Oct with reasons: [Status, Recap & Next Steps](https://claude.ai/artifact/1aqw6UxEwQtETnQbH9RZ8K).
 
 ## Schedule (proposal, Oct 20, 2026)
 
@@ -23,6 +25,20 @@ Work happens on the `dev/prototype` branch.
 - **Trip price:** the app estimates the single-ticket price from the distance, the user can correct it, and the corrected price is remembered per route.
 - **Language:** German + English, following the phone's language.
 - **Rewards:** keep tap-to-claim for quests and achievements (the claim moment matters, and claims are useful study data).
+
+## Decisions of 21 Oct 2026
+- **Participants:** students and commuters; mainly Carinthia, plus Vienna/Graz commuters, maybe Tyrol. Anyone may join; non-holders pick a **hypothetical ticket** ("would have paid off"). Profile flag "I own this ticket" vs "comparing only", recorded as study variable.
+- **One trip = the whole journey** with one ticket price; optional "via / extra modes" note.
+- **Consent:** privacy notice for everyone in onboarding; participants enter a **study code** + explicit consent at the start (code links questionnaires to usage data); "leave study + delete my data" in the profile. Ethics requirement still to ask.
+- **Baseline switch** gets built; use decided with the supervisor (not yet consulted).
+- **Reminders:** onboarding asks "Do you want reminders?"; on/off recorded over time. Needs expo-notifications (new build, bundle with other native changes in M5).
+- **Streak:** weekly **goal ladder** replaces the daily streak: active days (≥1 trip), start 1 day or onboarding estimate, +1 suggested after each met week (user accepts or keeps), default cap 5 (user can raise), one pause per month; streak = consecutive weeks with goal met; weekly goal recorded as study data.
+- **Rewards revoked automatically** when deleted/edited trips no longer meet a claimed quest, checked against the claim's own day/week; user sees "−35 XP: Double up no longer met"; deletions logged.
+- **Social:** only an anonymous community total.
+- **Apple account** after the pilot, ideally by mid-December.
+- **Thesis language** English; app German + English.
+- **Supabase** stays free, kept active; weekly study-data export (M6).
+- **Documentation:** PM spreadsheet updated at each milestone + Project Log doc every session.
 
 ## M1 — Foundation ✅
 Done: LF line endings, repo cleanup, dependencies aligned with SDK 54, dead code and NativeWind removed, single app config, Prettier + ESLint, `tsc` at 0, dev build on Android (USB + `adb reverse`, `npm run dev`).
@@ -72,7 +88,7 @@ General
 - [ ] One term for the trip amount ("Ticket value") and one money format everywhere
 - [ ] Split oversized screens (quests, profile, stats, TripDetailModal)
 - [ ] App icon, splash screen, compressed images
-- [ ] Onboarding rework (#44) including ticket setup and start date
+- [ ] Onboarding rework (#44): ticket + start date (or hypothetical ticket), usual trip + real price, reminders yes/no, study code
 - [ ] Onboarding asks for the most common trip and its real price (seeds the remembered route price; real prices for the study)
 - [ ] Optional: request ÖBB's partner deep-link parameters so "Check price" opens the shop with the route pre-filled
 - [ ] Undo for deletes; offline/error states (#51)
@@ -99,11 +115,25 @@ Walkthrough findings (Oct 20, 2026)
 - [ ] Quest cards: fixed layout (XP top right, CLAIM below), full-width progress bars
 - [ ] Remove extra bottom padding in cards
 
+## M5b — Gamification (alongside M5)
+- [ ] Weekly goal ladder (replaces daily streak; see decisions)
+- [ ] Quests fitted to the user (only modes they use; targets relative to own average)
+- [ ] Daily ticket value ("ticket costs €3.84/day; today you used €10.50")
+- [ ] Break-even journey map (route across Austria, stops at 25/50/75/100%)
+- [ ] Seasonal challenges (timed for the study window)
+- [ ] Reflection line after logging ("your best week so far")
+- [ ] Surprise bonuses (new station or mode, sparingly)
+- [ ] Community total (needs M4)
+- [ ] Automatic reward revocation on delete/edit
+
 ## M6 — Study-ready
-- [ ] Consent screen (GDPR), study participant info
+- [ ] Privacy notice (everyone) + study code and consent (participants), leave-study option
+- [ ] "Own ticket" vs "comparing" flag; hypothetical ticket wording
+- [ ] Weekly study-data export script; keep the free Supabase project active
 - [ ] Switch for the game features (optional tracking-only baseline phase)
 - [ ] Decide on email confirmation for accounts (currently off)
-- [ ] Internal builds: Android APK; TestFlight if the Apple Developer account is set up
+- [ ] Regenerate stations/fares with 2027 ÖBB data (mid-December)
+- [ ] Internal builds: Android APK; TestFlight (Apple account by mid-December)
 - [ ] Pre/post questionnaires ready; analysis script for the exported data
 
 ## Out of scope for the thesis
