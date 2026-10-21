@@ -15,7 +15,7 @@ Planned dates: M5 23 Nov – 18 Dec, but we are about four weeks ahead. **The pi
 
 ### S22 — Foundations (pilot)
 1. **Native bundle + build:** add `expo-localization` and `expo-notifications`; set Android edge-to-edge in `app.config.ts`; one EAS development build, installed on the Xiaomi. Check with the user first that the EAS login works (`npx eas-cli whoami`).
-2. **Translation setup:** a small typed dictionary (`i18n/en.ts`, `i18n/de.ts`, `t("key")`, language from `expo-localization`, fallback English). No large library: a few hundred strings, no plurals beyond simple cases (helper `plural(n, one, other)`). Move all UI texts screen by screen; a unit test checks both languages have the same keys.
+2. **Translation setup** (decided: i18next): `i18next` + `react-i18next`, language from `expo-localization`, fallback English; resources in `i18n/en.json` and `i18n/de.json`, namespaced per screen. Check first that plurals work on Hermes (`Intl.PluralRules`); if not, add a polyfill. Move all UI texts screen by screen; a unit test checks both languages have the same keys. Claude writes German and English; the user skims the German on the phone once per session.
 3. **Edge-to-edge:** one central fix with safe-area insets (screen wrapper or the existing layouts), so content sits under the status bar and buttons stay above Android's navigation bar.
 4. **One term + one money format:** "Ticket value" everywhere; `formatEuro()` in `utils/format.ts` (German: `€ 12,10` style per locale), replacing every hand-built `€${x.toFixed(2)}`.
 - Done when: the app runs in German on a German phone and in English otherwise; no hardcoded UI strings left (grep check); screens are edge-to-edge on the Xiaomi.
@@ -28,8 +28,8 @@ Planned dates: M5 23 Nov – 18 Dec, but we are about four weeks ahead. **The pi
 - Done when: no screen file over ~400 lines, all walkthrough items ticked, device check.
 
 ### S24 — Onboarding, reminders, password reset (pilot)
-1. **Onboarding rework (#44):** ticket + start date, or a hypothetical ticket ("comparing only", flag stored for the study); usual trip + its real price (seeds the remembered route price); "Do you want reminders?"; a placeholder step for the study code (filled in M6). Keep "Skip".
-2. **Reminders:** local notifications via `expo-notifications`; on/off and every change logged with a timestamp (study variable). Content and timing: see open question 2.
+1. **Onboarding rework (#44):** ticket + start date, or a hypothetical ticket ("comparing only", flag stored for the study; non-holders pick from all KlimaTickets, same list as holders, made **searchable**, which also helps the profile's ticket picker); usual trip + its real price (seeds the remembered route price); "Do you want reminders?"; a placeholder step for the study code (filled in M6). Keep "Skip".
+2. **Reminders:** local notifications via `expo-notifications`; on/off and every change logged with a timestamp (study variable). Decided: 19:00 on days without a trip, plus Sunday "1 active day left for your weekly goal" when it applies; off unless the user says yes in onboarding.
 3. **Password reset:** "Forgot password?" sends Supabase's reset email; the link opens the app (`klimachallenge://reset-password`) and asks for a new password. The redirect URL must be added in the Supabase dashboard (user action).
 4. **Migration 2:** profile gets `owns_ticket` (own vs comparing); new table `setting_changes` (user, key, value, changed_at) for reminders on/off; both in `study.*` views.
 - Done when: a new install goes through onboarding in about a minute, reminders arrive on the phone, password reset works end to end.
@@ -49,32 +49,48 @@ Planned dates: M5 23 Nov – 18 Dec, but we are about four weeks ahead. **The pi
 5. **Daily ticket value:** "Your ticket costs €3.84 a day; today you used €10.50."
 6. **Reflection line after logging:** one short sentence ("your best week so far", "3rd trip this week"); a few rules in a pure function, tested.
 7. **Daily totals in trip list headers.**
-8. **Fitted quests:** quests only for transport modes the user has used (last 4 weeks); targets relative to the user's own average (see open question 6).
+8. **Fitted quests:** quests only for transport modes the user has used (last 4 weeks); decided: target = own weekly average × 1.2, rounded up, minimum 1; first-time quests keep fixed targets.
 
 ### S27 — Journey map, seasonal, surprises, community total, polish, pilot build
-1. **Break-even journey map:** a route across Austria with stops at 25 / 50 / 75 / 100 % of break-even (see open question 3); SVG with `react-native-svg`.
-2. **Seasonal challenges:** time-limited challenges for the study window (open question 4).
-3. **Surprise bonuses:** small XP for a new station or a new transport mode, sparingly (at most one a week).
-4. **Community total:** an anonymous total across all users (e.g. km this week). A Postgres function (`security definer`, returns only the sum) called via RPC, cached for the day; never any per-user data.
-5. **App icon, splash screen, compressed images; accessibility basics** (labels on icon buttons, touch targets ≥ 44 px, contrast check).
+1. **Break-even journey map:** stops at 25 / 50 / 75 / 100 % of break-even; decided: **one route per ticket region** (e.g. Kärnten: Villach → Klagenfurt → Graz → Vienna; nationwide ticket: Bregenz → Vienna), drawn with `react-native-svg` from real station coordinates in the bundled data.
+2. **Seasonal challenges** (decided: both): "Winter weeks" (weekly goal met 3 weeks in a row during Jan–Feb → badge + XP) and a monthly distance challenge (e.g. January: 300 km). To settle in the session: whether the km target is fixed or fitted to the user's own average like the fitted quests (a fixed target favours long-distance commuters).
+3. **Surprise bonuses** (decided): 25 XP for a station or a transport mode used for the first time; at most one a week.
+4. **Community total + common goal** (decided): track km, money saved and CO₂ saved across all users; the card alternates which number it shows, next to a **shared goal per season**: season 1 "travel 1,000 km together", season 2 "save the value of one KlimaTicket together", season 3 "save X kg CO₂ together" (X set from pilot data once the CO₂ factor is fixed). Proposal to confirm: the 6-week study = 3 seasons of 2 weeks. Server side: a Postgres function (`security definer`, returns only the sums for a date range) called via RPC, cached for the day; never any per-user data. Seasons and goals live in a small config table so they can change without a new build.
+5. **App icon + splash screen** (decided: designed together): Claude shows a few concepts as images first, the user picks one, then refine together; then export the sizes, compress the images.
+6. **Accessibility basics:** labels on icon buttons, touch targets ≥ 44 px, contrast check.
 6. **Pilot build:** Android APK via EAS (preview profile), install test on a second phone.
 
-## Open questions (answer at the start of S22, or earlier)
-1. **Translations:** agree on the small built-in dictionary instead of a library (i18next)? Who checks the German texts?
-2. **Reminders:** what and when? Proposal: one evening reminder (19:00) only on days without a trip, plus Sunday "1 active day left for your weekly goal" when relevant. Off by default unless the user says yes in onboarding.
-3. **Journey map route:** one fixed route (e.g. Bregenz → Vienna along the Westbahn) or one per region (Carinthia: Villach → Klagenfurt → Graz → Vienna)?
-4. **Seasonal challenges:** themes and rules for Jan–Feb 2027 (e.g. "Winter weeks": 3 weeks in a row with the goal met)?
-5. **Surprise bonuses:** which events, and how much XP?
-6. **Fitted quests:** targets = own weekly average × 1.2, rounded up, minimum 1? Which quests stay fixed (e.g. first-time quests)?
-7. **Community total:** which number(s) to show: total km, trips or CO₂ saved; this week or since the study start?
-8. **Hypothetical ticket:** which tickets can non-holders pick (all KlimaTickets, or just Ö + their region)?
-9. **App icon / splash:** design by you, or should I make a simple one?
-10. **ÖBB partner deep link (optional):** do you want to email ÖBB to ask for the shop's deep-link parameters?
+## Decisions (21 Oct 2026, end of S21)
+1. **Translations:** i18next (`react-i18next`); Claude writes German and English, the user skims the German.
+2. **Reminders:** 19:00 on days without a trip + Sunday weekly-goal reminder when it applies; opt-in in onboarding.
+3. **Journey map:** one route per ticket region.
+4. **Seasonal challenges:** both "Winter weeks" and a monthly distance challenge.
+5. **Surprise bonuses:** new station or new mode, 25 XP, at most one a week.
+6. **Fitted quests:** own weekly average × 1.2, rounded up, minimum 1; first-time quests fixed.
+7. **Community total:** km, money and CO₂ tracked, shown in turn, with a shared goal per season (1,000 km → one KlimaTicket's value → X kg CO₂).
+8. **Hypothetical ticket:** all KlimaTickets, in a searchable list.
+9. **App icon / splash:** designed together from a few concepts.
+10. **ÖBB deep link:** the user emails ÖBB (draft below); if they answer, "Check price" opens the shop directly.
+
+Still to settle in the session that builds it: season length (proposal: 3 × 2 weeks), the CO₂ goal amount, fixed vs fitted monthly km target.
+
+### Draft email to ÖBB (German)
+> **Betreff:** Deep-Link-Parameter für den ÖBB Ticketshop – studentisches Forschungsprojekt
+>
+> Sehr geehrte Damen und Herren,
+>
+> im Rahmen meiner Bachelorarbeit entwickle ich eine App, mit der Nutzerinnen und Nutzer ihre Fahrten mit öffentlichen Verkehrsmitteln erfassen und sehen, ab wann sich ihr KlimaTicket rechnet. Bei jeder Fahrt bieten wir einen Link „Preis bei ÖBB prüfen“ an. Derzeit öffnet dieser den Fahrplan (Scotty) mit vorausgefüllter Strecke.
+>
+> Gibt es dokumentierte Parameter, mit denen ein Link direkt den Ticketshop mit Start, Ziel und Datum öffnet? Die App ist nicht kommerziell; die Links führen ausschließlich zu Ihrem Angebot.
+>
+> Vielen Dank und freundliche Grüße
+> Gabriel Heregger
 
 ## User actions along the way
 - EAS login / build quota check (S22).
 - Supabase dashboard: run migrations 2 and 3 (S24, S25); add the password-reset redirect URL (S24).
-- Pick or approve the app icon (S27).
+- Pick and refine the app icon concept with Claude (S27, or earlier if you like).
+- Send the ÖBB email (any time; draft above).
 - Recruit the 5–8 pilot participants (before 30 Nov).
 
 ## Risks

@@ -39,6 +39,7 @@ Work happens on the `dev/prototype` branch (pushed to GitHub).
 - **Thesis language** English; app German + English.
 - **Supabase** stays free, kept active; weekly study-data export (M6).
 - **Documentation:** PM spreadsheet updated at each milestone + Project Log doc every session.
+- **M5/M5b details** (decided end of S21): i18next; reminders at 19:00 on days without a trip + Sunday weekly-goal reminder (opt-in); journey map per ticket region; seasonal "Winter weeks" + monthly distance; surprise bonus 25 XP (new station/mode, max 1/week); fitted quests = own average × 1.2; community total (km, money, CO₂ in turn) with a shared goal per season; hypothetical ticket from all KlimaTickets (searchable); app icon designed together; user emails ÖBB about shop deep links. Full list: `docs/M5_PLAN.md` → Decisions.
 
 ## M1 — Foundation ✅
 Done: LF line endings, repo cleanup, dependencies aligned with SDK 54, dead code and NativeWind removed, single app config, Prettier + ESLint, `tsc` at 0, dev build on Android (USB + `adb reverse`, `npm run dev`).
