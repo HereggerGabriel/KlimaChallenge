@@ -16,6 +16,7 @@ import { QuickAddTripModal } from "@/components/ui/QuickAddTripModal";
 import { TripDetailModal } from "@/components/ui/TripDetailModal";
 import UserLevelCard from "@/components/ui/UserLevelCard";
 import { MainQuestOverlay } from "@/components/ui/MainQuestOverlay";
+import { SyncStatusBadge } from "@/components/ui/SyncStatusBadge";
 import { Trip } from "@/types/trip";
 import { styles } from "@/styles/userScreen";
 import { TRANSPORT_COLOR, transportIcon } from "@/constants/transport";
@@ -228,6 +229,7 @@ export default function UserScreen() {
             </ThemedText>
             <ThemedText style={styles.subtitle}>Track your impact and savings</ThemedText>
           </View>
+          <SyncStatusBadge />
           <TouchableOpacity onPress={() => router.push("/profile")} activeOpacity={0.8}>
             <View style={styles.avatarCircle}>
               <ThemedText style={styles.avatarInitial}>

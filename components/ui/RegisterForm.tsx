@@ -50,7 +50,7 @@ export default function RegisterForm() {
       <View style={styles.container}>
         <Text style={styles.successText}>
           {result === "linked"
-            ? "Account created! You can now log in with this email on another phone. Your trips stay stored on this phone; use Export in your profile for a backup."
+            ? "Account created! Your trips are backed up to it, so you can log in with this email on another phone and find them there."
             : "Almost done: check your inbox and confirm your email address to finish creating your account."}
         </Text>
         <View style={styles.buttonRow}>

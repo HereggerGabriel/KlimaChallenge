@@ -516,8 +516,8 @@ export default function ProfileScreen() {
           {anonymous ? (
             <>
               <ThemedText style={styles.accountHint}>
-                You are using KlimaChallenge without an account. Create one to sign in with the same
-                identity on another phone. Trips stay on this phone; use Export below for a backup.
+                You are using KlimaChallenge without an account. Your trips are backed up, but only
+                this phone can reach them. Create an account to keep them when you switch phones.
               </ThemedText>
               <TouchableOpacity
                 style={styles.navButton}

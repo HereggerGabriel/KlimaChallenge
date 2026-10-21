@@ -338,7 +338,12 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         state.current.trips.length,
       );
       if (decision === "ask") {
-        setPendingMerge({ userId: user.id, tripCount: state.current.trips.length });
+        const id = user.id;
+        const tripCount = state.current.trips.length;
+        // Same question again (another round): keep the object, so it isn't asked twice.
+        setPendingMerge((prev) =>
+          prev?.userId === id && prev.tripCount === tripCount ? prev : { userId: id, tripCount },
+        );
         return; // nothing is synced until the user answers
       }
       if (decision === "adopt") {

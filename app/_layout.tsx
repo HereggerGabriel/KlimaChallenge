@@ -4,6 +4,7 @@ import { LogBox } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AppDataProvider } from "@/store/AppData";
 import { RewardFeedback } from "@/components/ui/RewardFeedback";
+import { AccountMergePrompt } from "@/components/ui/AccountMergePrompt";
 
 // Dev-only: the Expo dev client keeps the screen awake while developing and
 // fails with this error when the app is backgrounded. Harmless, and it never
@@ -17,6 +18,8 @@ export default function RootLayout() {
         <Slot />
         {/* "+XP" toast and level-up overlay on top of every screen */}
         <RewardFeedback />
+        {/* "Add the N trips from this phone to your account?" after logging in */}
+        <AccountMergePrompt />
       </AppDataProvider>
     </GestureHandlerRootView>
   );
