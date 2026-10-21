@@ -8,8 +8,8 @@ Thesis due end of March 2027. Current focus: a polished prototype (see `ROADMAP.
 
 ## Session startup
 
-1. Read `ROADMAP.md` to see the current milestone and the next open items.
-2. Read `.claude/memory/project_state.md` for architecture and key files.
+1. Read `ROADMAP.md` to see the current milestone and the next open items.2. 
+2. Read `docs/ARCHITECTURE.md` for architecture and key files.
 3. Run `git status` and `git log --oneline -5`.
 4. Run `npx tsc --noEmit` to get the baseline error count before touching anything (target: 0).
 
